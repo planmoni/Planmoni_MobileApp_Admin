@@ -192,20 +192,20 @@ const calculateTrends = async () => {
   console.log('📈 Payouts trend calculated (absolute):', payoutsTrend);
 
   // Calculate plans trend - absolute difference
-  const { count: thisMonthPlansCount } = await supabase
+  const { count: rawThisMonthPlansCount } = await supabase
     .from('payout_plans')
     .select('id', { count: 'exact', head: true })
     .gte('created_at', thisMonthStart.toISOString())
     .lte('created_at', thisMonthEnd.toISOString());
 
-  const { count: lastMonthPlansCount } = await supabase
+  const { count: rawLastMonthPlansCount } = await supabase
     .from('payout_plans')
     .select('id', { count: 'exact', head: true })
     .gte('created_at', lastMonthStart.toISOString())
     .lte('created_at', lastMonthEnd.toISOString());
 
-  const thisMonthPlansCount = thisMonthPlansCount || 0;
-  const lastMonthPlansCount = lastMonthPlansCount || 0;
+  const thisMonthPlansCount = rawThisMonthPlansCount || 0;
+  const lastMonthPlansCount = rawLastMonthPlansCount || 0;
   
   console.log('📋 Plan counts:');
   console.log('This month plans:', thisMonthPlansCount);
