@@ -14,19 +14,16 @@ import {
   Clock,
   BarChart3,
   Award,
-  Eye,
-  User
+  Eye
 } from 'lucide-react';
 import Card from '../../components/Card';
 import Button from '../../components/Button';
-import { useToast } from '../../contexts/ToastContext';
 import { useSuperAdminData } from '@/hooks/queries/useSuperAdminData';
 import { useRefreshData } from '@/hooks/mutations/useRefreshData';
 
 export default function SuperAdmin() {
   const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'roles' | 'permissions' | 'audit'>('overview');
   const [searchQuery, setSearchQuery] = useState('');
-  const { showToast } = useToast();
   
   const { data: superAdminData, isLoading, error } = useSuperAdminData();
   const refreshData = useRefreshData();
