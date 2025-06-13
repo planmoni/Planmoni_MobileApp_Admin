@@ -1,216 +1,40 @@
-import { useState, useEffect } from 'react';
-import { supabase } from '../../lib/supabase';
+import { useState } from 'react';
 import { Search, Filter, ArrowUpRight, ArrowDownRight, RefreshCw } from 'lucide-react';
 import Card from '../../components/Card';
 import DateRangePicker from '../../components/DateRangePicker';
 import { format } from 'date-fns';
+import { useTransactionsData } from '@/hooks/queries/useTransactionsData';
+import { useRefreshData } from '@/hooks/mutations/useRefreshData';
 
 type TransactionType = 'all' | 'deposit' | 'payout' | 'withdrawal';
 
-interface Profile {
-  id: string;
-  first_name: string | null;
-  last_name: string | null;
-  email: string | null;
-}
-
-interface Transaction {
-  id: string;
-  type: string;
-  amount: number;
-  status: string;
-  source: string;
-  destination: string;
-  payout_plan_id?: string | null;
-  bank_account_id?: string | null;
-  reference?: string | null;
-  description?: string | null;
-  created_at: string;
-  profiles: Profile[] | null;
-}
-
-interface SupabaseRpcTransaction {
-  id: string;
-  type: string;
-  amount: number;
-  status: string;
-  source: string;
-  destination: string;
-  created_at: string;
-  user_name: string | null;
-  user_email: string | null;
-}
-
-interface TransactionStats {
-  total_deposits: number;
-  total_payouts: number;
-  total_withdrawals: number;
-}
-
 export default function Transactions() {
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeType, setActiveType] = useState<TransactionType>('all');
-  const [refreshing, setRefreshing] = useState(false);
   const [dateRange, setDateRange] = useState<{ start: Date | null; end: Date | null }>({
     start: null,
     end: null,
   });
-  const [stats, setStats] = useState({
-    inflows: 0,
-    outflows: 0,
-    netMovement: 0,
+
+  const { data: transactionsData, isLoading, error } = useTransactionsData({
+    searchQuery,
+    activeType,
+    dateRange
   });
 
-  useEffect(() => {
-    fetchTransactions();
-  }, [searchQuery, activeType, dateRange]);
+  const refreshData = useRefreshData();
 
-  const fetchTransactions = async () => {
-    try {
-      setRefreshing(true);
-      
-      // Use the optimized RPC function for fetching transactions
-      const { data: transactionData, error: transactionError } = await supabase.rpc('get_all_transactions_data', {
-        search_query: searchQuery || null,
-        transaction_type: activeType === 'all' ? null : activeType,
-        start_date: dateRange.start ? format(dateRange.start, 'yyyy-MM-dd') : null,
-        end_date: dateRange.end ? format(dateRange.end, 'yyyy-MM-dd') : null,
-        limit_count: 100,
-        offset_count: 0
-      });
-      
-      if (transactionError) {
-        console.error('Error fetching transactions via RPC:', transactionError);
-        // Fallback to original method
-        await fetchTransactionsFallback();
-        return;
-      }
-      
-      // Transform the data to match expected format
-      const transformedTransactions: Transaction[] = (transactionData as SupabaseRpcTransaction[])?.map((t: SupabaseRpcTransaction) => ({
-        id: t.id,
-        type: t.type,
-        amount: t.amount,
-        status: t.status,
-        source: t.source,
-        destination: t.destination,
-        created_at: t.created_at,
-        profiles: [{
-          id: '', // RPC doesn't return user ID, but we need it for the interface
-          first_name: t.user_name?.split(' ')[0] || null,
-          last_name: t.user_name?.split(' ')[1] || null,
-          email: t.user_email
-        }]
-      })) || [];
-      
-      setTransactions(transformedTransactions);
-      
-      // Fetch transaction statistics
-      const { data: statsData, error: statsError } = await supabase.rpc('get_transaction_stats', {
-        start_date: dateRange.start ? format(dateRange.start, 'yyyy-MM-dd') : null,
-        end_date: dateRange.end ? format(dateRange.end, 'yyyy-MM-dd') : null
-      });
-      
-      if (statsError) {
-        console.error('Error fetching transaction stats:', statsError);
-      } else if (statsData && statsData.length > 0) {
-        const statsInfo = statsData[0] as TransactionStats;
-        setStats({
-          inflows: statsInfo.total_deposits || 0,
-          outflows: (statsInfo.total_payouts || 0) + (statsInfo.total_withdrawals || 0),
-          netMovement: (statsInfo.total_deposits || 0) - ((statsInfo.total_payouts || 0) + (statsInfo.total_withdrawals || 0)),
-        });
-      }
-      
-    } catch (error) {
-      console.error('Error fetching transactions:', error);
-      await fetchTransactionsFallback();
-    } finally {
-      setIsLoading(false);
-      setRefreshing(false);
-    }
-  };
-
-  const fetchTransactionsFallback = async () => {
-    try {
-      // Fallback to original query method
-      const { data, error } = await supabase
-        .from('transactions')
-        .select(`
-          id,
-          type,
-          amount,
-          status,
-          source,
-          destination,
-          payout_plan_id,
-          bank_account_id,
-          reference,
-          description,
-          created_at,
-          profiles (
-            id,
-            first_name,
-            last_name,
-            email
-          )
-        `)
-        .order('created_at', { ascending: false });
-      
-      if (error) throw error;
-      
-      // Apply filters manually for fallback
-      let filtered = data || [];
-      
-      if (activeType !== 'all') {
-        filtered = filtered.filter(transaction => transaction.type === activeType);
-      }
-      
-      if (searchQuery) {
-        filtered = filtered.filter(transaction => 
-          transaction.profiles?.[0]?.first_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          transaction.profiles?.[0]?.last_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          transaction.profiles?.[0]?.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          transaction.source.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          transaction.destination.toLowerCase().includes(searchQuery.toLowerCase())
-        );
-      }
-      
-      if (dateRange.start && dateRange.end) {
-        filtered = filtered.filter(transaction => {
-          const transactionDate = new Date(transaction.created_at);
-          return transactionDate >= dateRange.start! && transactionDate <= dateRange.end!;
-        });
-      }
-      
-      setTransactions(filtered as Transaction[]);
-      
-      // Calculate stats manually for fallback
-      const inflows = filtered
-        .filter(t => t.type === 'deposit')
-        .reduce((sum, t) => sum + t.amount, 0);
-      const outflows = filtered
-        .filter(t => t.type === 'payout' || t.type === 'withdrawal')
-        .reduce((sum, t) => sum + t.amount, 0);
-      
-      setStats({
-        inflows,
-        outflows,
-        netMovement: inflows - outflows,
-      });
-      
-    } catch (error) {
-      console.error('Error in fallback transactions fetch:', error);
-    }
+  const handleRefresh = () => {
+    refreshData.mutate(['transactions']);
   };
 
   // Group transactions by date
   const groupTransactionsByDate = () => {
-    const grouped: Record<string, Transaction[]> = {};
+    if (!transactionsData?.transactions) return {};
     
-    transactions.forEach(transaction => {
+    const grouped: Record<string, any[]> = {};
+    
+    transactionsData.transactions.forEach(transaction => {
       const date = format(new Date(transaction.created_at), 'yyyy-MM-dd');
       if (!grouped[date]) {
         grouped[date] = [];
@@ -229,6 +53,22 @@ export default function Transactions() {
     return `${format(dateRange.start, 'MMM d, yyyy')} - ${format(dateRange.end, 'MMM d, yyyy')}`;
   };
 
+  if (error) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-error mb-4">Failed to load transactions</p>
+        <button
+          onClick={handleRefresh}
+          className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark"
+        >
+          Try Again
+        </button>
+      </div>
+    );
+  }
+
+  const stats = transactionsData?.stats || { inflows: 0, outflows: 0, netMovement: 0 };
+
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
@@ -237,11 +77,11 @@ export default function Transactions() {
           <p className="text-text-secondary dark:text-text-secondary">View and manage all transactions</p>
         </div>
         <button 
-          onClick={fetchTransactions}
+          onClick={handleRefresh}
           className="p-2 rounded-full bg-background-tertiary dark:bg-background-tertiary hover:bg-background-secondary dark:hover:bg-background-secondary transition-colors"
-          disabled={refreshing}
+          disabled={refreshData.isPending}
         >
-          <RefreshCw className={`h-5 w-5 text-primary dark:text-primary ${refreshing ? 'animate-spin' : ''}`} />
+          <RefreshCw className={`h-5 w-5 text-primary dark:text-primary ${refreshData.isPending ? 'animate-spin' : ''}`} />
         </button>
       </div>
 

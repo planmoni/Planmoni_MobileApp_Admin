@@ -1,162 +1,20 @@
-import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { supabase } from '../../lib/supabase';
 import { ArrowLeft, Wallet, Calendar, Building2, ArrowUpRight, ArrowDownRight, RefreshCw, Shield } from 'lucide-react';
 import Card from '../../components/Card';
 import { format } from 'date-fns';
+import { useUserDetails } from '@/hooks/queries/useUsersData';
+import { useRefreshData } from '@/hooks/mutations/useRefreshData';
 
 export default function UserDetails() {
   const { id } = useParams<{ id: string }>();
-  const [user, setUser] = useState<any>(null);
-  const [transactions, setTransactions] = useState<any[]>([]);
-  const [payoutPlans, setPayoutPlans] = useState<any[]>([]);
-  const [bankAccounts, setBankAccounts] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+  const { data: userDetailsData, isLoading, error } = useUserDetails(id!);
+  const refreshData = useRefreshData();
 
-  useEffect(() => {
+  const handleRefresh = () => {
     if (id) {
-      fetchUserData();
-    }
-  }, [id]);
-
-  const fetchUserData = async () => {
-    try {
-      setRefreshing(true);
-      
-      // Use the get_user_info RPC function to fetch comprehensive user data
-      const { data: userData, error: userError } = await supabase
-        .rpc('get_user_info', { target_user_id: id });
-      
-      if (userError) {
-        console.error('Error fetching user data via RPC:', userError);
-        // Fallback to original method if RPC fails
-        await fetchUserDataFallback();
-        return;
-      }
-      
-      if (!userData || userData.length === 0) {
-        console.log('No user data returned from RPC');
-        setUser(null);
-        return;
-      }
-      
-      const userInfo = userData[0];
-      console.log('User data from RPC:', userInfo);
-      
-      // Set user data
-      setUser({
-        id: userInfo.id,
-        first_name: userInfo.first_name,
-        last_name: userInfo.last_name,
-        email: userInfo.email,
-        created_at: userInfo.date_joined,
-        is_admin: userInfo.is_admin,
-        wallets: [{
-          balance: userInfo.available_balance || 0,
-          locked_balance: userInfo.locked_balance || 0
-        }]
-      });
-      
-      // Set transactions from RPC data
-      setTransactions(userInfo.recent_transactions || []);
-      
-      // Set payout plans from RPC data
-      setPayoutPlans(userInfo.payout_plans || []);
-      
-      // Fetch bank accounts separately (not included in RPC)
-      const { data: accountData, error: accountError } = await supabase
-        .from('bank_accounts')
-        .select('*')
-        .eq('user_id', id)
-        .order('created_at', { ascending: false });
-      
-      if (accountError) {
-        console.error('Error fetching bank accounts:', accountError);
-      } else {
-        setBankAccounts(accountData || []);
-      }
-      
-    } catch (error) {
-      console.error('Error fetching user data:', error);
-      await fetchUserDataFallback();
-    } finally {
-      setIsLoading(false);
-      setRefreshing(false);
+      refreshData.mutate(['user', id]);
     }
   };
-
-  const fetchUserDataFallback = async () => {
-    try {
-      // Fallback to original query method
-      const { data: userData, error: userError } = await supabase
-        .from('profiles')
-        .select(`
-          id,
-          first_name,
-          last_name,
-          email,
-          created_at,
-          updated_at,
-          is_admin,
-          wallets (
-            balance,
-            locked_balance
-          )
-        `)
-        .eq('id', id)
-        .maybeSingle();
-      
-      if (userError) throw userError;
-      setUser(userData);
-      
-      // Only fetch related data if user exists
-      if (userData) {
-        // Fetch user transactions
-        const { data: transactionData, error: transactionError } = await supabase
-          .from('transactions')
-          .select('*')
-          .eq('user_id', id)
-          .order('created_at', { ascending: false });
-        
-        if (transactionError) throw transactionError;
-        setTransactions(transactionData || []);
-        
-        // Fetch user payout plans
-        const { data: planData, error: planError } = await supabase
-          .from('payout_plans')
-          .select('*')
-          .eq('user_id', id)
-          .order('created_at', { ascending: false });
-        
-        if (planError) throw planError;
-        setPayoutPlans(planData || []);
-        
-        // Fetch user bank accounts
-        const { data: accountData, error: accountError } = await supabase
-          .from('bank_accounts')
-          .select('*')
-          .eq('user_id', id)
-          .order('created_at', { ascending: false });
-        
-        if (accountError) throw accountError;
-        setBankAccounts(accountData || []);
-      }
-    } catch (error) {
-      console.error('Error in fallback user data fetch:', error);
-    }
-  };
-
-  // Calculate user stats
-  const totalDeposits = transactions
-    .filter(t => t.type === 'deposit')
-    .reduce((sum, t) => sum + t.amount, 0);
-  
-  const totalPayouts = transactions
-    .filter(t => t.type === 'payout')
-    .reduce((sum, t) => sum + t.amount, 0);
-  
-  const activePlans = payoutPlans.filter(p => p.status === 'active').length;
 
   if (isLoading) {
     return (
@@ -166,7 +24,7 @@ export default function UserDetails() {
     );
   }
 
-  if (!user) {
+  if (error || !userDetailsData) {
     return (
       <div className="text-center py-12">
         <h2 className="text-xl font-semibold text-error dark:text-error mb-4">User not found</h2>
@@ -184,6 +42,19 @@ export default function UserDetails() {
     );
   }
 
+  const { user, transactions, payoutPlans, bankAccounts } = userDetailsData;
+
+  // Calculate user stats
+  const totalDeposits = transactions
+    .filter((t: any) => t.type === 'deposit')
+    .reduce((sum: number, t: any) => sum + t.amount, 0);
+  
+  const totalPayouts = transactions
+    .filter((t: any) => t.type === 'payout')
+    .reduce((sum: number, t: any) => sum + t.amount, 0);
+  
+  const activePlans = payoutPlans.filter((p: any) => p.status === 'active').length;
+
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
@@ -197,11 +68,11 @@ export default function UserDetails() {
           <h1 className="text-2xl font-bold text-text dark:text-text">User Details</h1>
         </div>
         <button 
-          onClick={fetchUserData}
+          onClick={handleRefresh}
           className="p-2 rounded-full bg-background-tertiary dark:bg-background-tertiary hover:bg-background-secondary dark:hover:bg-background-secondary transition-colors"
-          disabled={refreshing}
+          disabled={refreshData.isPending}
         >
-          <RefreshCw className={`h-5 w-5 text-primary dark:text-primary ${refreshing ? 'animate-spin' : ''}`} />
+          <RefreshCw className={`h-5 w-5 text-primary dark:text-primary ${refreshData.isPending ? 'animate-spin' : ''}`} />
         </button>
       </div>
 
@@ -296,7 +167,7 @@ export default function UserDetails() {
           <Card className="overflow-hidden">
             {bankAccounts.length > 0 ? (
               <div className="divide-y divide-border dark:divide-border">
-                {bankAccounts.map((account) => (
+                {bankAccounts.map((account: any) => (
                   <div key={account.id} className="p-4 flex items-center">
                     <div className="w-10 h-10 rounded-full bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center mr-4">
                       <Building2 className="h-5 w-5 text-blue-500" />
@@ -335,7 +206,7 @@ export default function UserDetails() {
         <Card className="overflow-hidden">
           {payoutPlans.length > 0 ? (
             <div className="divide-y divide-border dark:divide-border">
-              {payoutPlans.map((plan) => (
+              {payoutPlans.map((plan: any) => (
                 <div key={plan.id} className="p-4">
                   <div className="flex justify-between items-start mb-3">
                     <h3 className="text-text dark:text-text font-medium">{plan.name}</h3>
@@ -391,7 +262,7 @@ export default function UserDetails() {
         <Card className="overflow-hidden">
           {transactions.length > 0 ? (
             <div className="divide-y divide-border dark:divide-border">
-              {transactions.slice(0, 5).map((transaction) => (
+              {transactions.slice(0, 5).map((transaction: any) => (
                 <div key={transaction.id} className="p-4 flex justify-between items-center">
                   <div className="flex items-center">
                     <div className={`w-10 h-10 rounded-full flex items-center justify-center ${

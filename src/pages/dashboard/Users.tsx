@@ -1,134 +1,28 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../../lib/supabase';
 import { Link } from 'react-router-dom';
 import { Search, RefreshCw, Users as UsersIcon, TrendingUp, Wallet } from 'lucide-react';
 import Card from '../../components/Card';
+import { useUsersData } from '@/hooks/queries/useUsersData';
+import { useRefreshData } from '@/hooks/mutations/useRefreshData';
 
-type UserData = {
-  id: string;
-  first_name: string;
-  last_name: string;
-  email: string;
-  created_at: string;
-  is_admin: boolean;
-  balance: number;
-  locked_balance: number;
-  total_deposits: number;
-  total_payouts: number;
-  active_plans: number;
-};
-
-type UserStats = {
-  total_users: number;
-  new_users_today: number;
-  new_users_this_week: number;
-  new_users_this_month: number;
-  active_users_today: number;
-  active_users_this_week: number;
-  active_users_this_month: number;
-  users_with_balance: number;
-  users_with_plans: number;
-  admin_users: number;
-  verified_users: number;
-  total_wallet_balance: number;
-  total_locked_balance: number;
-  user_growth_trend: any[];
-};
+type FilterType = 'all' | 'admin' | 'with_balance' | 'with_plans';
 
 export default function Users() {
-  const [users, setUsers] = useState<UserData[]>([]);
-  const [filteredUsers, setFilteredUsers] = useState<UserData[]>([]);
-  const [userStats, setUserStats] = useState<UserStats | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const { data: usersData, isLoading, error } = useUsersData();
+  const refreshData = useRefreshData();
   const [searchQuery, setSearchQuery] = useState('');
-  const [refreshing, setRefreshing] = useState(false);
-  const [filterType, setFilterType] = useState<'all' | 'admin' | 'with_balance' | 'with_plans'>('all');
+  const [filterType, setFilterType] = useState<FilterType>('all');
+  const [filteredUsers, setFilteredUsers] = useState<any[]>([]);
 
-  useEffect(() => {
-    fetchUsersData();
-  }, []);
+  const users = usersData?.users || [];
+  const userStats = usersData?.stats;
 
   useEffect(() => {
     filterUsers();
   }, [searchQuery, users, filterType]);
 
-  const fetchUsersData = async () => {
-    try {
-      setRefreshing(true);
-      
-      // Fetch all users data using the optimized RPC function
-      const { data: usersData, error: usersError } = await supabase.rpc('get_all_users_info');
-      
-      if (usersError) {
-        console.error('Error fetching users:', usersError);
-        // Fallback to individual queries if RPC fails
-        await fetchUsersDataFallback();
-        return;
-      }
-      
-      // Fetch user management statistics
-      const { data: statsData, error: statsError } = await supabase.rpc('get_user_management_data');
-      
-      if (statsError) {
-        console.error('Error fetching user stats:', statsError);
-      } else {
-        setUserStats(statsData?.[0] || null);
-      }
-      
-      console.log('Fetched users via RPC:', usersData?.length);
-      setUsers(usersData || []);
-      setFilteredUsers(usersData || []);
-    } catch (error) {
-      console.error('Error fetching users data:', error);
-      await fetchUsersDataFallback();
-    } finally {
-      setIsLoading(false);
-      setRefreshing(false);
-    }
-  };
-
-  const fetchUsersDataFallback = async () => {
-    try {
-      // Fallback to original query method
-      const { data, error } = await supabase
-        .from('profiles')
-        .select(`
-          id,
-          first_name,
-          last_name,
-          email,
-          created_at,
-          is_admin,
-          wallets (
-            balance,
-            locked_balance
-          )
-        `)
-        .order('created_at', { ascending: false });
-      
-      if (error) throw error;
-      
-      // Transform data to match expected format
-      const transformedData = data?.map(user => ({
-        id: user.id,
-        first_name: user.first_name,
-        last_name: user.last_name,
-        email: user.email,
-        created_at: user.created_at,
-        is_admin: user.is_admin,
-        balance: user.wallets?.[0]?.balance || 0,
-        locked_balance: user.wallets?.[0]?.locked_balance || 0,
-        total_deposits: 0, // Would need additional queries
-        total_payouts: 0,
-        active_plans: 0,
-      })) || [];
-      
-      console.log('Fetched users via fallback:', transformedData.length);
-      setUsers(transformedData);
-      setFilteredUsers(transformedData);
-    } catch (error) {
-      console.error('Error in fallback users fetch:', error);
-    }
+  const handleRefresh = () => {
+    refreshData.mutate(['users']);
   };
 
   const filterUsers = () => {
@@ -178,6 +72,20 @@ export default function Users() {
     return `${baseClass} ${filterType === type ? activeClass : inactiveClass}`;
   };
 
+  if (error) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-error mb-4">Failed to load users data</p>
+        <button
+          onClick={handleRefresh}
+          className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark"
+        >
+          Try Again
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
@@ -186,11 +94,11 @@ export default function Users() {
           <p className="text-text-secondary dark:text-text-secondary">Manage all users on the platform</p>
         </div>
         <button 
-          onClick={fetchUsersData}
+          onClick={handleRefresh}
           className="p-2 rounded-full bg-background-tertiary dark:bg-background-tertiary hover:bg-background-secondary dark:hover:bg-background-secondary transition-colors"
-          disabled={refreshing}
+          disabled={refreshData.isPending}
         >
-          <RefreshCw className={`h-5 w-5 text-primary dark:text-primary ${refreshing ? 'animate-spin' : ''}`} />
+          <RefreshCw className={`h-5 w-5 text-primary dark:text-primary ${refreshData.isPending ? 'animate-spin' : ''}`} />
         </button>
       </div>
 
