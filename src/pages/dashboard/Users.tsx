@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { Link } from 'react-router-dom';
-import { Search, Filter, RefreshCw, Users as UsersIcon, TrendingUp, Wallet } from 'lucide-react';
+import { Search, RefreshCw, Users as UsersIcon, TrendingUp, Wallet } from 'lucide-react';
 import Card from '../../components/Card';
 
 type UserData = {

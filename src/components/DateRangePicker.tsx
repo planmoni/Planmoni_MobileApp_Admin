@@ -7,13 +7,14 @@ type DateRangePickerProps = {
   startDate: Date | null;
   endDate: Date | null;
   className?: string;
+  placeholder?: string;
 };
 
-export default function DateRangePicker({ onChange, startDate, endDate, className = '' }: DateRangePickerProps) {
+export default function DateRangePicker({ onChange, startDate, endDate, className = '', placeholder }: DateRangePickerProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   const formatDateRange = () => {
-    if (!startDate || !endDate) return 'Select date range';
+    if (!startDate || !endDate) return placeholder || 'Select date range';
     return `${format(startDate, 'MMM d, yyyy')} - ${format(endDate, 'MMM d, yyyy')}`;
   };
 
