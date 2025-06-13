@@ -156,10 +156,6 @@ export default function Login() {
           </form>
         </div>
       </div>
-      
-      <div className="mt-8 text-center text-xs text-text-tertiary">
-        <p>© {new Date().getFullYear()} Planmoni. All rights reserved.</p>
-      </div>
     </div>
   );
 }
