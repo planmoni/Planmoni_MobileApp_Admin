@@ -59,6 +59,7 @@ export default function Login() {
               nextElement.style.display = 'block';
             }
           }}
+        />
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
