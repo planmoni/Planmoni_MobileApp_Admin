@@ -113,13 +113,13 @@ const calculateTrends = async () => {
   console.log('Last month:', lastMonthStart.toISOString(), 'to', lastMonthEnd.toISOString());
 
   // Calculate user growth trend - absolute difference
-  const { data: thisMonthUsers, error: thisMonthUsersError } = await supabase
+  const { data: thisMonthUsers } = await supabase
     .from('profiles')
     .select('id', { count: 'exact', head: true })
     .gte('created_at', thisMonthStart.toISOString())
     .lte('created_at', thisMonthEnd.toISOString());
 
-  const { data: lastMonthUsers, error: lastMonthUsersError } = await supabase
+  const { data: lastMonthUsers } = await supabase
     .from('profiles')
     .select('id', { count: 'exact', head: true })
     .gte('created_at', lastMonthStart.toISOString())
@@ -138,7 +138,7 @@ const calculateTrends = async () => {
   console.log('📈 User growth trend calculated (absolute):', userGrowthTrend);
 
   // Calculate deposits trend - absolute difference
-  const { data: thisMonthDeposits, error: thisMonthDepositsError } = await supabase
+  const { data: thisMonthDeposits } = await supabase
     .from('transactions')
     .select('amount')
     .eq('type', 'deposit')
@@ -198,7 +198,7 @@ const calculateTrends = async () => {
     .gte('created_at', thisMonthStart.toISOString())
     .lte('created_at', thisMonthEnd.toISOString());
 
-  const { data: lastMonthPlans, error: lastMonthPlansError } = await supabase
+  const { data: lastMonthPlans } = await supabase
     .from('payout_plans')
     .select('id', { count: 'exact', head: true })
     .gte('created_at', lastMonthStart.toISOString())

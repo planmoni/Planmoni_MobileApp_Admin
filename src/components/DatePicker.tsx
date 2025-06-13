@@ -64,7 +64,6 @@ export default function DatePicker({
   };
 
   const getCalendarDays = () => {
-    const daysInMonth = getDaysInMonth();
     const firstDay = startOfMonth(currentMonth);
     const startDate = new Date(firstDay);
     startDate.setDate(startDate.getDate() - firstDay.getDay());
