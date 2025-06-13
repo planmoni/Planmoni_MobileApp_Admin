@@ -26,7 +26,7 @@ interface Transaction {
   reference?: string | null;
   description?: string | null;
   created_at: string;
-  profiles: Profile | null;
+  profiles: Profile[] | null;
 }
 
 interface SupabaseRpcTransaction {
@@ -97,12 +97,12 @@ export default function Transactions() {
         source: t.source,
         destination: t.destination,
         created_at: t.created_at,
-        profiles: {
+        profiles: [{
           id: '', // RPC doesn't return user ID, but we need it for the interface
           first_name: t.user_name?.split(' ')[0] || null,
           last_name: t.user_name?.split(' ')[1] || null,
           email: t.user_email
-        }
+        }]
       })) || [];
       
       setTransactions(transformedTransactions);
@@ -170,9 +170,9 @@ export default function Transactions() {
       
       if (searchQuery) {
         filtered = filtered.filter(transaction => 
-          transaction.profiles?.first_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          transaction.profiles?.last_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          transaction.profiles?.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          transaction.profiles?.[0]?.first_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          transaction.profiles?.[0]?.last_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          transaction.profiles?.[0]?.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
           transaction.source.toLowerCase().includes(searchQuery.toLowerCase()) ||
           transaction.destination.toLowerCase().includes(searchQuery.toLowerCase())
         );
