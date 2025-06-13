@@ -51,12 +51,6 @@ export default function Transactions() {
 
   const groupedTransactions = groupTransactionsByDate();
 
-  const formatDateRange = () => {
-    if (!dateRange.start || !dateRange.end) return 'All Time';
-    
-    return `${format(dateRange.start, 'MMM d, yyyy')} - ${format(dateRange.end, 'MMM d, yyyy')}`;
-  };
-
   if (error) {
     return (
       <div className="text-center py-12">
