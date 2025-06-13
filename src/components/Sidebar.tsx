@@ -14,7 +14,6 @@ import {
 
 export default function Sidebar({ isMobileMenuOpen, closeMobileMenu }: { isMobileMenuOpen: boolean, closeMobileMenu: () => void }) {
   const { signOut, session } = useAuth();
-  const navigate = useNavigate();
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [userProfile, setUserProfile] = useState<{
     first_name: string | null;
@@ -77,7 +76,7 @@ export default function Sidebar({ isMobileMenuOpen, closeMobileMenu }: { isMobil
 
   const handleSignOut = async () => {
     await signOut();
-    navigate('/login');
+    // Remove explicit navigation - let App.tsx routing handle the redirect
   };
 
   const navigation = [
