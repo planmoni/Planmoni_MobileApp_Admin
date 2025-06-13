@@ -162,20 +162,6 @@ export default function Login() {
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-border" />
               </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="bg-white px-2 text-text-secondary">
-                  Don't have an account?
-                </span>
-              </div>
-            </div>
-
-            <div className="mt-6">
-              <Link
-                to="/signup"
-                className="flex w-full justify-center rounded-md bg-background-tertiary px-3 py-3 text-sm font-semibold text-text shadow-sm hover:bg-background-secondary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-              >
-                Create an account
-              </Link>
             </div>
           </div>
         </div>
