@@ -1,0 +1,62 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  font-family: 'Inter', system-ui, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+/* Light mode variables */
+:root {
+  --color-background: #FFFFFF;
+  --color-background-secondary: #F8FAFC;
+  --color-background-tertiary: #F1F5F9;
+  
+  --color-surface: #FFFFFF;
+  --color-surface-secondary: #F8FAFC;
+  
+  --color-text: #1E293B;
+  --color-text-secondary: #64748B;
+  --color-text-tertiary: #94A3B8;
+  
+  --color-primary: #1E3A8A;
+  --color-primary-light: #3B82F6;
+  --color-primary-dark: #1E40AF;
+  
+  --color-success: #22C55E;
+  --color-success-light: #DCFCE7;
+  --color-warning: #F59E0B;
+  --color-warning-light: #FEF3C7;
+  --color-error: #EF4444;
+  --color-error-light: #FEE2E2;
+  
+  --color-border: #E2E8F0;
+  --color-border-secondary: #CBD5E1;
+  
+  --color-card: #FFFFFF;
+  --color-card-secondary: #F8FAFC;
+}
+
+/* Base styles */
+body {
+  background-color: var(--color-background-secondary);
+  color: var(--color-text);
+}
+
+/* Transition for theme changes */
+* {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
