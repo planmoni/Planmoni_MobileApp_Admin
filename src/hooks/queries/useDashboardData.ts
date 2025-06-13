@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
-import { format, subDays } from 'date-fns';
+import { subDays } from 'date-fns';
 
 type DashboardStats = {
   totalUsers: number;

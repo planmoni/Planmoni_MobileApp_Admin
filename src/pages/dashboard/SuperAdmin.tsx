@@ -4,7 +4,6 @@ import {
   Users, 
   Key, 
   UserCheck, 
-  UserX, 
   Plus, 
   Edit, 
   Trash2, 
@@ -15,9 +14,7 @@ import {
   Clock,
   BarChart3,
   Award,
-  Lock,
   Eye,
-  X,
   User
 } from 'lucide-react';
 import Card from '../../components/Card';
