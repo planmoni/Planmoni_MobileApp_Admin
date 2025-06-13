@@ -32,6 +32,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
+  const checkUserRole = async (userId: string): Promise<boolean> => {
+    try {
+      // First check if user has admin flag in profiles table
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('is_admin')
+        .eq('id', userId)
+        .single();
+
+      if (profileError) {
+        console.error('Error checking profile admin status:', profileError);
+      } else if (profile?.is_admin) {
+        return true; // User is admin, allow access
+      }
+
+      // Check user roles using the get_user_roles function
+      const { data: userRoles, error: rolesError } = await supabase
+        .rpc('get_user_roles', { target_user_id: userId });
+
+      if (rolesError) {
+        console.error('Error fetching user roles:', rolesError);
+        return false;
+      }
+
+      // Check if user has any of the allowed roles
+      const allowedRoles = ['Super Admin', 'Admin', 'Moderator'];
+      const hasAllowedRole = userRoles?.some((role: any) => 
+        allowedRoles.includes(role.role_name) && role.is_active
+      );
+
+      return hasAllowedRole || false;
+    } catch (error) {
+      console.error('Error in role check:', error);
+      return false;
+    }
+  };
+
   const signIn = async (email: string, password: string) => {
     try {
       setIsLoading(true);
@@ -47,7 +84,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { success: false, error: error.message };
       }
 
-      console.log('Sign in successful:', data);
+      if (!data.user) {
+        return { success: false, error: 'Authentication failed' };
+      }
+
+      console.log('Authentication successful, checking user roles...');
+
+      // Check if user has required role for admin dashboard access
+      const hasRequiredRole = await checkUserRole(data.user.id);
+
+      if (!hasRequiredRole) {
+        console.log('User does not have required role, signing out...');
+        
+        // Sign out the user immediately
+        await supabase.auth.signOut();
+        
+        return { 
+          success: false, 
+          error: 'Access denied. This dashboard is restricted to administrators only.' 
+        };
+      }
+
+      console.log('User has required role, sign in successful');
       return { success: true };
     } catch (error) {
       console.error('Unexpected sign in error:', error);
