@@ -1,40 +1,97 @@
+import { View, Text, StyleSheet, ViewProps } from 'react-native';
 import { ReactNode } from 'react';
-import { TrendingUp, TrendingDown } from 'lucide-react';
+import { useTheme } from '@/contexts/ThemeContext';
+import { TrendingUp, TrendingDown, Minus } from 'lucide-react-native';
 import Card from './Card';
 
-type StatCardProps = {
+type StatCardProps = ViewProps & {
   title: string;
   value: string;
   icon: ReactNode;
   trend?: number;
-  className?: string;
 };
 
-export default function StatCard({ title, value, icon, trend = 0, className = '' }: StatCardProps) {
+export default function StatCard({ title, value, icon, trend = 0, style, ...props }: StatCardProps) {
+  const { colors } = useTheme();
+  
+  const styles = createStyles(colors);
+
   return (
-    <Card className={`flex flex-col items-center p-4 ${className}`}>
-      <div className="flex justify-between items-center w-full mb-2">
-        <span className="text-text-secondary dark:text-text-secondary text-sm">{title}</span>
-        <div className="w-10 h-10 rounded-full bg-background-tertiary dark:bg-background-tertiary flex items-center justify-center">
+    <Card style={[styles.card, style]} {...props}>
+      <View style={styles.header}>
+        <Text style={styles.title}>{title}</Text>
+        <View style={styles.iconContainer}>
           {icon}
-        </div>
-      </div>
-      <div className="text-2xl font-bold text-text dark:text-text self-start">{value}</div>
-      {trend !== 0 && (
-        <div className="flex items-center text-xs mt-2 self-start">
-          {trend > 0 ? (
-            <>
-              <TrendingUp className="h-3 w-3 mr-1 text-success dark:text-success" />
-              <span className="text-success dark:text-success">+{trend}% vs last month</span>
-            </>
-          ) : (
-            <>
-              <TrendingDown className="h-3 w-3 mr-1 text-error dark:text-error" />
-              <span className="text-error dark:text-error">{trend}% vs last month</span>
-            </>
-          )}
-        </div>
-      )}
+        </View>
+      </View>
+      <Text style={styles.value}>{value}</Text>
+      
+      {/* Always show trend container */}
+      <View style={styles.trendContainer}>
+        {trend > 0 ? (
+          <TrendingUp size={16} color="#22C55E" />
+        ) : trend < 0 ? (
+          <TrendingDown size={16} color="#EF4444" />
+        ) : (
+          <Minus size={16} color="#94A3B8" />
+        )}
+        <Text style={[
+          styles.trendText,
+          { 
+            color: trend > 0 ? '#22C55E' : trend < 0 ? '#EF4444' : '#94A3B8'
+          }
+        ]}>
+          {trend > 0 ? '+' : ''}{trend}%
+        </Text>
+        <Text style={styles.periodText}>vs last month</Text>
+      </View>
     </Card>
   );
 }
+
+const createStyles = (colors: any) => StyleSheet.create({
+  card: {
+    padding: 16,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  title: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    fontFamily: 'Inter-Regular',
+  },
+  iconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.backgroundTertiary,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  value: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: colors.text,
+    marginBottom: 8,
+    fontFamily: 'Inter-Bold',
+  },
+  trendContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  trendText: {
+    fontSize: 12,
+    fontWeight: '600',
+    fontFamily: 'Inter-SemiBold',
+  },
+  periodText: {
+    fontSize: 12,
+    color: colors.textTertiary,
+    fontFamily: 'Inter-Regular',
+  },
+});
