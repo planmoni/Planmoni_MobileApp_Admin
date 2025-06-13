@@ -28,6 +28,10 @@ export default function Transactions() {
     refreshData.mutate(['transactions']);
   };
 
+  const handleDateRangeChange = (startDate: Date, endDate: Date) => {
+    setDateRange({ start: startDate, end: endDate });
+  };
+
   // Group transactions by date
   const groupTransactionsByDate = () => {
     if (!transactionsData?.transactions) return {};
@@ -150,8 +154,9 @@ export default function Transactions() {
         <DateRangePicker
           startDate={dateRange.start}
           endDate={dateRange.end}
-          onChange={(start, end) => setDateRange({ start, end })}
-          placeholder={formatDateRange()}
+          onChange={handleDateRangeChange}
+          placeholder="Select date range"
+          className="w-full sm:w-auto"
         />
       </div>
 
