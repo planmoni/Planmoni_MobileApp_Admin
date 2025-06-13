@@ -104,9 +104,11 @@ const fetchAnalyticsDataFallback = async (): Promise<AnalyticsData> => {
   
   const thisMonthUserCount = thisMonthUsers?.length || 0;
   const lastMonthUserCount = lastMonthUsers?.length || 0;
+  
+  // Fixed trend calculation logic
   const userPercentChange = lastMonthUserCount === 0 
-    ? 100 
-    : ((thisMonthUserCount - lastMonthUserCount) / lastMonthUserCount) * 100;
+    ? (thisMonthUserCount > 0 ? 100 : 0)
+    : Math.round(((thisMonthUserCount - lastMonthUserCount) / lastMonthUserCount) * 100);
   
   // Fetch monthly user growth for the last 6 months
   const monthlyUserData = [];
@@ -144,9 +146,11 @@ const fetchAnalyticsDataFallback = async (): Promise<AnalyticsData> => {
   
   const thisMonthVolume = thisMonthTransactions?.reduce((sum, t) => sum + t.amount, 0) || 0;
   const lastMonthVolume = lastMonthTransactions?.reduce((sum, t) => sum + t.amount, 0) || 0;
+  
+  // Fixed trend calculation logic
   const volumePercentChange = lastMonthVolume === 0 
-    ? 100 
-    : ((thisMonthVolume - lastMonthVolume) / lastMonthVolume) * 100;
+    ? (thisMonthVolume > 0 ? 100 : 0)
+    : Math.round(((thisMonthVolume - lastMonthVolume) / lastMonthVolume) * 100);
   
   // Fetch monthly transaction volume for the last 6 months
   const monthlyVolumeData = [];
