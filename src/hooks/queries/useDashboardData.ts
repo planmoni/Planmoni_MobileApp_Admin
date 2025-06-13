@@ -11,7 +11,7 @@ type DashboardStats = {
   recentTransactions: any[];
   recentUsers: any[];
   transactionTrends: any[];
-  // New trend properties
+  // New trend properties - now absolute differences
   userGrowthTrend: number;
   depositsTrend: number;
   payoutsTrend: number;
@@ -112,7 +112,7 @@ const calculateTrends = async () => {
   console.log('This month:', thisMonthStart.toISOString(), 'to', thisMonthEnd.toISOString());
   console.log('Last month:', lastMonthStart.toISOString(), 'to', lastMonthEnd.toISOString());
 
-  // Calculate user growth trend
+  // Calculate user growth trend - absolute difference
   const { data: thisMonthUsers, error: thisMonthUsersError } = await supabase
     .from('profiles')
     .select('id', { count: 'exact', head: true })
@@ -132,13 +132,12 @@ const calculateTrends = async () => {
   console.log('This month users:', thisMonthUserCount);
   console.log('Last month users:', lastMonthUserCount);
   
-  const userGrowthTrend = lastMonthUserCount === 0 
-    ? (thisMonthUserCount > 0 ? 100 : 0)
-    : Math.round(((thisMonthUserCount - lastMonthUserCount) / lastMonthUserCount) * 100);
+  // Calculate absolute difference instead of percentage
+  const userGrowthTrend = thisMonthUserCount - lastMonthUserCount;
 
-  console.log('📈 User growth trend calculated:', userGrowthTrend + '%');
+  console.log('📈 User growth trend calculated (absolute):', userGrowthTrend);
 
-  // Calculate deposits trend
+  // Calculate deposits trend - absolute difference
   const { data: thisMonthDeposits, error: thisMonthDepositsError } = await supabase
     .from('transactions')
     .select('amount')
@@ -160,13 +159,12 @@ const calculateTrends = async () => {
   console.log('This month deposits:', thisMonthDepositsTotal);
   console.log('Last month deposits:', lastMonthDepositsTotal);
   
-  const depositsTrend = lastMonthDepositsTotal === 0 
-    ? (thisMonthDepositsTotal > 0 ? 100 : 0)
-    : Math.round(((thisMonthDepositsTotal - lastMonthDepositsTotal) / lastMonthDepositsTotal) * 100);
+  // Calculate absolute difference instead of percentage
+  const depositsTrend = thisMonthDepositsTotal - lastMonthDepositsTotal;
 
-  console.log('📈 Deposits trend calculated:', depositsTrend + '%');
+  console.log('📈 Deposits trend calculated (absolute):', depositsTrend);
 
-  // Calculate payouts trend
+  // Calculate payouts trend - absolute difference
   const { data: thisMonthPayouts, error: thisMonthPayoutsError } = await supabase
     .from('transactions')
     .select('amount')
@@ -188,13 +186,12 @@ const calculateTrends = async () => {
   console.log('This month payouts:', thisMonthPayoutsTotal);
   console.log('Last month payouts:', lastMonthPayoutsTotal);
   
-  const payoutsTrend = lastMonthPayoutsTotal === 0 
-    ? (thisMonthPayoutsTotal > 0 ? 100 : 0)
-    : Math.round(((thisMonthPayoutsTotal - lastMonthPayoutsTotal) / lastMonthPayoutsTotal) * 100);
+  // Calculate absolute difference instead of percentage
+  const payoutsTrend = thisMonthPayoutsTotal - lastMonthPayoutsTotal;
 
-  console.log('📈 Payouts trend calculated:', payoutsTrend + '%');
+  console.log('📈 Payouts trend calculated (absolute):', payoutsTrend);
 
-  // Calculate plans trend
+  // Calculate plans trend - absolute difference
   const { data: thisMonthPlans, error: thisMonthPlansError } = await supabase
     .from('payout_plans')
     .select('id', { count: 'exact', head: true })
@@ -214,11 +211,10 @@ const calculateTrends = async () => {
   console.log('This month plans:', thisMonthPlansCount);
   console.log('Last month plans:', lastMonthPlansCount);
   
-  const plansTrend = lastMonthPlansCount === 0 
-    ? (thisMonthPlansCount > 0 ? 100 : 0)
-    : Math.round(((thisMonthPlansCount - lastMonthPlansCount) / lastMonthPlansCount) * 100);
+  // Calculate absolute difference instead of percentage
+  const plansTrend = thisMonthPlansCount - lastMonthPlansCount;
 
-  console.log('📈 Plans trend calculated:', plansTrend + '%');
+  console.log('📈 Plans trend calculated (absolute):', plansTrend);
 
   const finalTrends = {
     userGrowthTrend,
@@ -227,7 +223,7 @@ const calculateTrends = async () => {
     plansTrend,
   };
 
-  console.log('🎯 Final calculated trends:', finalTrends);
+  console.log('🎯 Final calculated trends (absolute differences):', finalTrends);
 
   return finalTrends;
 };
