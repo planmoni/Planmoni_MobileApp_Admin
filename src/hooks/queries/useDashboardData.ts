@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
-import { subDays } from 'date-fns';
+import { subDays, startOfMonth, endOfMonth, subMonths } from 'date-fns';
 
 type DashboardStats = {
   totalUsers: number;
@@ -11,6 +11,11 @@ type DashboardStats = {
   recentTransactions: any[];
   recentUsers: any[];
   transactionTrends: any[];
+  // New trend properties
+  userGrowthTrend: number;
+  depositsTrend: number;
+  payoutsTrend: number;
+  plansTrend: number;
 };
 
 const fetchDashboardData = async (): Promise<DashboardStats> => {
@@ -25,6 +30,9 @@ const fetchDashboardData = async (): Promise<DashboardStats> => {
     }
     
     const mainStats = dashboardData?.[0] || {};
+    
+    // Calculate trends for current vs previous month
+    const trends = await calculateTrends();
     
     // Fetch recent transactions separately
     const { data: recentTransactions, error: recentTransactionsError } = await supabase
@@ -80,6 +88,10 @@ const fetchDashboardData = async (): Promise<DashboardStats> => {
       recentTransactions: recentTransactions || [],
       recentUsers: recentUsers || [],
       transactionTrends: mainStats.transaction_trends || [],
+      userGrowthTrend: trends.userGrowthTrend,
+      depositsTrend: trends.depositsTrend,
+      payoutsTrend: trends.payoutsTrend,
+      plansTrend: trends.plansTrend,
     };
   } catch (error) {
     console.error('Error fetching dashboard data:', error);
@@ -87,7 +99,105 @@ const fetchDashboardData = async (): Promise<DashboardStats> => {
   }
 };
 
+const calculateTrends = async () => {
+  const today = new Date();
+  const thisMonthStart = startOfMonth(today);
+  const thisMonthEnd = endOfMonth(today);
+  const lastMonthStart = startOfMonth(subMonths(today, 1));
+  const lastMonthEnd = endOfMonth(subMonths(today, 1));
+
+  // Calculate user growth trend
+  const { data: thisMonthUsers, error: thisMonthUsersError } = await supabase
+    .from('profiles')
+    .select('id', { count: 'exact', head: true })
+    .gte('created_at', thisMonthStart.toISOString())
+    .lte('created_at', thisMonthEnd.toISOString());
+
+  const { data: lastMonthUsers, error: lastMonthUsersError } = await supabase
+    .from('profiles')
+    .select('id', { count: 'exact', head: true })
+    .gte('created_at', lastMonthStart.toISOString())
+    .lte('created_at', lastMonthEnd.toISOString());
+
+  const thisMonthUserCount = thisMonthUsers || 0;
+  const lastMonthUserCount = lastMonthUsers || 0;
+  const userGrowthTrend = lastMonthUserCount === 0 
+    ? (thisMonthUserCount > 0 ? 100 : 0)
+    : Math.round(((thisMonthUserCount - lastMonthUserCount) / lastMonthUserCount) * 100);
+
+  // Calculate deposits trend
+  const { data: thisMonthDeposits, error: thisMonthDepositsError } = await supabase
+    .from('transactions')
+    .select('amount')
+    .eq('type', 'deposit')
+    .gte('created_at', thisMonthStart.toISOString())
+    .lte('created_at', thisMonthEnd.toISOString());
+
+  const { data: lastMonthDeposits, error: lastMonthDepositsError } = await supabase
+    .from('transactions')
+    .select('amount')
+    .eq('type', 'deposit')
+    .gte('created_at', lastMonthStart.toISOString())
+    .lte('created_at', lastMonthEnd.toISOString());
+
+  const thisMonthDepositsTotal = thisMonthDeposits?.reduce((sum, t) => sum + t.amount, 0) || 0;
+  const lastMonthDepositsTotal = lastMonthDeposits?.reduce((sum, t) => sum + t.amount, 0) || 0;
+  const depositsTrend = lastMonthDepositsTotal === 0 
+    ? (thisMonthDepositsTotal > 0 ? 100 : 0)
+    : Math.round(((thisMonthDepositsTotal - lastMonthDepositsTotal) / lastMonthDepositsTotal) * 100);
+
+  // Calculate payouts trend
+  const { data: thisMonthPayouts, error: thisMonthPayoutsError } = await supabase
+    .from('transactions')
+    .select('amount')
+    .eq('type', 'payout')
+    .gte('created_at', thisMonthStart.toISOString())
+    .lte('created_at', thisMonthEnd.toISOString());
+
+  const { data: lastMonthPayouts, error: lastMonthPayoutsError } = await supabase
+    .from('transactions')
+    .select('amount')
+    .eq('type', 'payout')
+    .gte('created_at', lastMonthStart.toISOString())
+    .lte('created_at', lastMonthEnd.toISOString());
+
+  const thisMonthPayoutsTotal = thisMonthPayouts?.reduce((sum, t) => sum + t.amount, 0) || 0;
+  const lastMonthPayoutsTotal = lastMonthPayouts?.reduce((sum, t) => sum + t.amount, 0) || 0;
+  const payoutsTrend = lastMonthPayoutsTotal === 0 
+    ? (thisMonthPayoutsTotal > 0 ? 100 : 0)
+    : Math.round(((thisMonthPayoutsTotal - lastMonthPayoutsTotal) / lastMonthPayoutsTotal) * 100);
+
+  // Calculate plans trend
+  const { data: thisMonthPlans, error: thisMonthPlansError } = await supabase
+    .from('payout_plans')
+    .select('id', { count: 'exact', head: true })
+    .gte('created_at', thisMonthStart.toISOString())
+    .lte('created_at', thisMonthEnd.toISOString());
+
+  const { data: lastMonthPlans, error: lastMonthPlansError } = await supabase
+    .from('payout_plans')
+    .select('id', { count: 'exact', head: true })
+    .gte('created_at', lastMonthStart.toISOString())
+    .lte('created_at', lastMonthEnd.toISOString());
+
+  const thisMonthPlansCount = thisMonthPlans || 0;
+  const lastMonthPlansCount = lastMonthPlans || 0;
+  const plansTrend = lastMonthPlansCount === 0 
+    ? (thisMonthPlansCount > 0 ? 100 : 0)
+    : Math.round(((thisMonthPlansCount - lastMonthPlansCount) / lastMonthPlansCount) * 100);
+
+  return {
+    userGrowthTrend,
+    depositsTrend,
+    payoutsTrend,
+    plansTrend,
+  };
+};
+
 const fetchDashboardDataFallback = async (): Promise<DashboardStats> => {
+  // Calculate trends first
+  const trends = await calculateTrends();
+
   // Fetch total users
   const { count: userCount, error: userError } = await supabase
     .from('profiles')
@@ -164,6 +274,10 @@ const fetchDashboardDataFallback = async (): Promise<DashboardStats> => {
     recentTransactions: recentTransactions || [],
     recentUsers: recentUsers || [],
     transactionTrends,
+    userGrowthTrend: trends.userGrowthTrend,
+    depositsTrend: trends.depositsTrend,
+    payoutsTrend: trends.payoutsTrend,
+    plansTrend: trends.plansTrend,
   };
 };
 

@@ -85,6 +85,10 @@ export default function Dashboard() {
     recentTransactions: [],
     recentUsers: [],
     transactionTrends: [],
+    userGrowthTrend: 0,
+    depositsTrend: 0,
+    payoutsTrend: 0,
+    plansTrend: 0,
   };
 
   return (
@@ -108,28 +112,28 @@ export default function Dashboard() {
           title="Total Users"
           value={stats.totalUsers.toString()}
           icon={<Users className="h-5 w-5 text-primary dark:text-primary" />}
-          trend={5}
+          trend={stats.userGrowthTrend}
         />
 
         <StatCard
           title="Total Deposits"
           value={`₦${stats.totalDeposits.toLocaleString()}`}
           icon={<ArrowUpRight className="h-5 w-5 text-success dark:text-success" />}
-          trend={12}
+          trend={stats.depositsTrend}
         />
 
         <StatCard
           title="Total Payouts"
           value={`₦${stats.totalPayouts.toLocaleString()}`}
           icon={<ArrowDownRight className="h-5 w-5 text-error dark:text-error" />}
-          trend={8}
+          trend={stats.payoutsTrend}
         />
 
         <StatCard
           title="Total Plans"
           value={stats.totalPlans.toString()}
           icon={<Calendar className="h-5 w-5 text-warning dark:text-warning" />}
-          trend={15}
+          trend={stats.plansTrend}
         />
       </div>
 
