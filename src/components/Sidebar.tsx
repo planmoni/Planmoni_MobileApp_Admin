@@ -127,7 +127,7 @@ export default function Sidebar({ isMobileMenuOpen, closeMobileMenu }: { isMobil
         <img
           src="/assets/images/Planmoni-Office.png"
           alt="Planmoni Office"
-          className="h-8 w-auto"
+          className="h-12 w-auto"
           onError={(e) => {
             // Fallback to text if image fails to load
             e.currentTarget.style.display = 'none';
