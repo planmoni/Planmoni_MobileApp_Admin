@@ -145,7 +145,7 @@ const calculateTrends = async () => {
     .gte('created_at', thisMonthStart.toISOString())
     .lte('created_at', thisMonthEnd.toISOString());
 
-  const { data: lastMonthDeposits, error: lastMonthDepositsError } = await supabase
+  const { data: lastMonthDeposits } = await supabase
     .from('transactions')
     .select('amount')
     .eq('type', 'deposit')
@@ -165,14 +165,14 @@ const calculateTrends = async () => {
   console.log('📈 Deposits trend calculated (absolute):', depositsTrend);
 
   // Calculate payouts trend - absolute difference
-  const { data: thisMonthPayouts, error: thisMonthPayoutsError } = await supabase
+  const { data: thisMonthPayouts } = await supabase
     .from('transactions')
     .select('amount')
     .eq('type', 'payout')
     .gte('created_at', thisMonthStart.toISOString())
     .lte('created_at', thisMonthEnd.toISOString());
 
-  const { data: lastMonthPayouts, error: lastMonthPayoutsError } = await supabase
+  const { data: lastMonthPayouts } = await supabase
     .from('transactions')
     .select('amount')
     .eq('type', 'payout')

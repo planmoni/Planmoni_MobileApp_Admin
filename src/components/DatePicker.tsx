@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Calendar, ChevronLeft, ChevronRight, X } from 'lucide-react';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, isToday, isBefore, isAfter } from 'date-fns';
+import { format, startOfMonth, isSameMonth, isSameDay, addMonths, subMonths, isToday, isBefore, isAfter } from 'date-fns';
 
 type DatePickerProps = {
   selected?: Date | null;
