@@ -113,20 +113,20 @@ const calculateTrends = async () => {
   console.log('Last month:', lastMonthStart.toISOString(), 'to', lastMonthEnd.toISOString());
 
   // Calculate user growth trend - absolute difference
-  const { data: thisMonthUsers } = await supabase
+  const { count: thisMonthUsersCount } = await supabase
     .from('profiles')
     .select('id', { count: 'exact', head: true })
     .gte('created_at', thisMonthStart.toISOString())
     .lte('created_at', thisMonthEnd.toISOString());
 
-  const { data: lastMonthUsers } = await supabase
+  const { count: lastMonthUsersCount } = await supabase
     .from('profiles')
     .select('id', { count: 'exact', head: true })
     .gte('created_at', lastMonthStart.toISOString())
     .lte('created_at', lastMonthEnd.toISOString());
 
-  const thisMonthUserCount = thisMonthUsers || 0;
-  const lastMonthUserCount = lastMonthUsers || 0;
+  const thisMonthUserCount = thisMonthUsersCount || 0;
+  const lastMonthUserCount = lastMonthUsersCount || 0;
   
   console.log('👥 User counts:');
   console.log('This month users:', thisMonthUserCount);
@@ -192,20 +192,20 @@ const calculateTrends = async () => {
   console.log('📈 Payouts trend calculated (absolute):', payoutsTrend);
 
   // Calculate plans trend - absolute difference
-  const { data: thisMonthPlans, error: thisMonthPlansError } = await supabase
+  const { count: thisMonthPlansCount } = await supabase
     .from('payout_plans')
     .select('id', { count: 'exact', head: true })
     .gte('created_at', thisMonthStart.toISOString())
     .lte('created_at', thisMonthEnd.toISOString());
 
-  const { data: lastMonthPlans } = await supabase
+  const { count: lastMonthPlansCount } = await supabase
     .from('payout_plans')
     .select('id', { count: 'exact', head: true })
     .gte('created_at', lastMonthStart.toISOString())
     .lte('created_at', lastMonthEnd.toISOString());
 
-  const thisMonthPlansCount = thisMonthPlans || 0;
-  const lastMonthPlansCount = lastMonthPlans || 0;
+  const thisMonthPlansCount = thisMonthPlansCount || 0;
+  const lastMonthPlansCount = lastMonthPlansCount || 0;
   
   console.log('📋 Plan counts:');
   console.log('This month plans:', thisMonthPlansCount);

@@ -57,12 +57,6 @@ export default function DatePicker({
     return format(selected, 'MMM d, yyyy');
   };
 
-  const getDaysInMonth = () => {
-    const start = startOfMonth(currentMonth);
-    const end = endOfMonth(currentMonth);
-    return eachDayOfInterval({ start, end });
-  };
-
   const getCalendarDays = () => {
     const firstDay = startOfMonth(currentMonth);
     const startDate = new Date(firstDay);
