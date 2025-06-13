@@ -34,6 +34,8 @@ const fetchAnalyticsData = async (): Promise<AnalyticsData> => {
     // Use the optimized RPC function for analytics data
     const { data: analyticsResult, error: analyticsError } = await supabase.rpc('get_analytics_data');
     
+    console.log('🔍 Analytics RPC Response:', analyticsResult);
+    
     if (analyticsError) {
       console.error('Analytics RPC error:', analyticsError);
       // Fallback to individual queries if RPC doesn't exist
@@ -79,11 +81,17 @@ const fetchAnalyticsData = async (): Promise<AnalyticsData> => {
 };
 
 const fetchAnalyticsDataFallback = async (): Promise<AnalyticsData> => {
+  console.log('🔄 Using fallback analytics data fetch');
+  
   const today = new Date();
   const thisMonthStart = startOfMonth(today);
   const thisMonthEnd = endOfMonth(today);
   const lastMonthStart = startOfMonth(subMonths(today, 1));
   const lastMonthEnd = endOfMonth(subMonths(today, 1));
+  
+  console.log('📅 Analytics date ranges:');
+  console.log('This month:', thisMonthStart.toISOString(), 'to', thisMonthEnd.toISOString());
+  console.log('Last month:', lastMonthStart.toISOString(), 'to', lastMonthEnd.toISOString());
   
   // Fetch user growth data
   const { data: thisMonthUsers, error: thisMonthUsersError } = await supabase
@@ -105,10 +113,16 @@ const fetchAnalyticsDataFallback = async (): Promise<AnalyticsData> => {
   const thisMonthUserCount = thisMonthUsers?.length || 0;
   const lastMonthUserCount = lastMonthUsers?.length || 0;
   
+  console.log('👥 Analytics user counts:');
+  console.log('This month users:', thisMonthUserCount);
+  console.log('Last month users:', lastMonthUserCount);
+  
   // Fixed trend calculation logic
   const userPercentChange = lastMonthUserCount === 0 
     ? (thisMonthUserCount > 0 ? 100 : 0)
     : Math.round(((thisMonthUserCount - lastMonthUserCount) / lastMonthUserCount) * 100);
+  
+  console.log('📈 Analytics user percent change calculated:', userPercentChange + '%');
   
   // Fetch monthly user growth for the last 6 months
   const monthlyUserData = [];
@@ -147,10 +161,16 @@ const fetchAnalyticsDataFallback = async (): Promise<AnalyticsData> => {
   const thisMonthVolume = thisMonthTransactions?.reduce((sum, t) => sum + t.amount, 0) || 0;
   const lastMonthVolume = lastMonthTransactions?.reduce((sum, t) => sum + t.amount, 0) || 0;
   
+  console.log('💰 Analytics transaction volumes:');
+  console.log('This month volume:', thisMonthVolume);
+  console.log('Last month volume:', lastMonthVolume);
+  
   // Fixed trend calculation logic
   const volumePercentChange = lastMonthVolume === 0 
     ? (thisMonthVolume > 0 ? 100 : 0)
     : Math.round(((thisMonthVolume - lastMonthVolume) / lastMonthVolume) * 100);
+  
+  console.log('📈 Analytics volume percent change calculated:', volumePercentChange + '%');
   
   // Fetch monthly transaction volume for the last 6 months
   const monthlyVolumeData = [];
@@ -218,7 +238,7 @@ const fetchAnalyticsDataFallback = async (): Promise<AnalyticsData> => {
     dailyPayouts.push(Math.floor(Math.random() * 300000) + 50000);
   }
   
-  return {
+  const finalAnalyticsData = {
     userGrowth: {
       this_month: thisMonthUserCount,
       last_month: lastMonthUserCount,
@@ -248,6 +268,10 @@ const fetchAnalyticsDataFallback = async (): Promise<AnalyticsData> => {
       payouts_amount: dailyPayouts[index],
     })),
   };
+
+  console.log('🎯 Final analytics data:', finalAnalyticsData);
+  
+  return finalAnalyticsData;
 };
 
 export const useAnalyticsData = () => {

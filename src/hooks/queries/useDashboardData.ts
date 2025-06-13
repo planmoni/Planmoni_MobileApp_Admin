@@ -23,6 +23,8 @@ const fetchDashboardData = async (): Promise<DashboardStats> => {
     // Use the optimized SQL query for main dashboard stats
     const { data: dashboardData, error: dashboardError } = await supabase.rpc('get_dashboard_stats');
     
+    console.log('🔍 Dashboard RPC Response:', dashboardData);
+    
     if (dashboardError) {
       console.error('Dashboard RPC error:', dashboardError);
       // Fallback to individual queries if RPC doesn't exist
@@ -106,6 +108,10 @@ const calculateTrends = async () => {
   const lastMonthStart = startOfMonth(subMonths(today, 1));
   const lastMonthEnd = endOfMonth(subMonths(today, 1));
 
+  console.log('📅 Date ranges for trend calculation:');
+  console.log('This month:', thisMonthStart.toISOString(), 'to', thisMonthEnd.toISOString());
+  console.log('Last month:', lastMonthStart.toISOString(), 'to', lastMonthEnd.toISOString());
+
   // Calculate user growth trend
   const { data: thisMonthUsers, error: thisMonthUsersError } = await supabase
     .from('profiles')
@@ -121,9 +127,16 @@ const calculateTrends = async () => {
 
   const thisMonthUserCount = thisMonthUsers || 0;
   const lastMonthUserCount = lastMonthUsers || 0;
+  
+  console.log('👥 User counts:');
+  console.log('This month users:', thisMonthUserCount);
+  console.log('Last month users:', lastMonthUserCount);
+  
   const userGrowthTrend = lastMonthUserCount === 0 
     ? (thisMonthUserCount > 0 ? 100 : 0)
     : Math.round(((thisMonthUserCount - lastMonthUserCount) / lastMonthUserCount) * 100);
+
+  console.log('📈 User growth trend calculated:', userGrowthTrend + '%');
 
   // Calculate deposits trend
   const { data: thisMonthDeposits, error: thisMonthDepositsError } = await supabase
@@ -142,9 +155,16 @@ const calculateTrends = async () => {
 
   const thisMonthDepositsTotal = thisMonthDeposits?.reduce((sum, t) => sum + t.amount, 0) || 0;
   const lastMonthDepositsTotal = lastMonthDeposits?.reduce((sum, t) => sum + t.amount, 0) || 0;
+  
+  console.log('💰 Deposit totals:');
+  console.log('This month deposits:', thisMonthDepositsTotal);
+  console.log('Last month deposits:', lastMonthDepositsTotal);
+  
   const depositsTrend = lastMonthDepositsTotal === 0 
     ? (thisMonthDepositsTotal > 0 ? 100 : 0)
     : Math.round(((thisMonthDepositsTotal - lastMonthDepositsTotal) / lastMonthDepositsTotal) * 100);
+
+  console.log('📈 Deposits trend calculated:', depositsTrend + '%');
 
   // Calculate payouts trend
   const { data: thisMonthPayouts, error: thisMonthPayoutsError } = await supabase
@@ -163,9 +183,16 @@ const calculateTrends = async () => {
 
   const thisMonthPayoutsTotal = thisMonthPayouts?.reduce((sum, t) => sum + t.amount, 0) || 0;
   const lastMonthPayoutsTotal = lastMonthPayouts?.reduce((sum, t) => sum + t.amount, 0) || 0;
+  
+  console.log('💸 Payout totals:');
+  console.log('This month payouts:', thisMonthPayoutsTotal);
+  console.log('Last month payouts:', lastMonthPayoutsTotal);
+  
   const payoutsTrend = lastMonthPayoutsTotal === 0 
     ? (thisMonthPayoutsTotal > 0 ? 100 : 0)
     : Math.round(((thisMonthPayoutsTotal - lastMonthPayoutsTotal) / lastMonthPayoutsTotal) * 100);
+
+  console.log('📈 Payouts trend calculated:', payoutsTrend + '%');
 
   // Calculate plans trend
   const { data: thisMonthPlans, error: thisMonthPlansError } = await supabase
@@ -182,19 +209,32 @@ const calculateTrends = async () => {
 
   const thisMonthPlansCount = thisMonthPlans || 0;
   const lastMonthPlansCount = lastMonthPlans || 0;
+  
+  console.log('📋 Plan counts:');
+  console.log('This month plans:', thisMonthPlansCount);
+  console.log('Last month plans:', lastMonthPlansCount);
+  
   const plansTrend = lastMonthPlansCount === 0 
     ? (thisMonthPlansCount > 0 ? 100 : 0)
     : Math.round(((thisMonthPlansCount - lastMonthPlansCount) / lastMonthPlansCount) * 100);
 
-  return {
+  console.log('📈 Plans trend calculated:', plansTrend + '%');
+
+  const finalTrends = {
     userGrowthTrend,
     depositsTrend,
     payoutsTrend,
     plansTrend,
   };
+
+  console.log('🎯 Final calculated trends:', finalTrends);
+
+  return finalTrends;
 };
 
 const fetchDashboardDataFallback = async (): Promise<DashboardStats> => {
+  console.log('🔄 Using fallback dashboard data fetch');
+  
   // Calculate trends first
   const trends = await calculateTrends();
 
