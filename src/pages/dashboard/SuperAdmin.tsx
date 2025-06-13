@@ -3,7 +3,6 @@ import { supabase } from '../../lib/supabase';
 import { 
   Shield, 
   Users, 
-  Settings, 
   Key, 
   UserCheck, 
   UserX, 
@@ -11,7 +10,6 @@ import {
   Edit, 
   Trash2, 
   Search,
-  Filter,
   RefreshCw,
   AlertTriangle,
   CheckCircle,
@@ -20,7 +18,6 @@ import {
   Award,
   Lock,
   Eye,
-  EyeOff,
   X,
   User
 } from 'lucide-react';
@@ -84,7 +81,6 @@ export default function SuperAdmin() {
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedRole, setSelectedRole] = useState<string | null>(null);
   const [roleDetails, setRoleDetails] = useState<RoleDetails | null>(null);
   const [showRoleModal, setShowRoleModal] = useState(false);
   const [showUserRoleModal, setShowUserRoleModal] = useState(false);
