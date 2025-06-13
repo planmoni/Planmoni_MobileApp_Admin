@@ -59,16 +59,6 @@ export default function Login() {
               nextElement.style.display = 'block';
             }
           }}
-        />
-        <h1 className="text-xl font-bold text-primary text-center mt-2" style={{ display: 'none' }}>
-          Planmoni Admin
-        </h1>
-        <h2 className="mt-6 text-center text-2xl font-bold leading-9 text-text">
-          Sign in to your account
-        </h2>
-        <p className="mt-2 text-center text-sm text-text-secondary">
-          Access the Planmoni admin dashboard
-        </p>
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
