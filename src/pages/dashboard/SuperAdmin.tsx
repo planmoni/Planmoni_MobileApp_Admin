@@ -93,7 +93,6 @@ export default function SuperAdmin() {
     color: '#6B7280'
   });
   const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
-  const [availablePermissions, setAvailablePermissions] = useState<Permission[]>([]);
   const { showToast } = useToast();
 
   useEffect(() => {
@@ -217,25 +216,6 @@ export default function SuperAdmin() {
     } catch (error) {
       console.error('Error fetching role details:', error);
       showToast('Failed to load role details', 'error');
-    }
-  };
-
-  const assignRoleToUser = async (userId: string, roleId: string, expiresAt?: string) => {
-    try {
-      const { error } = await supabase.rpc('assign_user_role', {
-        target_user_id: userId,
-        target_role_id: roleId,
-        expires_at: expiresAt || null
-      });
-      
-      if (error) throw error;
-      
-      showToast('Role assigned successfully', 'success');
-      setShowUserRoleModal(false);
-      await fetchUsersWithRoles();
-    } catch (error) {
-      console.error('Error assigning role:', error);
-      showToast('Failed to assign role', 'error');
     }
   };
 
