@@ -5,6 +5,7 @@ import Card from '../../components/Card';
 import { Line } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js';
 import { format, subDays } from 'date-fns';
+import { Link } from 'react-router-dom';
 
 // Register ChartJS components
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
@@ -399,9 +400,12 @@ export default function Dashboard() {
               <p className="text-center py-6 text-text-secondary dark:text-text-secondary">No recent transactions</p>
             )}
             <div className="border-t border-border dark:border-border p-4 text-center">
-              <a href="/transactions" className="text-primary dark:text-primary-light hover:underline text-sm font-medium">
+              <Link 
+                to="/transactions" 
+                className="text-primary dark:text-primary-light hover:underline text-sm font-medium transition-colors"
+              >
                 View All Transactions
-              </a>
+              </Link>
             </div>
           </Card>
         </div>
@@ -429,12 +433,12 @@ export default function Dashboard() {
                         </p>
                       </div>
                     </div>
-                    <a 
-                      href={`/users/${user.id}`}
+                    <Link 
+                      to={`/users/${user.id}`}
                       className="px-3 py-1 text-xs font-medium text-primary dark:text-primary-light bg-background-tertiary dark:bg-background-tertiary rounded hover:bg-background-secondary dark:hover:bg-background-secondary transition-colors"
                     >
                       View
-                    </a>
+                    </Link>
                   </div>
                 ))}
               </div>
@@ -442,9 +446,12 @@ export default function Dashboard() {
               <p className="text-center py-6 text-text-secondary dark:text-text-secondary">No recent users</p>
             )}
             <div className="border-t border-border dark:border-border p-4 text-center">
-              <a href="/users" className="text-primary dark:text-primary-light hover:underline text-sm font-medium">
+              <Link 
+                to="/users" 
+                className="text-primary dark:text-primary-light hover:underline text-sm font-medium transition-colors"
+              >
                 View All Users
-              </a>
+              </Link>
             </div>
           </Card>
         </div>
