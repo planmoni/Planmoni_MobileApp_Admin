@@ -247,9 +247,9 @@ export default function Analytics() {
         : (usersWithMultipleTransactions / totalUsersWithTransactions) * 100;
       
       // Generate daily transactions data for the last 7 days
-      const dailyLabels = [];
-      const dailyDeposits = [];
-      const dailyPayouts = [];
+      const dailyLabels: string[] = [];
+      const dailyDeposits: number[] = [];
+      const dailyPayouts: number[] = [];
       
       for (let i = 6; i >= 0; i--) {
         const date = new Date();
