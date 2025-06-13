@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { Eye, EyeOff, Mail, Lock, ArrowRight } from 'lucide-react';
@@ -48,7 +48,7 @@ export default function Login() {
     <div className="flex min-h-full flex-col justify-center">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <img
-          src="/public/assets/images/Planmoni-Office.png"
+          src="/assets/images/Planmoni-Office.png"
           alt="Planmoni Office"
           className="mx-auto h-20 w-auto"
           onError={(e) => {
@@ -60,6 +60,15 @@ export default function Login() {
             }
           }}
         />
+        <h1 className="text-xl font-bold text-primary text-center mt-2" style={{ display: 'none' }}>
+          Planmoni Admin
+        </h1>
+        <h2 className="mt-6 text-center text-2xl font-bold leading-9 text-text">
+          Sign in to your account
+        </h2>
+        <p className="mt-2 text-center text-sm text-text-secondary">
+          Access the Planmoni admin dashboard
+        </p>
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
@@ -107,6 +116,11 @@ export default function Login() {
                 <label htmlFor="password" className="block text-sm font-medium leading-6 text-text">
                   Password
                 </label>
+                <div className="text-sm">
+                  <Link to="/forgot-password" className="font-medium text-primary hover:text-primary-dark">
+                    Forgot password?
+                  </Link>
+                </div>
               </div>
               <div className="relative mt-2">
                 <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
@@ -157,9 +171,27 @@ export default function Login() {
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-border" />
               </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="bg-white px-2 text-text-secondary">
+                  Don't have an account?
+                </span>
+              </div>
+            </div>
+
+            <div className="mt-6">
+              <Link
+                to="/signup"
+                className="flex w-full justify-center rounded-md bg-background-tertiary px-3 py-3 text-sm font-semibold text-text shadow-sm hover:bg-background-secondary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+              >
+                Create an account
+              </Link>
             </div>
           </div>
         </div>
+      </div>
+      
+      <div className="mt-8 text-center text-xs text-text-tertiary">
+        <p>© {new Date().getFullYear()} Planmoni. All rights reserved.</p>
       </div>
     </div>
   );

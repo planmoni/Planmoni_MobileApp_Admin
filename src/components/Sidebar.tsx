@@ -125,7 +125,7 @@ export default function Sidebar({ isMobileMenuOpen, closeMobileMenu }: { isMobil
     <aside className={sidebarClasses}>
       <div className="flex items-center h-16 flex-shrink-0 px-4 border-b border-border">
         <img
-          src="/public/assets/images/Planmoni-Office.png"
+          src="/assets/images/Planmoni-Office.png"
           alt="Planmoni Office"
           className="h-8 w-auto"
           onError={(e) => {
