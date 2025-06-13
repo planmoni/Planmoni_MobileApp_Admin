@@ -132,7 +132,10 @@ export default function Sidebar({ isMobileMenuOpen, closeMobileMenu }: { isMobil
           onError={(e) => {
             // Fallback to text if image fails to load
             e.currentTarget.style.display = 'none';
-            (e.currentTarget.nextElementSibling as HTMLElement)!.style.display = 'block';
+            const nextElement = e.currentTarget.nextElementSibling as HTMLElement;
+            if (nextElement) {
+              nextElement.style.display = 'block';
+            }
           }}
         />
         <h1 className="text-xl font-bold text-primary ml-2" style={{ display: 'none' }}>

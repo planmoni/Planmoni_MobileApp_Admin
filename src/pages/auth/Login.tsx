@@ -54,10 +54,21 @@ export default function Login() {
           onError={(e) => {
             // Fallback to text if image fails to load
             e.currentTarget.style.display = 'none';
-            e.currentTarget.nextElementSibling!.style.display = 'block';
+            const nextElement = e.currentTarget.nextElementSibling as HTMLElement;
+            if (nextElement) {
+              nextElement.style.display = 'block';
+            }
           }}
         />
-        
+        <h1 className="text-xl font-bold text-primary text-center mt-2" style={{ display: 'none' }}>
+          Planmoni Admin
+        </h1>
+        <h2 className="mt-6 text-center text-2xl font-bold leading-9 text-text">
+          Sign in to your account
+        </h2>
+        <p className="mt-2 text-center text-sm text-text-secondary">
+          Access the Planmoni admin dashboard
+        </p>
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
@@ -161,12 +172,26 @@ export default function Login() {
                 <div className="w-full border-t border-border" />
               </div>
               <div className="relative flex justify-center text-sm">
-                
+                <span className="bg-white px-2 text-text-secondary">
+                  Don't have an account?
+                </span>
               </div>
             </div>
 
+            <div className="mt-6">
+              <Link
+                to="/signup"
+                className="flex w-full justify-center rounded-md bg-background-tertiary px-3 py-3 text-sm font-semibold text-text shadow-sm hover:bg-background-secondary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+              >
+                Create an account
+              </Link>
+            </div>
           </div>
         </div>
+      </div>
+      
+      <div className="mt-8 text-center text-xs text-text-tertiary">
+        <p>© {new Date().getFullYear()} Planmoni. All rights reserved.</p>
       </div>
     </div>
   );

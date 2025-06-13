@@ -37,7 +37,10 @@ export default function DashboardLayout() {
             onError={(e) => {
               // Fallback to text if image fails to load
               e.currentTarget.style.display = 'none';
-              (e.currentTarget.nextElementSibling as HTMLElement)!.style.display = 'block';
+              const nextElement = e.currentTarget.nextElementSibling as HTMLElement;
+              if (nextElement) {
+                nextElement.style.display = 'block';
+              }
             }}
           />
           <h1 className="text-lg font-bold text-primary" style={{ display: 'none' }}>
