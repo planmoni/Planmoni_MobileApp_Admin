@@ -7,8 +7,48 @@ import { format } from 'date-fns';
 
 type TransactionType = 'all' | 'deposit' | 'payout' | 'withdrawal';
 
+interface Profile {
+  id: string;
+  first_name: string | null;
+  last_name: string | null;
+  email: string | null;
+}
+
+interface Transaction {
+  id: string;
+  type: string;
+  amount: number;
+  status: string;
+  source: string;
+  destination: string;
+  payout_plan_id?: string | null;
+  bank_account_id?: string | null;
+  reference?: string | null;
+  description?: string | null;
+  created_at: string;
+  profiles: Profile | null;
+}
+
+interface SupabaseRpcTransaction {
+  id: string;
+  type: string;
+  amount: number;
+  status: string;
+  source: string;
+  destination: string;
+  created_at: string;
+  user_name: string | null;
+  user_email: string | null;
+}
+
+interface TransactionStats {
+  total_deposits: number;
+  total_payouts: number;
+  total_withdrawals: number;
+}
+
 export default function Transactions() {
-  const [transactions, setTransactions] = useState<any[]>([]);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeType, setActiveType] = useState<TransactionType>('all');
@@ -49,7 +89,7 @@ export default function Transactions() {
       }
       
       // Transform the data to match expected format
-      const transformedTransactions = transactionData?.map(t => ({
+      const transformedTransactions: Transaction[] = (transactionData as SupabaseRpcTransaction[])?.map((t: SupabaseRpcTransaction) => ({
         id: t.id,
         type: t.type,
         amount: t.amount,
@@ -58,8 +98,9 @@ export default function Transactions() {
         destination: t.destination,
         created_at: t.created_at,
         profiles: {
-          first_name: t.user_name?.split(' ')[0] || '',
-          last_name: t.user_name?.split(' ')[1] || '',
+          id: '', // RPC doesn't return user ID, but we need it for the interface
+          first_name: t.user_name?.split(' ')[0] || null,
+          last_name: t.user_name?.split(' ')[1] || null,
           email: t.user_email
         }
       })) || [];
@@ -75,7 +116,7 @@ export default function Transactions() {
       if (statsError) {
         console.error('Error fetching transaction stats:', statsError);
       } else if (statsData && statsData.length > 0) {
-        const statsInfo = statsData[0];
+        const statsInfo = statsData[0] as TransactionStats;
         setStats({
           inflows: statsInfo.total_deposits || 0,
           outflows: (statsInfo.total_payouts || 0) + (statsInfo.total_withdrawals || 0),
@@ -144,7 +185,7 @@ export default function Transactions() {
         });
       }
       
-      setTransactions(filtered);
+      setTransactions(filtered as Transaction[]);
       
       // Calculate stats manually for fallback
       const inflows = filtered
@@ -167,7 +208,7 @@ export default function Transactions() {
 
   // Group transactions by date
   const groupTransactionsByDate = () => {
-    const grouped: Record<string, any[]> = {};
+    const grouped: Record<string, Transaction[]> = {};
     
     transactions.forEach(transaction => {
       const date = format(new Date(transaction.created_at), 'yyyy-MM-dd');
