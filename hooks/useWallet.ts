@@ -20,7 +20,7 @@ export function useWallet() {
       setError(null);
       const { data, error: walletError } = await supabase
         .from('wallets')
-        .select('available_balancee, locked_balance')
+        .select('available_balance, locked_balance')
         .eq('user_id', session?.user?.id)
         .single();
 
