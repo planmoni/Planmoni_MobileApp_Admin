@@ -73,7 +73,7 @@ const fetchUsersDataFallback = async (): Promise<UserData[]> => {
       created_at,
       is_admin,
       wallets (
-        balance,
+        available_balance,
         locked_balance
       )
     `)
@@ -89,7 +89,7 @@ const fetchUsersDataFallback = async (): Promise<UserData[]> => {
     email: user.email,
     created_at: user.created_at,
     is_admin: user.is_admin,
-    balance: user.wallets?.[0]?.balance || 0,
+    balance: user.wallets?.[0]?.available_balance || 0,
     locked_balance: user.wallets?.[0]?.locked_balance || 0,
     total_deposits: 0, // Would need additional queries
     total_payouts: 0,
