@@ -73,7 +73,7 @@ const fetchUsersDataFallback = async (): Promise<UserData[]> => {
       created_at,
       is_admin,
       wallets (
-        available_balance,
+        balance,
         locked_balance
       )
     `)
