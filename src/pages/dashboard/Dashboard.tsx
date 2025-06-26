@@ -8,7 +8,6 @@ import { useDashboardData } from '@/hooks/queries/useDashboardData';
 import { useRefreshData } from '@/hooks/mutations/useRefreshData';
 import StatCard from '@/components/StatCard';
 import { Users, ArrowUpRight, ArrowDownRight, Calendar } from 'lucide-react';
-import { useEffect } from 'react';
 
 // Register ChartJS components
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
@@ -16,19 +15,6 @@ ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, T
 export default function Dashboard() {
   const { data: dashboardData, isLoading, error } = useDashboardData();
   const refreshData = useRefreshData();
-
-  // Log dashboard data for debugging
-  useEffect(() => {
-    if (dashboardData) {
-      console.log('📊 Dashboard data received:', {
-        totalUsers: dashboardData.totalUsers,
-        totalDeposits: dashboardData.totalDeposits,
-        totalPayouts: dashboardData.totalPayouts,
-        totalPlans: dashboardData.totalPlans,
-        depositsTrend: dashboardData.depositsTrend
-      });
-    }
-  }, [dashboardData]);
 
   const handleRefresh = () => {
     refreshData.mutate(['dashboard']);
@@ -121,18 +107,6 @@ export default function Dashboard() {
         </button>
       </div>
 
-      {/* Debug Information - Remove in production */}
-      {process.env.NODE_ENV === 'development' && (
-        <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-          <h3 className="text-sm font-medium text-yellow-800 mb-2">Debug Info (Dev Only)</h3>
-          <div className="text-xs text-yellow-700 space-y-1">
-            <div>Total Deposits: ₦{stats.totalDeposits.toLocaleString()}</div>
-            <div>Deposits Trend: {stats.depositsTrend > 0 ? '+' : ''}{stats.depositsTrend}</div>
-            <div>Recent Transactions: {stats.recentTransactions.length}</div>
-          </div>
-        </div>
-      )}
-
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <StatCard
           title="Total Users"
@@ -199,9 +173,6 @@ export default function Dashboard() {
                         <p className="text-xs text-text-tertiary dark:text-text-tertiary">
                           {new Date(transaction.created_at).toLocaleDateString()}
                         </p>
-                        <span className="inline-block px-2 py-0.5 bg-green-50 dark:bg-green-900/20 text-green-500 text-xs rounded-full mt-1">
-                          {transaction.status}
-                        </span>
                       </div>
                     </div>
                     <p className={`text-sm font-semibold ${

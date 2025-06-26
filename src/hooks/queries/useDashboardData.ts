@@ -20,8 +20,6 @@ type DashboardStats = {
 
 const fetchDashboardData = async (): Promise<DashboardStats> => {
   try {
-    console.log('🔍 Fetching dashboard data...');
-    
     // Use the optimized SQL query for main dashboard stats
     const { data: dashboardData, error: dashboardError } = await supabase.rpc('get_dashboard_stats');
     
@@ -34,13 +32,6 @@ const fetchDashboardData = async (): Promise<DashboardStats> => {
     }
     
     const mainStats = dashboardData?.[0] || {};
-    
-    console.log('📊 Main stats from RPC:', {
-      totalUsers: mainStats.total_users,
-      totalDeposits: mainStats.total_deposits,
-      totalPayouts: mainStats.total_payouts,
-      totalPlans: mainStats.total_plans
-    });
     
     // Calculate trends for current vs previous month
     const trends = await calculateTrends();
@@ -61,13 +52,10 @@ const fetchDashboardData = async (): Promise<DashboardStats> => {
           email
         )
       `)
-      .eq('status', 'completed') // Only show completed transactions
       .order('created_at', { ascending: false })
       .limit(5);
     
-    if (recentTransactionsError) {
-      console.error('Error fetching recent transactions:', recentTransactionsError);
-    }
+    if (recentTransactionsError) throw recentTransactionsError;
     
     // Fetch recent users separately
     const { data: recentUsers, error: recentUsersError } = await supabase
@@ -76,9 +64,7 @@ const fetchDashboardData = async (): Promise<DashboardStats> => {
       .order('created_at', { ascending: false })
       .limit(5);
     
-    if (recentUsersError) {
-      console.error('Error fetching recent users:', recentUsersError);
-    }
+    if (recentUsersError) throw recentUsersError;
     
     // Calculate active users (users with transactions in last 30 days)
     const thirtyDaysAgo = new Date();
@@ -87,18 +73,15 @@ const fetchDashboardData = async (): Promise<DashboardStats> => {
     const { data: activeUserData, error: activeUserError } = await supabase
       .from('transactions')
       .select('user_id')
-      .eq('status', 'completed') // Only count completed transactions
       .gte('created_at', thirtyDaysAgo.toISOString())
       .not('user_id', 'is', null);
     
-    if (activeUserError) {
-      console.error('Error fetching active users:', activeUserError);
-    }
+    if (activeUserError) throw activeUserError;
     
     // Count unique active users
     const uniqueActiveUsers = new Set(activeUserData?.map(t => t.user_id) || []).size;
     
-    const finalStats = {
+    return {
       totalUsers: mainStats.total_users || 0,
       totalDeposits: mainStats.total_deposits || 0,
       totalPayouts: mainStats.total_payouts || 0,
@@ -112,10 +95,6 @@ const fetchDashboardData = async (): Promise<DashboardStats> => {
       payoutsTrend: trends.payoutsTrend,
       plansTrend: trends.plansTrend,
     };
-    
-    console.log('🎯 Final dashboard stats:', finalStats);
-    
-    return finalStats;
   } catch (error) {
     console.error('Error fetching dashboard data:', error);
     return await fetchDashboardDataFallback();
@@ -158,12 +137,11 @@ const calculateTrends = async () => {
 
   console.log('📈 User growth trend calculated (absolute):', userGrowthTrend);
 
-  // Calculate deposits trend - absolute difference (only completed transactions)
+  // Calculate deposits trend - absolute difference
   const { data: thisMonthDeposits } = await supabase
     .from('transactions')
     .select('amount')
     .eq('type', 'deposit')
-    .eq('status', 'completed') // Only count completed deposits
     .gte('created_at', thisMonthStart.toISOString())
     .lte('created_at', thisMonthEnd.toISOString());
 
@@ -171,14 +149,13 @@ const calculateTrends = async () => {
     .from('transactions')
     .select('amount')
     .eq('type', 'deposit')
-    .eq('status', 'completed') // Only count completed deposits
     .gte('created_at', lastMonthStart.toISOString())
     .lte('created_at', lastMonthEnd.toISOString());
 
   const thisMonthDepositsTotal = thisMonthDeposits?.reduce((sum, t) => sum + t.amount, 0) || 0;
   const lastMonthDepositsTotal = lastMonthDeposits?.reduce((sum, t) => sum + t.amount, 0) || 0;
   
-  console.log('💰 Deposit totals (completed only):');
+  console.log('💰 Deposit totals:');
   console.log('This month deposits:', thisMonthDepositsTotal);
   console.log('Last month deposits:', lastMonthDepositsTotal);
   
@@ -187,12 +164,11 @@ const calculateTrends = async () => {
 
   console.log('📈 Deposits trend calculated (absolute):', depositsTrend);
 
-  // Calculate payouts trend - absolute difference (only completed transactions)
+  // Calculate payouts trend - absolute difference
   const { data: thisMonthPayouts } = await supabase
     .from('transactions')
     .select('amount')
     .eq('type', 'payout')
-    .eq('status', 'completed') // Only count completed payouts
     .gte('created_at', thisMonthStart.toISOString())
     .lte('created_at', thisMonthEnd.toISOString());
 
@@ -200,14 +176,13 @@ const calculateTrends = async () => {
     .from('transactions')
     .select('amount')
     .eq('type', 'payout')
-    .eq('status', 'completed') // Only count completed payouts
     .gte('created_at', lastMonthStart.toISOString())
     .lte('created_at', lastMonthEnd.toISOString());
 
   const thisMonthPayoutsTotal = thisMonthPayouts?.reduce((sum, t) => sum + t.amount, 0) || 0;
   const lastMonthPayoutsTotal = lastMonthPayouts?.reduce((sum, t) => sum + t.amount, 0) || 0;
   
-  console.log('💸 Payout totals (completed only):');
+  console.log('💸 Payout totals:');
   console.log('This month payouts:', thisMonthPayoutsTotal);
   console.log('Last month payouts:', lastMonthPayoutsTotal);
   
@@ -266,28 +241,21 @@ const fetchDashboardDataFallback = async (): Promise<DashboardStats> => {
   
   if (userError) throw userError;
   
-  // Fetch total deposits (only completed transactions)
+  // Fetch total deposits
   const { data: deposits, error: depositError } = await supabase
     .from('transactions')
     .select('amount')
-    .eq('type', 'deposit')
-    .eq('status', 'completed');
+    .eq('type', 'deposit');
   
   if (depositError) throw depositError;
   
   const totalDeposits = deposits?.reduce((sum, transaction) => sum + transaction.amount, 0) || 0;
   
-  console.log('💰 Fallback deposits calculation:', {
-    depositsCount: deposits?.length || 0,
-    totalDeposits
-  });
-  
-  // Fetch total payouts (only completed transactions)
+  // Fetch total payouts
   const { data: payouts, error: payoutError } = await supabase
     .from('transactions')
     .select('amount')
-    .eq('type', 'payout')
-    .eq('status', 'completed');
+    .eq('type', 'payout');
   
   if (payoutError) throw payoutError;
   
@@ -300,7 +268,7 @@ const fetchDashboardDataFallback = async (): Promise<DashboardStats> => {
   
   if (planError) throw planError;
   
-  // Fetch recent transactions (only completed)
+  // Fetch recent transactions
   const { data: recentTransactions, error: recentTransactionsError } = await supabase
     .from('transactions')
     .select(`
@@ -316,7 +284,6 @@ const fetchDashboardDataFallback = async (): Promise<DashboardStats> => {
         email
       )
     `)
-    .eq('status', 'completed')
     .order('created_at', { ascending: false })
     .limit(5);
   
@@ -362,7 +329,6 @@ const generateTrendData = async () => {
       const { count, error } = await supabase
         .from('transactions')
         .select('*', { count: 'exact', head: true })
-        .eq('status', 'completed') // Only count completed transactions
         .gte('created_at', startOfDay)
         .lte('created_at', endOfDay);
       
