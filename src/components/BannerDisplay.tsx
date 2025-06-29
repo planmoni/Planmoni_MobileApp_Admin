@@ -7,6 +7,7 @@ import { useToast } from '@/contexts/ToastContext';
 import { useAuth } from '@/contexts/AuthContext';
 import Card from './Card';
 import Button from './Button';
+import BannerCarousel from './BannerCarousel';
 
 interface Banner {
   id: string;
@@ -35,11 +36,17 @@ export default function BannerDisplay({ showAdminControls = false, className = '
   const { data: banners, isLoading, error } = useQuery({
     queryKey: ['banners'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const query = supabase
         .from('banners')
         .select('*')
-        .eq('is_active', true)
         .order('order_index', { ascending: true });
+      
+      // Only filter by active status if not in admin mode
+      if (!showAdminControls) {
+        query.eq('is_active', true);
+      }
+      
+      const { data, error } = await query;
 
       if (error) throw error;
       return data as Banner[];
@@ -100,85 +107,6 @@ export default function BannerDisplay({ showAdminControls = false, className = '
     }
   };
 
-  const renderBannerContent = (banner: Banner) => {
-    const bannerElement = (
-      <div className="relative group">
-        <img
-          src={banner.image_url}
-          alt={banner.title}
-          className="w-full h-auto rounded-lg shadow-sm transition-transform group-hover:scale-105"
-          style={{ 
-            width: '393px', 
-            height: '116px',
-            objectFit: 'cover'
-          }}
-          onError={(e) => {
-            const target = e.target as HTMLImageElement;
-            target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzkzIiBoZWlnaHQ9IjExNiIgdmlld0JveD0iMCAwIDM5MyAxMTYiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIzOTMiIGhlaWdodD0iMTE2IiBmaWxsPSIjRjNGNEY2Ii8+Cjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjOTQ5NEE0IiBmb250LXNpemU9IjE0Ij5JbWFnZSBub3QgZm91bmQ8L3RleHQ+Cjwvc3ZnPg==';
-          }}
-        />
-        
-        {showAdminControls && (
-          <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-            <button
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                handleToggleActive(banner);
-              }}
-              className="p-1 bg-white dark:bg-gray-800 rounded shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700"
-              title={banner.is_active ? 'Hide banner' : 'Show banner'}
-            >
-              {banner.is_active ? (
-                <Eye className="h-4 w-4 text-green-600" />
-              ) : (
-                <EyeOff className="h-4 w-4 text-gray-400" />
-              )}
-            </button>
-            <button
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                handleDelete(banner);
-              }}
-              className="p-1 bg-white dark:bg-gray-800 rounded shadow-sm hover:bg-red-50 dark:hover:bg-red-900"
-              title="Delete banner"
-            >
-              <Trash2 className="h-4 w-4 text-red-600" />
-            </button>
-          </div>
-        )}
-      </div>
-    );
-
-    // If no link URL, just return the image
-    if (!banner.link_url) {
-      return bannerElement;
-    }
-
-    // Check if it's an external URL
-    const isExternalUrl = banner.link_url.startsWith('http://') || banner.link_url.startsWith('https://');
-
-    if (isExternalUrl) {
-      return (
-        <a
-          href={banner.link_url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="block"
-        >
-          {bannerElement}
-        </a>
-      );
-    } else {
-      return (
-        <Link to={banner.link_url} className="block">
-          {bannerElement}
-        </Link>
-      );
-    }
-  };
-
   if (isLoading) {
     return (
       <div className={`flex justify-center items-center h-32 ${className}`}>
@@ -207,21 +135,103 @@ export default function BannerDisplay({ showAdminControls = false, className = '
     return null; // Don't show anything if no banners for public display
   }
 
+  // If not in admin mode, just show the carousel
+  if (!showAdminControls) {
+    return <BannerCarousel className={className} />;
+  }
+
+  // Admin view with controls
   return (
     <div className={`space-y-4 ${className}`}>
-      {showAdminControls && (
-        <div className="flex justify-between items-center">
-          <h3 className="text-lg font-semibold text-text dark:text-text">
-            Active Banners ({banners.length})
-          </h3>
-        </div>
-      )}
+      <div className="flex justify-between items-center">
+        <h3 className="text-lg font-semibold text-text dark:text-text">
+          Banners ({banners.length})
+        </h3>
+      </div>
       
-      <div className="grid gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {banners.map((banner) => (
-          <div key={banner.id} className="flex justify-center">
-            {renderBannerContent(banner)}
-          </div>
+          <Card key={banner.id} className="overflow-hidden">
+            <div className="relative group">
+              <img
+                src={banner.image_url}
+                alt={banner.title}
+                className="w-full h-auto"
+                style={{ 
+                  height: '116px',
+                  objectFit: 'cover'
+                }}
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzkzIiBoZWlnaHQ9IjExNiIgdmlld0JveD0iMCAwIDM5MyAxMTYiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIzOTMiIGhlaWdodD0iMTE2IiBmaWxsPSIjRjNGNEY2Ii8+Cjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjOTQ5NEE0IiBmb250LXNpemU9IjE0Ij5JbWFnZSBub3QgZm91bmQ8L3RleHQ+Cjwvc3ZnPg==';
+                }}
+              />
+              
+              <div className="absolute top-2 right-2 flex gap-1">
+                <button
+                  onClick={() => handleToggleActive(banner)}
+                  className="p-1 bg-white dark:bg-gray-800 rounded shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700"
+                  title={banner.is_active ? 'Hide banner' : 'Show banner'}
+                >
+                  {banner.is_active ? (
+                    <Eye className="h-4 w-4 text-green-600" />
+                  ) : (
+                    <EyeOff className="h-4 w-4 text-gray-400" />
+                  )}
+                </button>
+                <button
+                  onClick={() => handleDelete(banner)}
+                  className="p-1 bg-white dark:bg-gray-800 rounded shadow-sm hover:bg-red-50 dark:hover:bg-red-900"
+                  title="Delete banner"
+                >
+                  <Trash2 className="h-4 w-4 text-red-600" />
+                </button>
+              </div>
+            </div>
+            
+            <div className="p-4">
+              <h4 className="font-medium text-text dark:text-text mb-1">{banner.title}</h4>
+              {banner.description && (
+                <p className="text-sm text-text-secondary dark:text-text-secondary mb-2">
+                  {banner.description}
+                </p>
+              )}
+              
+              {banner.link_url && (
+                <div className="flex items-center text-xs text-text-tertiary dark:text-text-tertiary">
+                  <span className="mr-1">Link:</span>
+                  {banner.link_url.startsWith('http') ? (
+                    <a 
+                      href={banner.link_url} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="flex items-center text-primary dark:text-primary-light hover:underline truncate"
+                    >
+                      <span className="truncate max-w-[150px]">{banner.link_url}</span>
+                      <ExternalLink className="h-3 w-3 ml-1 flex-shrink-0" />
+                    </a>
+                  ) : (
+                    <span className="text-primary dark:text-primary-light truncate max-w-[180px]">
+                      {banner.link_url}
+                    </span>
+                  )}
+                </div>
+              )}
+              
+              <div className="mt-2 flex items-center">
+                <span className={`px-2 py-0.5 text-xs rounded-full ${
+                  banner.is_active 
+                    ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300' 
+                    : 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-300'
+                }`}>
+                  {banner.is_active ? 'Active' : 'Inactive'}
+                </span>
+                <span className="text-xs text-text-tertiary dark:text-text-tertiary ml-2">
+                  Order: {banner.order_index}
+                </span>
+              </div>
+            </div>
+          </Card>
         ))}
       </div>
     </div>

@@ -91,3 +91,30 @@ export const useDeleteBanner = () => {
     },
   });
 };
+
+export const useReorderBanners = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (bannerIds: string[]) => {
+      // Update each banner with its new order index
+      const updates = bannerIds.map((id, index) => ({
+        id,
+        order_index: index
+      }));
+
+      // Use Promise.all to update all banners in parallel
+      await Promise.all(
+        updates.map(update => 
+          supabase
+            .from('banners')
+            .update({ order_index: update.order_index })
+            .eq('id', update.id)
+        )
+      );
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['banners'] });
+    },
+  });
+};

@@ -8,6 +8,8 @@ import Card from './Card';
 export default function BannerUploadForm() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [linkUrl, setLinkUrl] = useState('');
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const { showToast } = useToast();
@@ -32,6 +34,16 @@ export default function BannerUploadForm() {
       // Create preview URL
       const url = URL.createObjectURL(file);
       setPreviewUrl(url);
+      
+      // Set default title from filename if empty
+      if (!title) {
+        const fileName = file.name.split('.')[0];
+        // Convert to title case and replace hyphens/underscores with spaces
+        const formattedTitle = fileName
+          .replace(/[-_]/g, ' ')
+          .replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
+        setTitle(formattedTitle);
+      }
     }
   };
 
@@ -51,8 +63,8 @@ export default function BannerUploadForm() {
       return;
     }
 
-    if (!linkUrl.trim()) {
-      showToast('Please enter a link URL', 'error');
+    if (!title.trim()) {
+      showToast('Please enter a banner title', 'error');
       return;
     }
 
@@ -84,9 +96,10 @@ export default function BannerUploadForm() {
       const { error: insertError } = await supabase
         .from('banners')
         .insert({
-          title: selectedFile.name.split('.')[0], // Use filename without extension as title
+          title: title.trim(),
+          description: description.trim() || null,
           image_url: publicUrl,
-          link_url: linkUrl.trim(),
+          link_url: linkUrl.trim() || null,
           is_active: true,
           order_index: 0
         });
@@ -100,6 +113,8 @@ export default function BannerUploadForm() {
       // Reset form
       setSelectedFile(null);
       setLinkUrl('');
+      setTitle('');
+      setDescription('');
       handleRemoveFile();
       
       // Reset file input
@@ -183,10 +198,41 @@ export default function BannerUploadForm() {
           )}
         </div>
 
+        {/* Title Input */}
+        <div>
+          <label htmlFor="banner-title" className="block text-sm font-medium text-text dark:text-text mb-2">
+            Banner Title
+          </label>
+          <input
+            id="banner-title"
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Enter banner title"
+            className="block w-full px-3 py-2 border border-border dark:border-border rounded-md bg-white dark:bg-background-tertiary text-text dark:text-text focus:outline-none focus:ring-2 focus:ring-primary dark:focus:ring-primary-light focus:border-primary dark:focus:border-primary-light"
+            required
+          />
+        </div>
+
+        {/* Description Input */}
+        <div>
+          <label htmlFor="banner-description" className="block text-sm font-medium text-text dark:text-text mb-2">
+            Description (Optional)
+          </label>
+          <textarea
+            id="banner-description"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Enter banner description"
+            className="block w-full px-3 py-2 border border-border dark:border-border rounded-md bg-white dark:bg-background-tertiary text-text dark:text-text focus:outline-none focus:ring-2 focus:ring-primary dark:focus:ring-primary-light focus:border-primary dark:focus:border-primary-light"
+            rows={2}
+          />
+        </div>
+
         {/* URL Input Section */}
         <div>
           <label htmlFor="link-url" className="block text-sm font-medium text-text dark:text-text mb-2">
-            Link URL
+            Link URL (Optional)
           </label>
           <p className="text-xs text-text-secondary dark:text-text-secondary mb-3">
             Enter a full URL (e.g., https://planmoni.com/learn-more) or internal path (e.g., /learn-more)
@@ -201,12 +247,11 @@ export default function BannerUploadForm() {
             </div>
             <input
               id="link-url"
-              type="url"
+              type="text"
               value={linkUrl}
               onChange={(e) => setLinkUrl(e.target.value)}
               placeholder="https://planmoni.com/learn-more or /learn-more"
               className="block w-full pl-10 pr-3 py-2 border border-border dark:border-border rounded-md bg-white dark:bg-background-tertiary text-text dark:text-text focus:outline-none focus:ring-2 focus:ring-primary dark:focus:ring-primary-light focus:border-primary dark:focus:border-primary-light"
-              required
             />
           </div>
           {linkUrl && (
@@ -220,7 +265,7 @@ export default function BannerUploadForm() {
         <div className="flex justify-end">
           <Button
             type="submit"
-            disabled={!selectedFile || !linkUrl.trim() || isUploading}
+            disabled={!selectedFile || !title.trim() || isUploading}
             isLoading={isUploading}
             className="min-w-[120px]"
           >

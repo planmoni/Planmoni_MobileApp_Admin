@@ -3,6 +3,8 @@ import { RefreshCw, Image, Plus } from 'lucide-react';
 import { useRefreshData } from '@/hooks/mutations/useRefreshData';
 import BannerUploadForm from '@/components/BannerUploadForm';
 import BannerDisplay from '@/components/BannerDisplay';
+import BannerCarousel from '@/components/BannerCarousel';
+import Card from '@/components/Card';
 
 export default function Banners() {
   const [isAddingBanner, setIsAddingBanner] = useState(false);
@@ -53,6 +55,13 @@ export default function Banners() {
       )}
 
       <div className="space-y-8">
+        <Card title="Banner Preview (Carousel)" className="p-4">
+          <p className="text-sm text-text-secondary dark:text-text-secondary mb-4">
+            This is how your banners will appear to users on the dashboard:
+          </p>
+          <BannerCarousel />
+        </Card>
+        
         <BannerDisplay showAdminControls={true} />
       </div>
     </div>
