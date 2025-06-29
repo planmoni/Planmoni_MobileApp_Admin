@@ -27,7 +27,7 @@ export default function BannerCarousel({
   useEffect(() => {
     // This effect is used to force a Swiper update when banners data changes
     if (banners && banners.length > 0 && swiperInitialized) {
-      const swiperInstance = document.querySelector('.banner-carousel .swiper')?.swiper;
+      const swiperInstance = (document.querySelector('.banner-carousel .swiper') as any)?.swiper;
       if (swiperInstance) {
         swiperInstance.update();
       }
@@ -165,7 +165,7 @@ export default function BannerCarousel({
       )}
       
       {/* Custom styles for pagination */}
-      <style jsx>{`
+      <style>{`
         .banner-carousel .swiper-pagination-bullet {
           width: 8px !important;
           height: 8px !important;
