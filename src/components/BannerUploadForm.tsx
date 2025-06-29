@@ -252,7 +252,7 @@ export default function BannerUploadForm() {
             Link URL (Optional)
           </label>
           <p className="text-xs text-text-secondary dark:text-text-secondary mb-3">
-            Enter a full URL (e.g., https://planmoni.com/learn-more) or internal path (e.g., /learn-more)
+            Enter a full URL (e.g., https://planmoni.com/learn-more) or internal path (e.g., /create-payout/amount)
           </p>
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -267,7 +267,7 @@ export default function BannerUploadForm() {
               type="text"
               value={linkUrl}
               onChange={(e) => setLinkUrl(e.target.value)}
-              placeholder="https://planmoni.com/learn-more or /learn-more"
+              placeholder="https://planmoni.com/learn-more or /create-payout/amount"
               className="block w-full pl-10 pr-3 py-2 border border-border dark:border-border rounded-md bg-white dark:bg-background-tertiary text-text dark:text-text focus:outline-none focus:ring-2 focus:ring-primary dark:focus:ring-primary-light focus:border-primary dark:focus:border-primary-light"
             />
           </div>
