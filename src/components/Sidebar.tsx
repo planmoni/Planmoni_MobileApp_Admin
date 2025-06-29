@@ -9,8 +9,7 @@ import {
   BarChart3, 
   Settings, 
   LogOut,
-  Shield,
-  Image
+  Shield
 } from 'lucide-react';
 
 export default function Sidebar({ isMobileMenuOpen, closeMobileMenu }: { isMobileMenuOpen: boolean, closeMobileMenu: () => void }) {
@@ -116,10 +115,7 @@ export default function Sidebar({ isMobileMenuOpen, closeMobileMenu }: { isMobil
     { name: 'Users', path: '/users', icon: Users },
     { name: 'Transactions', path: '/transactions', icon: CreditCard },
     { name: 'Analytics', path: '/analytics', icon: BarChart3 },
-    ...(isSuperAdmin ? [
-      { name: 'Super Admin', path: '/super-admin', icon: Shield },
-      { name: 'Banners', path: '/banners', icon: Image }
-    ] : []),
+    ...(isSuperAdmin ? [{ name: 'Super Admin', path: '/super-admin', icon: Shield }] : []),
     { name: 'Settings', path: '/settings', icon: Settings },
   ];
 
@@ -193,13 +189,13 @@ export default function Sidebar({ isMobileMenuOpen, closeMobileMenu }: { isMobil
                   isActive
                     ? 'bg-primary-light/10 text-primary'
                     : 'text-text-secondary hover:bg-background-tertiary'
-                } ${(item.name === 'Super Admin' || item.name === 'Banners') ? 'border-l-4 border-red-500' : ''}`
+                } ${item.name === 'Super Admin' ? 'border-l-4 border-red-500' : ''}`
               }
               onClick={isMobileMenuOpen ? closeMobileMenu : undefined}
             >
-              <item.icon className={`mr-3 h-5 w-5 ${(item.name === 'Super Admin' || item.name === 'Banners') ? 'text-red-500' : ''}`} />
+              <item.icon className={`mr-3 h-5 w-5 ${item.name === 'Super Admin' ? 'text-red-500' : ''}`} />
               {item.name}
-              {(item.name === 'Super Admin' || item.name === 'Banners') && (
+              {item.name === 'Super Admin' && (
                 <span className="ml-auto px-2 py-0.5 text-xs bg-red-100 text-red-800 rounded-full">
                   ADMIN
                 </span>

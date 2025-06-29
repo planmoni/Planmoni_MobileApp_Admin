@@ -17,7 +17,6 @@ const AnalyticsPage = lazy(() => import('./pages/dashboard/Analytics'));
 const SettingsPage = lazy(() => import('./pages/dashboard/Settings'));
 const UserDetailsPage = lazy(() => import('./pages/dashboard/UserDetails'));
 const SuperAdminPage = lazy(() => import('./pages/dashboard/SuperAdmin'));
-const BannersPage = lazy(() => import('./pages/dashboard/Banners'));
 const NotFoundPage = lazy(() => import('./pages/NotFound'));
 
 function App() {
@@ -52,7 +51,6 @@ function App() {
                 <Route path="transactions" element={<TransactionsPage />} />
                 <Route path="analytics" element={<AnalyticsPage />} />
                 <Route path="super-admin" element={<SuperAdminPage />} />
-                <Route path="banners" element={<BannersPage />} />
                 <Route path="settings" element={<SettingsPage />} />
                 <Route path="*" element={<NotFoundPage />} />
               </Route>
