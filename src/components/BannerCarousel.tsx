@@ -17,6 +17,8 @@ interface BannerCarouselProps {
 export default function BannerCarousel({ className = '' }: BannerCarouselProps) {
   const { data: banners, isLoading, error } = useBanners(true);
   const [swiperInitialized, setSwiperInitialized] = useState(false);
+  const [imageHeights, setImageHeights] = useState<Record<string, number>>({});
+  const [maxHeight, setMaxHeight] = useState<number | null>(null);
 
   useEffect(() => {
     // This effect is used to force a Swiper update when banners data changes
@@ -27,6 +29,22 @@ export default function BannerCarousel({ className = '' }: BannerCarouselProps) 
       }
     }
   }, [banners, swiperInitialized]);
+
+  useEffect(() => {
+    // Calculate the maximum height once all images are loaded
+    if (banners && banners.length > 0 && Object.keys(imageHeights).length === banners.length) {
+      const maxHeightValue = Math.max(...Object.values(imageHeights));
+      setMaxHeight(maxHeightValue > 0 ? maxHeightValue : null);
+    }
+  }, [imageHeights, banners]);
+
+  const handleImageLoad = (bannerId: string, event: React.SyntheticEvent<HTMLImageElement>) => {
+    const img = event.currentTarget;
+    setImageHeights(prev => ({
+      ...prev,
+      [bannerId]: img.naturalHeight * (img.width / img.naturalWidth)
+    }));
+  };
 
   if (isLoading) {
     return (
@@ -42,20 +60,31 @@ export default function BannerCarousel({ className = '' }: BannerCarouselProps) 
 
   const renderBannerContent = (banner: any) => {
     const bannerElement = (
-      <img
-        src={banner.image_url}
-        alt={banner.title}
-        className="w-full h-auto rounded-lg shadow-sm"
-        style={{ 
-          width: '100%',
-          height: '116px',
-          objectFit: 'cover'
-        }}
-        onError={(e) => {
-          const target = e.target as HTMLImageElement;
-          target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzkzIiBoZWlnaHQ9IjExNiIgdmlld0JveD0iMCAwIDM5MyAxMTYiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIzOTMiIGhlaWdodD0iMTE2IiBmaWxsPSIjRjNGNEY2Ii8+Cjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjOTQ5NEE0IiBmb250LXNpemU9IjE0Ij5JbWFnZSBub3QgZm91bmQ8L3RleHQ+Cjwvc3ZnPg==';
-        }}
-      />
+      <div className="relative w-full">
+        <img
+          src={banner.image_url}
+          alt={banner.title}
+          className="w-full h-auto rounded-lg shadow-sm"
+          style={{ 
+            width: '100%',
+            objectFit: 'contain',
+            maxHeight: maxHeight ? `${maxHeight}px` : 'auto'
+          }}
+          onLoad={(e) => handleImageLoad(banner.id, e)}
+          onError={(e) => {
+            const target = e.target as HTMLImageElement;
+            target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzkzIiBoZWlnaHQ9IjExNiIgdmlld0JveD0iMCAwIDM5MyAxMTYiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIzOTMiIGhlaWdodD0iMTE2IiBmaWxsPSIjRjNGNEY2Ii8+Cjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjOTQ5NEE0IiBmb250LXNpemU9IjE0Ij5JbWFnZSBub3QgZm91bmQ8L3RleHQ+Cjwvc3ZnPg==';
+          }}
+        />
+        {banner.title && (
+          <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 p-2 rounded-b-lg">
+            <h3 className="text-white text-sm font-medium">{banner.title}</h3>
+            {banner.description && (
+              <p className="text-white text-xs opacity-90">{banner.description}</p>
+            )}
+          </div>
+        )}
+      </div>
     );
 
     // If no link URL, just return the image
@@ -117,10 +146,10 @@ export default function BannerCarousel({ className = '' }: BannerCarouselProps) 
       
       {banners.length > 1 && (
         <>
-          <div className="swiper-button-prev absolute left-2 top-1/2 transform -translate-y-1/2 z-10 flex items-center justify-center w-8 h-8 rounded-full bg-white/70 dark:bg-gray-800/70 shadow-md cursor-pointer hover:bg-white dark:hover:bg-gray-800 transition-colors">
+          <div className="swiper-button-prev !hidden sm:!flex absolute left-2 top-1/2 transform -translate-y-1/2 z-10 items-center justify-center w-8 h-8 rounded-full bg-white/70 dark:bg-gray-800/70 shadow-md cursor-pointer hover:bg-white dark:hover:bg-gray-800 transition-colors">
             <ChevronLeft className="h-5 w-5 text-gray-700 dark:text-gray-200" />
           </div>
-          <div className="swiper-button-next absolute right-2 top-1/2 transform -translate-y-1/2 z-10 flex items-center justify-center w-8 h-8 rounded-full bg-white/70 dark:bg-gray-800/70 shadow-md cursor-pointer hover:bg-white dark:hover:bg-gray-800 transition-colors">
+          <div className="swiper-button-next !hidden sm:!flex absolute right-2 top-1/2 transform -translate-y-1/2 z-10 items-center justify-center w-8 h-8 rounded-full bg-white/70 dark:bg-gray-800/70 shadow-md cursor-pointer hover:bg-white dark:hover:bg-gray-800 transition-colors">
             <ChevronRight className="h-5 w-5 text-gray-700 dark:text-gray-200" />
           </div>
           <div className="swiper-pagination absolute bottom-2 left-0 right-0 z-10 flex justify-center"></div>

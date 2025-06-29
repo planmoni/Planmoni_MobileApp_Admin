@@ -158,8 +158,8 @@ export default function BannerDisplay({ showAdminControls = false, className = '
                 alt={banner.title}
                 className="w-full h-auto"
                 style={{ 
-                  height: '116px',
-                  objectFit: 'cover'
+                  objectFit: 'contain',
+                  maxHeight: '200px'
                 }}
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;

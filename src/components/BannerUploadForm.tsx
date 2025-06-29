@@ -12,6 +12,8 @@ export default function BannerUploadForm() {
   const [description, setDescription] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [imageWidth, setImageWidth] = useState<number | null>(null);
+  const [imageHeight, setImageHeight] = useState<number | null>(null);
   const { showToast } = useToast();
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -31,9 +33,17 @@ export default function BannerUploadForm() {
 
       setSelectedFile(file);
       
-      // Create preview URL
+      // Create preview URL and get image dimensions
       const url = URL.createObjectURL(file);
       setPreviewUrl(url);
+      
+      // Get image dimensions
+      const img = new Image();
+      img.onload = () => {
+        setImageWidth(img.width);
+        setImageHeight(img.height);
+      };
+      img.src = url;
       
       // Set default title from filename if empty
       if (!title) {
@@ -53,6 +63,8 @@ export default function BannerUploadForm() {
       URL.revokeObjectURL(previewUrl);
       setPreviewUrl(null);
     }
+    setImageWidth(null);
+    setImageHeight(null);
   };
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -142,7 +154,7 @@ export default function BannerUploadForm() {
             Banner Image
           </label>
           <p className="text-xs text-text-secondary dark:text-text-secondary mb-3">
-            Recommended size: 393px × 116px. Max file size: 5MB
+            Upload any size image - the carousel will adapt to display it properly
           </p>
           
           {!selectedFile ? (
@@ -191,6 +203,11 @@ export default function BannerUploadForm() {
                       className="max-w-full h-auto rounded border border-border dark:border-border"
                       style={{ maxHeight: '200px' }}
                     />
+                    {imageWidth && imageHeight && (
+                      <p className="mt-2 text-xs text-text-secondary dark:text-text-secondary">
+                        Image dimensions: {imageWidth} × {imageHeight} pixels
+                      </p>
+                    )}
                   </div>
                 )}
               </div>
