@@ -35,6 +35,44 @@ export interface Database {
           updated_at?: string
         }
       }
+      banners: {
+        Row: {
+          id: string
+          title: string
+          description: string | null
+          image_url: string
+          cta_text: string | null
+          link_url: string | null
+          order_index: number
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          title: string
+          description?: string | null
+          image_url: string
+          cta_text?: string | null
+          link_url?: string | null
+          order_index?: number
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          title?: string
+          description?: string | null
+          image_url?: string
+          cta_text?: string | null
+          link_url?: string | null
+          order_index?: number
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+      }
       wallets: {
         Row: {
           id: string
