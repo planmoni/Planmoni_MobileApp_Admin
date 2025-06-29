@@ -24,6 +24,7 @@ export default function Sidebar({ isMobileMenuOpen, closeMobileMenu }: { isMobil
 
   useEffect(() => {
     if (session?.user) {
+      console.log('🔍 Session user found:', session.user.id, session.user.email);
       checkSuperAdminStatus();
       fetchUserProfile();
     }
@@ -31,12 +32,21 @@ export default function Sidebar({ isMobileMenuOpen, closeMobileMenu }: { isMobil
 
   const checkSuperAdminStatus = async () => {
     try {
+      console.log('🚀 Calling is_super_admin RPC...');
       const { data, error } = await supabase.rpc('is_super_admin');
+      console.log('📊 RPC is_super_admin data:', data);
+      console.log('❌ RPC is_super_admin error:', error);
+      
       if (!error && data) {
+        console.log('✅ Setting isSuperAdmin to true');
         setIsSuperAdmin(true);
+      } else {
+        console.log('❌ Setting isSuperAdmin to false');
+        setIsSuperAdmin(false);
       }
     } catch (error) {
-      console.error('Error checking super admin status:', error);
+      console.error('💥 Error checking super admin status:', error);
+      setIsSuperAdmin(false);
     }
   };
 
@@ -44,11 +54,15 @@ export default function Sidebar({ isMobileMenuOpen, closeMobileMenu }: { isMobil
     try {
       if (!session?.user?.id) return;
 
+      console.log('👤 Fetching user profile for:', session.user.id);
       const { data, error } = await supabase
         .from('profiles')
         .select('first_name, last_name, email, is_admin')
         .eq('id', session.user.id)
         .single();
+
+      console.log('👤 Profile data:', data);
+      console.log('👤 Profile error:', error);
 
       if (error) {
         console.error('Error fetching user profile:', error);
@@ -87,6 +101,11 @@ export default function Sidebar({ isMobileMenuOpen, closeMobileMenu }: { isMobil
     ...(isSuperAdmin ? [{ name: 'Super Admin', path: '/super-admin', icon: Shield }] : []),
     { name: 'Settings', path: '/settings', icon: Settings },
   ];
+
+  console.log('🔧 Current state:');
+  console.log('  - isSuperAdmin:', isSuperAdmin);
+  console.log('  - userProfile:', userProfile);
+  console.log('  - navigation items:', navigation.length);
 
   const sidebarClasses = `
     ${isMobileMenuOpen ? 'fixed inset-y-0 left-0 z-20 w-64' : 'hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 md:z-10'}
