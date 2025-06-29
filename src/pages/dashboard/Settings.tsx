@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { Shield, Bell, Database, Key, LogOut } from 'lucide-react';
+import { Shield, Bell, Database, Key, LogOut, Image } from 'lucide-react';
 import Card from '../../components/Card';
 import Button from '../../components/Button';
+import BannerUploadForm from '../../components/BannerUploadForm';
+import BannerDisplay from '../../components/BannerDisplay';
 
 export default function Settings() {
   const { signOut } = useAuth();
@@ -22,6 +24,18 @@ export default function Settings() {
       </div>
 
       <div className="space-y-8">
+        {/* Banner Management Section */}
+        <div>
+          <h2 className="text-lg font-semibold text-text mb-4 flex items-center gap-2">
+            <Image className="h-5 w-5" />
+            Banner Management
+          </h2>
+          <div className="space-y-6">
+            <BannerUploadForm />
+            <BannerDisplay showAdminControls={true} />
+          </div>
+        </div>
+
         <div>
           <h2 className="text-lg font-semibold text-text mb-4">Notifications</h2>
           <Card className="overflow-hidden">
