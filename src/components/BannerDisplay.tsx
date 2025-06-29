@@ -124,8 +124,8 @@ export default function BannerDisplay({ showAdminControls = false, className = '
     if (showAdminControls) {
       return (
         <Card className={className}>
-          <div className="text-center py-6 sm:py-8">
-            <p className="text-sm sm:text-base text-text-secondary dark:text-text-secondary">
+          <div className="text-center py-8">
+            <p className="text-text-secondary dark:text-text-secondary">
               No banners uploaded yet. Upload your first banner above.
             </p>
           </div>
@@ -144,85 +144,85 @@ export default function BannerDisplay({ showAdminControls = false, className = '
   return (
     <div className={`space-y-4 ${className}`}>
       <div className="flex justify-between items-center">
-        <h3 className="text-base sm:text-lg font-semibold text-text dark:text-text">
+        <h3 className="text-lg font-semibold text-text dark:text-text">
           Banners ({banners.length})
         </h3>
       </div>
       
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {banners.map((banner) => (
           <Card key={banner.id} className="overflow-hidden">
             <div className="relative group">
-              <img
-                src={banner.image_url}
-                alt={banner.title}
-                className="w-full h-auto object-cover"
-                style={{ 
-                  objectFit: 'cover',
-                  minHeight: '120px',
-                  maxHeight: '200px'
-                }}
-                onError={(e) => {
-                  const target = e.target as HTMLImageElement;
-                  target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzkzIiBoZWlnaHQ9IjExNiIgdmlld0JveD0iMCAwIDM5MyAxMTYiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIzOTMiIGhlaWdodD0iMTE2IiBmaWxsPSIjRjNGNEY2Ii8+Cjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjOTQ5NEE0IiBmb250LXNpemU9IjE0Ij5JbWFnZSBub3QgZm91bmQ8L3RleHQ+Cjwvc3ZnPg==';
-                }}
-              />
+              <div className="aspect-video w-full overflow-hidden bg-gray-100 dark:bg-gray-800">
+                <img
+                  src={banner.image_url}
+                  alt={banner.title}
+                  className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-105"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzkzIiBoZWlnaHQ9IjExNiIgdmlld0JveD0iMCAwIDM5MyAxMTYiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIzOTMiIGhlaWdodD0iMTE2IiBmaWxsPSIjRjNGNEY2Ii8+Cjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjOTQ5NEE0IiBmb250LXNpemU9IjE0Ij5JbWFnZSBub3QgZm91bmQ8L3RleHQ+Cjwvc3ZnPg==';
+                  }}
+                />
+              </div>
               
-              <div className="absolute top-1 right-1 sm:top-2 sm:right-2 flex gap-1">
+              <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                 <button
                   onClick={() => handleToggleActive(banner)}
-                  className="p-1 bg-white dark:bg-gray-800 rounded shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                  className="p-1.5 bg-white dark:bg-gray-800 rounded shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                   title={banner.is_active ? 'Hide banner' : 'Show banner'}
                 >
                   {banner.is_active ? (
-                    <Eye className="h-3 w-3 sm:h-4 sm:w-4 text-green-600" />
+                    <Eye className="h-4 w-4 text-green-600" />
                   ) : (
-                    <EyeOff className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400" />
+                    <EyeOff className="h-4 w-4 text-gray-400" />
                   )}
                 </button>
                 <button
                   onClick={() => handleDelete(banner)}
-                  className="p-1 bg-white dark:bg-gray-800 rounded shadow-sm hover:bg-red-50 dark:hover:bg-red-900 transition-colors"
+                  className="p-1.5 bg-white dark:bg-gray-800 rounded shadow-sm hover:bg-red-50 dark:hover:bg-red-900 transition-colors"
                   title="Delete banner"
                 >
-                  <Trash2 className="h-3 w-3 sm:h-4 sm:w-4 text-red-600" />
+                  <Trash2 className="h-4 w-4 text-red-600" />
                 </button>
               </div>
             </div>
             
-            <div className="p-3 sm:p-4">
-              <h4 className="font-medium text-text dark:text-text mb-1 text-sm sm:text-base line-clamp-1">
+            <div className="p-4">
+              <h4 className="font-medium text-text dark:text-text mb-2 line-clamp-1">
                 {banner.title}
               </h4>
+              
               {banner.description && (
-                <p className="text-xs sm:text-sm text-text-secondary dark:text-text-secondary mb-2 line-clamp-2">
+                <p className="text-sm text-text-secondary dark:text-text-secondary mb-3 line-clamp-2">
                   {banner.description}
                 </p>
               )}
               
               {banner.link_url && (
-                <div className="flex items-center text-xs text-text-tertiary dark:text-text-tertiary mb-2">
+                <div className="flex items-center text-xs text-text-tertiary dark:text-text-tertiary mb-3">
                   <span className="mr-1 flex-shrink-0">Link:</span>
-                  {banner.link_url.startsWith('http') ? (
-                    <a 
-                      href={banner.link_url} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="flex items-center text-primary dark:text-primary-light hover:underline truncate min-w-0"
-                    >
-                      <span className="truncate max-w-[100px] sm:max-w-[120px]">{banner.link_url}</span>
-                      <ExternalLink className="h-3 w-3 ml-1 flex-shrink-0" />
-                    </a>
-                  ) : (
-                    <span className="text-primary dark:text-primary-light truncate max-w-[120px] sm:max-w-[140px]">
-                      {banner.link_url}
-                    </span>
-                  )}
+                  <div className="min-w-0 flex-1">
+                    {banner.link_url.startsWith('http') ? (
+                      <a 
+                        href={banner.link_url} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="flex items-center text-primary dark:text-primary-light hover:underline"
+                      >
+                        <span className="truncate">{banner.link_url}</span>
+                        <ExternalLink className="h-3 w-3 ml-1 flex-shrink-0" />
+                      </a>
+                    ) : (
+                      <span className="text-primary dark:text-primary-light truncate block">
+                        {banner.link_url}
+                      </span>
+                    )}
+                  </div>
                 </div>
               )}
               
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                <span className={`px-2 py-0.5 text-xs rounded-full self-start ${
+              <div className="flex items-center justify-between">
+                <span className={`px-2 py-1 text-xs rounded-full ${
                   banner.is_active 
                     ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300' 
                     : 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-300'

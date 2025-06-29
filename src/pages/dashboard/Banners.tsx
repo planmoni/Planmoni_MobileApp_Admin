@@ -15,84 +15,79 @@ export default function Banners() {
   };
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8">
-      <div className="flex flex-col space-y-4 sm:space-y-0 sm:flex-row sm:justify-between sm:items-center mb-6">
-        <div className="flex-1">
-          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-text dark:text-text flex items-center gap-2">
-            <Image className="h-5 w-5 sm:h-6 sm:w-6 lg:h-7 lg:w-7 text-primary" />
-            Banner Management
+    <div className="max-w-7xl mx-auto">
+      {/* Header Section */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <div className="flex-1 min-w-0">
+          <h1 className="text-2xl font-bold text-text dark:text-text flex items-center gap-2">
+            <Image className="h-6 w-6 text-primary flex-shrink-0" />
+            <span className="truncate">Banner Management</span>
           </h1>
-          <p className="text-sm sm:text-base text-text-secondary dark:text-text-secondary mt-1">
+          <p className="text-text-secondary dark:text-text-secondary mt-1">
             Manage promotional banners displayed in the app
           </p>
         </div>
         
-        {/* Action buttons container */}
-        <div className="flex items-center gap-2 sm:gap-3 self-end sm:self-auto">
-          {/* Refresh button */}
+        {/* Action buttons */}
+        <div className="flex items-center gap-2 flex-shrink-0">
           <button 
             onClick={handleRefresh}
-            className="flex items-center justify-center w-10 h-10 sm:w-11 sm:h-11 lg:w-12 lg:h-12 rounded-full bg-background-tertiary dark:bg-background-tertiary hover:bg-background-secondary dark:hover:bg-background-secondary transition-colors"
+            className="p-2 rounded-full bg-background-tertiary dark:bg-background-tertiary hover:bg-background-secondary dark:hover:bg-background-secondary transition-colors"
             disabled={refreshData.isPending}
             title="Refresh banners"
           >
-            <RefreshCw className={`h-4 w-4 sm:h-5 sm:w-5 text-primary dark:text-primary ${refreshData.isPending ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`h-5 w-5 text-primary dark:text-primary ${refreshData.isPending ? 'animate-spin' : ''}`} />
           </button>
           
-          {/* Add/Cancel button - Responsive design */}
           <button
             onClick={() => setIsAddingBanner(!isAddingBanner)}
             className={`
-              flex items-center justify-center gap-2 
-              px-3 py-2 sm:px-4 sm:py-2.5 lg:px-6 lg:py-3
-              rounded-md font-medium transition-all duration-200
-              text-sm sm:text-base
-              min-w-[80px] sm:min-w-[100px] lg:min-w-[120px]
+              flex items-center gap-2 px-4 py-2 rounded-md font-medium transition-colors
               ${isAddingBanner 
                 ? 'bg-gray-500 hover:bg-gray-600 text-white' 
-                : 'bg-primary hover:bg-primary-dark text-white hover:shadow-lg transform hover:scale-105'
+                : 'bg-primary hover:bg-primary-dark text-white'
               }
             `}
           >
             {isAddingBanner ? (
               <>
                 <X className="h-4 w-4" />
-                <span className="hidden xs:inline">Cancel</span>
+                <span>Cancel</span>
               </>
             ) : (
               <>
                 <Plus className="h-4 w-4" />
-                {/* Responsive text display */}
-                <span className="hidden xs:inline sm:hidden">Add</span>
-                <span className="hidden sm:inline lg:hidden">Add Banner</span>
-                <span className="hidden lg:inline">Add New Banner</span>
+                <span className="hidden sm:inline">Add Banner</span>
+                <span className="sm:hidden">Add</span>
               </>
             )}
           </button>
         </div>
       </div>
 
-      {/* Upload form with responsive spacing */}
+      {/* Upload Form */}
       {isAddingBanner && (
-        <div className="mb-6 sm:mb-8 animate-in slide-in-from-top-2 duration-300">
+        <div className="mb-8">
           <BannerUploadForm />
         </div>
       )}
 
-      {/* Main content with responsive spacing */}
-      <div className="space-y-6 sm:space-y-8">
-        <Card title="Banner Preview (Carousel)" className="p-3 sm:p-4 lg:p-6">
-          <p className="text-xs sm:text-sm text-text-secondary dark:text-text-secondary mb-3 sm:mb-4">
-            This is how your banners will appear to users on the dashboard:
-          </p>
-          <div className="w-full">
-            <BannerCarousel className="max-w-full" />
+      {/* Main Content */}
+      <div className="space-y-8">
+        {/* Banner Preview Section */}
+        <Card title="Banner Preview (Carousel)" className="overflow-hidden">
+          <div className="p-4">
+            <p className="text-sm text-text-secondary dark:text-text-secondary mb-4">
+              This is how your banners will appear to users on the dashboard:
+            </p>
+            <div className="w-full max-w-4xl mx-auto">
+              <BannerCarousel />
+            </div>
           </div>
         </Card>
         
-        <div className="w-full">
-          <BannerDisplay showAdminControls={true} />
-        </div>
+        {/* Banner Management Section */}
+        <BannerDisplay showAdminControls={true} />
       </div>
     </div>
   );
