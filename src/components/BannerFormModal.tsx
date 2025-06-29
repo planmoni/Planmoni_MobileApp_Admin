@@ -38,6 +38,7 @@ export default function BannerFormModal({
   });
   const [imagePreview, setImagePreview] = useState<string>('');
   const [dragActive, setDragActive] = useState(false);
+  const [imageError, setImageError] = useState<string | null>(null);
 
   useEffect(() => {
     if (banner) {
@@ -61,22 +62,33 @@ export default function BannerFormModal({
       });
       setImagePreview('');
     }
-  }, [banner]);
+    setImageError(null);
+  }, [banner, isOpen]);
 
   const handleInputChange = (field: keyof BannerFormData, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
   const handleImageChange = (file: File) => {
-    if (file && file.type.startsWith('image/')) {
-      setFormData(prev => ({ ...prev, image_file: file }));
-      
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setImagePreview(e.target?.result as string);
-      };
-      reader.readAsDataURL(file);
+    setImageError(null);
+    
+    if (!file.type.startsWith('image/')) {
+      setImageError('Please upload an image file (JPEG, PNG, etc.)');
+      return;
     }
+    
+    if (file.size > 5 * 1024 * 1024) {
+      setImageError('Image size should be less than 5MB');
+      return;
+    }
+    
+    setFormData(prev => ({ ...prev, image_file: file }));
+    
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setImagePreview(e.target?.result as string);
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleDrag = (e: React.DragEvent) => {
@@ -108,6 +120,7 @@ export default function BannerFormModal({
     }
     
     if (!banner && !formData.image_file) {
+      setImageError('Please upload a banner image');
       return;
     }
 
@@ -136,13 +149,15 @@ export default function BannerFormModal({
           {/* Image Upload */}
           <div>
             <label className="block text-sm font-medium text-text mb-2">
-              Banner Image *
+              Banner Image * <span className="text-xs text-text-secondary">(Full design banner)</span>
             </label>
             <div
               className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
                 dragActive
                   ? 'border-primary bg-primary/5'
-                  : 'border-border hover:border-primary/50'
+                  : imageError 
+                    ? 'border-error bg-error-light/10' 
+                    : 'border-border hover:border-primary/50'
               }`}
               onDragEnter={handleDrag}
               onDragLeave={handleDrag}
@@ -154,7 +169,7 @@ export default function BannerFormModal({
                   <img
                     src={imagePreview}
                     alt="Preview"
-                    className="max-h-48 mx-auto rounded-lg object-cover"
+                    className="max-h-64 mx-auto rounded-lg object-contain"
                   />
                   <div>
                     <input
@@ -191,13 +206,19 @@ export default function BannerFormModal({
                       className="inline-flex items-center px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark cursor-pointer transition-colors"
                     >
                       <Upload size={16} className="mr-2" />
-                      Upload Image
+                      Upload Banner Image
                     </label>
                   </div>
                   <p className="text-sm text-text-secondary">
-                    Drag and drop an image here, or click to select
+                    Drag and drop a full banner design here, or click to select
+                  </p>
+                  <p className="text-xs text-text-secondary">
+                    Recommended size: 1080×360px, Max size: 5MB
                   </p>
                 </div>
+              )}
+              {imageError && (
+                <p className="mt-2 text-sm text-error">{imageError}</p>
               )}
             </div>
           </div>
@@ -216,6 +237,9 @@ export default function BannerFormModal({
               required
               disabled={isLoading}
             />
+            <p className="text-xs text-text-secondary mt-1">
+              Internal name for this banner (not displayed in app)
+            </p>
           </div>
 
           {/* Description */}
@@ -227,10 +251,13 @@ export default function BannerFormModal({
               value={formData.description}
               onChange={(e) => handleInputChange('description', e.target.value)}
               className="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-              placeholder="Enter banner description"
+              placeholder="Enter banner description (optional)"
               rows={3}
               disabled={isLoading}
             />
+            <p className="text-xs text-text-secondary mt-1">
+              Internal description for this banner (not displayed in app)
+            </p>
           </div>
 
           {/* CTA Text */}
@@ -243,7 +270,7 @@ export default function BannerFormModal({
               value={formData.cta_text}
               onChange={(e) => handleInputChange('cta_text', e.target.value)}
               className="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-              placeholder="e.g., Learn More, Shop Now"
+              placeholder="e.g., Learn More, Shop Now (optional)"
               disabled={isLoading}
             />
           </div>
@@ -258,9 +285,12 @@ export default function BannerFormModal({
               value={formData.link_url}
               onChange={(e) => handleInputChange('link_url', e.target.value)}
               className="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-              placeholder="https://example.com"
+              placeholder="https://example.com (optional)"
               disabled={isLoading}
             />
+            <p className="text-xs text-text-secondary mt-1">
+              Where users will be directed when they tap on the banner
+            </p>
           </div>
 
           {/* Order Index */}

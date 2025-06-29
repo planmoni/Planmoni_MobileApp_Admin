@@ -15,7 +15,7 @@ import { useRefreshData } from '@/hooks/mutations/useRefreshData';
 export default function Banners() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingBanner, setEditingBanner] = useState<Banner | null>(null);
-  const [deletingBanner, setDeletingBanner] = useState<Banner | null>(null);
+  const [previewBanner, setPreviewBanner] = useState<Banner | null>(null);
 
   const { data: banners = [], isLoading, error } = useBannersData();
   const addBanner = useAddBanner();
@@ -36,6 +36,10 @@ export default function Banners() {
   const handleEditBanner = (banner: Banner) => {
     setEditingBanner(banner);
     setIsModalOpen(true);
+  };
+
+  const handlePreviewBanner = (banner: Banner) => {
+    setPreviewBanner(banner);
   };
 
   const handleDeleteBanner = async (banner: Banner) => {
@@ -86,7 +90,7 @@ export default function Banners() {
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-2xl font-bold text-text">Banner Management</h1>
-          <p className="text-text-secondary">Manage banners and advertisements for the mobile app</p>
+          <p className="text-text-secondary">Manage full-design banners and advertisements for the mobile app</p>
         </div>
         <div className="flex gap-3">
           <button 
@@ -148,6 +152,27 @@ export default function Banners() {
         </Card>
       </div>
 
+      {/* Sample Banner Display */}
+      <div className="mb-6">
+        <h2 className="text-lg font-semibold text-text mb-4">Banner Preview</h2>
+        <Card className="p-4">
+          <div className="flex flex-col items-center">
+            <div className="w-full max-w-md overflow-hidden rounded-lg shadow-md mb-4">
+              <img 
+                src={previewBanner?.image_url || "/assets/images/Planmoni.png"} 
+                alt="Banner Preview"
+                className="w-full h-auto object-contain"
+              />
+            </div>
+            <p className="text-sm text-text-secondary">
+              {previewBanner 
+                ? `Previewing: ${previewBanner.title}` 
+                : "Select a banner to preview how it will appear in the app"}
+            </p>
+          </div>
+        </Card>
+      </div>
+
       {/* Banners List */}
       <Card className="overflow-hidden">
         {isLoading ? (
@@ -198,7 +223,8 @@ export default function Banners() {
                         <img
                           src={banner.image_url}
                           alt={banner.title}
-                          className="h-16 w-24 object-cover rounded-lg mr-4"
+                          className="h-16 w-32 object-cover rounded-lg mr-4 cursor-pointer"
+                          onClick={() => handlePreviewBanner(banner)}
                         />
                         <div>
                           <div className="text-sm font-medium text-text">
@@ -253,6 +279,13 @@ export default function Banners() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex justify-end gap-2">
+                        <button
+                          onClick={() => handlePreviewBanner(banner)}
+                          className="text-blue-500 hover:text-blue-700 p-1"
+                          title="Preview banner"
+                        >
+                          <Eye size={16} />
+                        </button>
                         <button
                           onClick={() => handleEditBanner(banner)}
                           className="text-primary hover:text-primary-dark p-1"
