@@ -33,6 +33,23 @@ export default function Sidebar({ isMobileMenuOpen, closeMobileMenu }: { isMobil
   const checkSuperAdminStatus = async () => {
     try {
       console.log('🚀 Calling is_super_admin RPC...');
+      
+      // Let's also try to get more detailed information
+      const { data: roleData, error: roleError } = await supabase
+        .from('user_roles')
+        .select(`
+          *,
+          roles (
+            name,
+            level
+          )
+        `)
+        .eq('user_id', session?.user?.id)
+        .eq('is_active', true);
+      
+      console.log('🎭 User roles data:', roleData);
+      console.log('🎭 User roles error:', roleError);
+      
       const { data, error } = await supabase.rpc('is_super_admin');
       console.log('📊 RPC is_super_admin data:', data);
       console.log('❌ RPC is_super_admin error:', error);
@@ -106,6 +123,7 @@ export default function Sidebar({ isMobileMenuOpen, closeMobileMenu }: { isMobil
   console.log('  - isSuperAdmin:', isSuperAdmin);
   console.log('  - userProfile:', userProfile);
   console.log('  - navigation items:', navigation.length);
+  console.log('  - session user id:', session?.user?.id);
 
   const sidebarClasses = `
     ${isMobileMenuOpen ? 'fixed inset-y-0 left-0 z-20 w-64' : 'hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 md:z-10'}
