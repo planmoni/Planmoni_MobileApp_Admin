@@ -7,7 +7,6 @@ import { Link } from 'react-router-dom';
 import { useDashboardData } from '@/hooks/queries/useDashboardData';
 import { useRefreshData } from '@/hooks/mutations/useRefreshData';
 import StatCard from '@/components/StatCard';
-import BannerCarousel from '@/components/BannerCarousel';
 import { Users, ArrowUpRight, ArrowDownRight, Calendar } from 'lucide-react';
 
 // Register ChartJS components
@@ -106,11 +105,6 @@ export default function Dashboard() {
         >
           <RefreshCw className={`h-5 w-5 text-primary dark:text-primary ${refreshData.isPending ? 'animate-spin' : ''}`} />
         </button>
-      </div>
-
-      {/* Banner Carousel */}
-      <div className="mb-6">
-        <BannerCarousel />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
