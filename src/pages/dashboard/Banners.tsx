@@ -16,7 +16,7 @@ export default function Banners() {
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold text-text dark:text-text flex items-center gap-2">
             <Image className="h-6 w-6 text-primary" />
@@ -26,7 +26,7 @@ export default function Banners() {
             Manage promotional banners displayed in the app
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 self-end sm:self-auto">
           <button 
             onClick={handleRefresh}
             className="p-2 rounded-full bg-background-tertiary dark:bg-background-tertiary hover:bg-background-secondary dark:hover:bg-background-secondary transition-colors"
@@ -41,7 +41,8 @@ export default function Banners() {
             {isAddingBanner ? 'Cancel' : (
               <>
                 <Plus className="h-4 w-4" />
-                Add Banner
+                <span className="hidden xs:inline">Add Banner</span>
+                <span className="xs:hidden">Add</span>
               </>
             )}
           </button>

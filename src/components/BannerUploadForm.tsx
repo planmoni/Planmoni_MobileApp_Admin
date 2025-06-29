@@ -146,7 +146,7 @@ export default function BannerUploadForm() {
   const isExternalUrl = linkUrl.startsWith('http://') || linkUrl.startsWith('https://');
 
   return (
-    <Card title="Upload Banner" className="max-w-2xl">
+    <Card title="Upload Banner" className="max-w-full md:max-w-2xl">
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* File Upload Section */}
         <div>
@@ -158,7 +158,7 @@ export default function BannerUploadForm() {
           </p>
           
           {!selectedFile ? (
-            <div className="border-2 border-dashed border-border dark:border-border rounded-lg p-8 text-center hover:border-primary dark:hover:border-primary-light transition-colors">
+            <div className="border-2 border-dashed border-border dark:border-border rounded-lg p-4 sm:p-8 text-center hover:border-primary dark:hover:border-primary-light transition-colors">
               <input
                 id="banner-file"
                 type="file"
@@ -170,20 +170,20 @@ export default function BannerUploadForm() {
                 htmlFor="banner-file"
                 className="cursor-pointer flex flex-col items-center"
               >
-                <Upload className="h-12 w-12 text-text-tertiary dark:text-text-tertiary mb-4" />
-                <span className="text-text dark:text-text font-medium mb-2">
+                <Upload className="h-8 w-8 sm:h-12 sm:w-12 text-text-tertiary dark:text-text-tertiary mb-2 sm:mb-4" />
+                <span className="text-sm sm:text-base text-text dark:text-text font-medium mb-1 sm:mb-2">
                   Click to upload banner image
                 </span>
-                <span className="text-text-secondary dark:text-text-secondary text-sm">
+                <span className="text-xs sm:text-sm text-text-secondary dark:text-text-secondary">
                   PNG, JPG, GIF up to 5MB
                 </span>
               </label>
             </div>
           ) : (
             <div className="relative">
-              <div className="border border-border dark:border-border rounded-lg p-4 bg-background-tertiary dark:bg-background-tertiary">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-sm font-medium text-text dark:text-text">
+              <div className="border border-border dark:border-border rounded-lg p-3 sm:p-4 bg-background-tertiary dark:bg-background-tertiary">
+                <div className="flex items-center justify-between mb-2 sm:mb-3">
+                  <span className="text-xs sm:text-sm font-medium text-text dark:text-text truncate max-w-[calc(100%-40px)]">
                     {selectedFile.name}
                   </span>
                   <button
@@ -196,7 +196,7 @@ export default function BannerUploadForm() {
                 </div>
                 
                 {previewUrl && (
-                  <div className="mt-3">
+                  <div className="mt-2 sm:mt-3">
                     <img
                       src={previewUrl}
                       alt="Banner preview"
@@ -204,7 +204,7 @@ export default function BannerUploadForm() {
                       style={{ maxHeight: '200px' }}
                     />
                     {imageWidth && imageHeight && (
-                      <p className="mt-2 text-xs text-text-secondary dark:text-text-secondary">
+                      <p className="mt-1 sm:mt-2 text-xs text-text-secondary dark:text-text-secondary">
                         Image dimensions: {imageWidth} × {imageHeight} pixels
                       </p>
                     )}
