@@ -80,8 +80,8 @@ export default function Banners() {
             <p className="text-sm text-text-secondary dark:text-text-secondary mb-4">
               This is how your banners will appear to users on the dashboard:
             </p>
-            <div className="w-full max-w-4xl mx-auto">
-              <BannerCarousel />
+            <div className="w-full max-w-3xl mx-auto">
+              <BannerCarousel maxHeight="max-h-48 sm:max-h-56" />
             </div>
           </div>
         </Card>
