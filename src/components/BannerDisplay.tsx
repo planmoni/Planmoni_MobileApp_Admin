@@ -2,7 +2,6 @@ import { ExternalLink, Eye, EyeOff, Trash2 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/contexts/ToastContext';
-import { useAuth } from '@/contexts/AuthContext';
 import Card from './Card';
 import BannerCarousel from './BannerCarousel';
 

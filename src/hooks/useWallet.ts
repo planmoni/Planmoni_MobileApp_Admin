@@ -26,7 +26,7 @@ export function useWallet() {
 
       if (walletError) throw walletError;
       if (data) {
-        setBalance(data.available_balance);
+        setBalance(data.balance);
         setLockedBalance(data.locked_balance);
       }
     } catch (err) {
