@@ -1,11 +1,9 @@
-import { Link } from 'react-router-dom';
 import { ExternalLink, Eye, EyeOff, Trash2 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/contexts/ToastContext';
 import { useAuth } from '@/contexts/AuthContext';
 import Card from './Card';
-import Button from './Button';
 import BannerCarousel from './BannerCarousel';
 
 interface Banner {
@@ -27,7 +25,6 @@ interface BannerDisplayProps {
 }
 
 export default function BannerDisplay({ showAdminControls = false, className = '' }: BannerDisplayProps) {
-  const { session } = useAuth();
   const { showToast } = useToast();
   const queryClient = useQueryClient();
 

@@ -281,6 +281,9 @@ const fetchDashboardDataFallback = async (): Promise<DashboardStats> => {
   console.log('This month:', thisMonthStart.toISOString(), 'to', thisMonthEnd.toISOString());
   console.log('Last month:', lastMonthStart.toISOString(), 'to', lastMonthEnd.toISOString());
   
+  // Calculate trends using the dedicated function
+  const trends = await calculateTrends();
+  
   // Fetch user growth data
   const { data: thisMonthUsers, error: thisMonthUsersError } = await supabase
     .from('profiles')
@@ -447,10 +450,10 @@ const fetchDashboardDataFallback = async (): Promise<DashboardStats> => {
     recentTransactions: await getRecentTransactions(),
     recentUsers: await getRecentUsers(),
     transactionTrends: transactionTrends,
-    userGrowthTrend: thisMonthUserCount - lastMonthUserCount,
-    depositsTrend: thisMonthVolume - lastMonthVolume,
-    payoutsTrend: thisMonthPayoutsTotal - lastMonthPayoutsTotal,
-    plansTrend: thisMonthPlansCount - lastMonthPlansCount,
+    userGrowthTrend: trends.userGrowthTrend,
+    depositsTrend: trends.depositsTrend,
+    payoutsTrend: trends.payoutsTrend,
+    plansTrend: trends.plansTrend,
   };
 
   console.log('🎯 Final analytics data:', finalAnalyticsData);
