@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { Shield, Bell, Database, Key, LogOut, Image } from 'lucide-react';
+import { Shield, Bell, Database, Key, LogOut } from 'lucide-react';
 import Card from '../../components/Card';
 import Button from '../../components/Button';
 
