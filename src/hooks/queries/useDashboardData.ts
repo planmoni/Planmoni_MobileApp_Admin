@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
-import { subDays, startOfMonth, endOfMonth, subMonths } from 'date-fns';
+import { subDays, startOfMonth, endOfMonth, subMonths, format } from 'date-fns';
 
 type DashboardStats = {
   totalUsers: number;
@@ -81,6 +81,9 @@ const fetchDashboardData = async (): Promise<DashboardStats> => {
     // Count unique active users
     const uniqueActiveUsers = new Set(activeUserData?.map(t => t.user_id) || []).size;
     
+    // Fetch transaction trends for the last 7 days
+    const transactionTrends = await fetchTransactionTrends();
+    
     return {
       totalUsers: mainStats.total_users || 0,
       totalDeposits: mainStats.total_deposits || 0,
@@ -89,7 +92,7 @@ const fetchDashboardData = async (): Promise<DashboardStats> => {
       activeUsers: uniqueActiveUsers,
       recentTransactions: recentTransactions || [],
       recentUsers: recentUsers || [],
-      transactionTrends: mainStats.transaction_trends || [],
+      transactionTrends: transactionTrends,
       userGrowthTrend: trends.userGrowthTrend,
       depositsTrend: trends.depositsTrend,
       payoutsTrend: trends.payoutsTrend,
@@ -228,48 +231,290 @@ const calculateTrends = async () => {
   return finalTrends;
 };
 
+// New function to fetch accurate transaction trends for the last 7 days
+const fetchTransactionTrends = async () => {
+  const trends = [];
+  
+  // Fetch transaction counts for the last 7 days
+  for (let i = 6; i >= 0; i--) {
+    const date = subDays(new Date(), i);
+    const startOfDay = new Date(date);
+    startOfDay.setHours(0, 0, 0, 0);
+    
+    const endOfDay = new Date(date);
+    endOfDay.setHours(23, 59, 59, 999);
+    
+    const { count, error } = await supabase
+      .from('transactions')
+      .select('*', { count: 'exact', head: true })
+      .gte('created_at', startOfDay.toISOString())
+      .lte('created_at', endOfDay.toISOString());
+    
+    if (error) {
+      console.error('Error fetching transaction trend data:', error);
+      trends.push({ 
+        day: format(date, 'yyyy-MM-dd'),
+        total_transactions: 0 
+      });
+    } else {
+      trends.push({ 
+        day: format(date, 'yyyy-MM-dd'),
+        total_transactions: count || 0 
+      });
+    }
+  }
+  
+  console.log('📊 Transaction trends data:', trends);
+  return trends;
+};
+
 const fetchDashboardDataFallback = async (): Promise<DashboardStats> => {
   console.log('🔄 Using fallback dashboard data fetch');
   
-  // Calculate trends first
-  const trends = await calculateTrends();
+  const today = new Date();
+  const thisMonthStart = startOfMonth(today);
+  const thisMonthEnd = endOfMonth(today);
+  const lastMonthStart = startOfMonth(subMonths(today, 1));
+  const lastMonthEnd = endOfMonth(subMonths(today, 1));
+  
+  console.log('📅 Analytics date ranges:');
+  console.log('This month:', thisMonthStart.toISOString(), 'to', thisMonthEnd.toISOString());
+  console.log('Last month:', lastMonthStart.toISOString(), 'to', lastMonthEnd.toISOString());
+  
+  // Fetch user growth data
+  const { data: thisMonthUsers, error: thisMonthUsersError } = await supabase
+    .from('profiles')
+    .select('created_at')
+    .gte('created_at', thisMonthStart.toISOString())
+    .lte('created_at', thisMonthEnd.toISOString());
+  
+  if (thisMonthUsersError) throw thisMonthUsersError;
+  
+  const { data: lastMonthUsers, error: lastMonthUsersError } = await supabase
+    .from('profiles')
+    .select('created_at')
+    .gte('created_at', lastMonthStart.toISOString())
+    .lte('created_at', lastMonthEnd.toISOString());
+  
+  if (lastMonthUsersError) throw lastMonthUsersError;
+  
+  const thisMonthUserCount = thisMonthUsers?.length || 0;
+  const lastMonthUserCount = lastMonthUsers?.length || 0;
+  
+  console.log('👥 Analytics user counts:');
+  console.log('This month users:', thisMonthUserCount);
+  console.log('Last month users:', lastMonthUserCount);
+  
+  // Fixed trend calculation logic
+  const userPercentChange = lastMonthUserCount === 0 
+    ? (thisMonthUserCount > 0 ? 100 : 0)
+    : Math.round(((thisMonthUserCount - lastMonthUserCount) / lastMonthUserCount) * 100);
+  
+  console.log('📈 Analytics user percent change calculated:', userPercentChange + '%');
+  
+  // Fetch monthly user growth for the last 6 months
+  const monthlyUserData = [];
+  for (let i = 5; i >= 0; i--) {
+    const monthStart = startOfMonth(subMonths(today, i));
+    const monthEnd = endOfMonth(subMonths(today, i));
+    
+    const { data: monthUsers, error: monthUsersError } = await supabase
+      .from('profiles')
+      .select('created_at')
+      .gte('created_at', monthStart.toISOString())
+      .lte('created_at', monthEnd.toISOString());
+    
+    if (monthUsersError) throw monthUsersError;
+    
+    monthlyUserData.push(monthUsers?.length || 0);
+  }
+  
+  // Fetch transaction volume data
+  const { data: thisMonthTransactions, error: thisMonthTransactionsError } = await supabase
+    .from('transactions')
+    .select('amount')
+    .gte('created_at', thisMonthStart.toISOString())
+    .lte('created_at', thisMonthEnd.toISOString());
+  
+  if (thisMonthTransactionsError) throw thisMonthTransactionsError;
+  
+  const { data: lastMonthTransactions, error: lastMonthTransactionsError } = await supabase
+    .from('transactions')
+    .select('amount')
+    .gte('created_at', lastMonthStart.toISOString())
+    .lte('created_at', lastMonthEnd.toISOString());
+  
+  if (lastMonthTransactionsError) throw lastMonthTransactionsError;
+  
+  const thisMonthVolume = thisMonthTransactions?.reduce((sum, t) => sum + t.amount, 0) || 0;
+  const lastMonthVolume = lastMonthTransactions?.reduce((sum, t) => sum + t.amount, 0) || 0;
+  
+  console.log('💰 Analytics transaction volumes:');
+  console.log('This month volume:', thisMonthVolume);
+  console.log('Last month volume:', lastMonthVolume);
+  
+  // Fixed trend calculation logic
+  const volumePercentChange = lastMonthVolume === 0 
+    ? (thisMonthVolume > 0 ? 100 : 0)
+    : Math.round(((thisMonthVolume - lastMonthVolume) / lastMonthVolume) * 100);
+  
+  console.log('📈 Analytics volume percent change calculated:', volumePercentChange + '%');
+  
+  // Fetch monthly transaction volume for the last 6 months
+  const monthlyVolumeData = [];
+  for (let i = 5; i >= 0; i--) {
+    const monthStart = startOfMonth(subMonths(today, i));
+    const monthEnd = endOfMonth(subMonths(today, i));
+    
+    const { data: monthTransactions, error: monthTransactionsError } = await supabase
+      .from('transactions')
+      .select('amount')
+      .gte('created_at', monthStart.toISOString())
+      .lte('created_at', monthEnd.toISOString());
+    
+    if (monthTransactionsError) throw monthTransactionsError;
+    
+    monthlyVolumeData.push(monthTransactions?.reduce((sum, t) => sum + t.amount, 0) || 0);
+  }
+  
+  // Fetch payout plan distribution
+  const { data: payoutPlans, error: payoutPlansError } = await supabase
+    .from('payout_plans')
+    .select('frequency');
+  
+  if (payoutPlansError) throw payoutPlansError;
+  
+  const weeklyPlans = payoutPlans?.filter(p => p.frequency === 'weekly').length || 0;
+  const biweeklyPlans = payoutPlans?.filter(p => p.frequency === 'biweekly').length || 0;
+  const monthlyPlans = payoutPlans?.filter(p => p.frequency === 'monthly').length || 0;
+  const customPlans = payoutPlans?.filter(p => p.frequency === 'custom').length || 0;
+  
+  // Calculate retention rate (users who have made at least 2 transactions)
+  const { data: activeUsers, error: activeUsersError } = await supabase
+    .from('transactions')
+    .select('user_id')
+    .eq('status', 'completed')
+    .gte('created_at', subMonths(today, 1).toISOString());
+  
+  if (activeUsersError) throw activeUsersError;
+  
+  // Count transactions per user
+  const userTransactionCounts = activeUsers?.reduce((acc: Record<string, number>, transaction) => {
+    acc[transaction.user_id] = (acc[transaction.user_id] || 0) + 1;
+    return acc;
+  }, {}) || {};
+  
+  const usersWithMultipleTransactions = Object.values(userTransactionCounts).filter((count: number) => count >= 2).length;
+  const totalUsersWithTransactions = Object.keys(userTransactionCounts).length;
+  
+  const retentionRate = totalUsersWithTransactions === 0 
+    ? 0 
+    : (usersWithMultipleTransactions / totalUsersWithTransactions) * 100;
+  
+  // Fetch accurate transaction trends for the last 7 days
+  const transactionTrends = await fetchTransactionTrends();
+  
+  const finalAnalyticsData = {
+    userGrowth: {
+      this_month: thisMonthUserCount,
+      last_month: lastMonthUserCount,
+      percent_change: userPercentChange,
+      monthly_data: monthlyUserData,
+    },
+    transactionVolume: {
+      this_month: thisMonthVolume,
+      last_month: lastMonthVolume,
+      percent_change: volumePercentChange,
+      monthly_data: monthlyVolumeData,
+    },
+    payoutDistribution: {
+      weekly: weeklyPlans,
+      biweekly: biweeklyPlans,
+      monthly: monthlyPlans,
+      custom: customPlans,
+    },
+    retentionRate: {
+      value: retentionRate,
+      trend: retentionRate >= 0 ? 'up' : 'down',
+      percent_change: 0, // Would need historical data to calculate
+    },
+    dailyTransactions: [],
+    totalUsers: await getTotalUsers(),
+    totalDeposits: await getTotalDeposits(),
+    totalPayouts: await getTotalPayouts(),
+    totalPlans: await getTotalPlans(),
+    activeUsers: totalUsersWithTransactions,
+    recentTransactions: await getRecentTransactions(),
+    recentUsers: await getRecentUsers(),
+    transactionTrends: transactionTrends,
+    userGrowthTrend: thisMonthUserCount - lastMonthUserCount,
+    depositsTrend: thisMonthVolume - lastMonthVolume,
+    payoutsTrend: thisMonthPayoutsTotal - lastMonthPayoutsTotal,
+    plansTrend: thisMonthPlansCount - lastMonthPlansCount,
+  };
 
-  // Fetch total users
-  const { count: userCount, error: userError } = await supabase
+  console.log('🎯 Final analytics data:', finalAnalyticsData);
+  
+  return finalAnalyticsData;
+};
+
+// Helper functions for the fallback method
+const getTotalUsers = async () => {
+  const { count, error } = await supabase
     .from('profiles')
     .select('*', { count: 'exact', head: true });
   
-  if (userError) throw userError;
+  if (error) {
+    console.error('Error fetching total users:', error);
+    return 0;
+  }
   
-  // Fetch total deposits
-  const { data: deposits, error: depositError } = await supabase
+  return count || 0;
+};
+
+const getTotalDeposits = async () => {
+  const { data, error } = await supabase
     .from('transactions')
     .select('amount')
     .eq('type', 'deposit');
   
-  if (depositError) throw depositError;
+  if (error) {
+    console.error('Error fetching total deposits:', error);
+    return 0;
+  }
   
-  const totalDeposits = deposits?.reduce((sum, transaction) => sum + transaction.amount, 0) || 0;
-  
-  // Fetch total payouts
-  const { data: payouts, error: payoutError } = await supabase
+  return data?.reduce((sum, t) => sum + t.amount, 0) || 0;
+};
+
+const getTotalPayouts = async () => {
+  const { data, error } = await supabase
     .from('transactions')
     .select('amount')
     .eq('type', 'payout');
   
-  if (payoutError) throw payoutError;
+  if (error) {
+    console.error('Error fetching total payouts:', error);
+    return 0;
+  }
   
-  const totalPayouts = payouts?.reduce((sum, transaction) => sum + transaction.amount, 0) || 0;
-  
-  // Fetch total plans
-  const { count: planCount, error: planError } = await supabase
+  return data?.reduce((sum, t) => sum + t.amount, 0) || 0;
+};
+
+const getTotalPlans = async () => {
+  const { count, error } = await supabase
     .from('payout_plans')
     .select('*', { count: 'exact', head: true });
   
-  if (planError) throw planError;
+  if (error) {
+    console.error('Error fetching total plans:', error);
+    return 0;
+  }
   
-  // Fetch recent transactions
-  const { data: recentTransactions, error: recentTransactionsError } = await supabase
+  return count || 0;
+};
+
+const getRecentTransactions = async () => {
+  const { data, error } = await supabase
     .from('transactions')
     .select(`
       id,
@@ -287,64 +532,27 @@ const fetchDashboardDataFallback = async (): Promise<DashboardStats> => {
     .order('created_at', { ascending: false })
     .limit(5);
   
-  if (recentTransactionsError) throw recentTransactionsError;
+  if (error) {
+    console.error('Error fetching recent transactions:', error);
+    return [];
+  }
   
-  // Fetch recent users
-  const { data: recentUsers, error: recentUsersError } = await supabase
+  return data || [];
+};
+
+const getRecentUsers = async () => {
+  const { data, error } = await supabase
     .from('profiles')
     .select('id, first_name, last_name, email, created_at')
     .order('created_at', { ascending: false })
     .limit(5);
   
-  if (recentUsersError) throw recentUsersError;
-  
-  // Generate transaction trends for last 7 days
-  const transactionTrends = await generateTrendData();
-  
-  return {
-    totalUsers: userCount || 0,
-    totalDeposits,
-    totalPayouts,
-    totalPlans: planCount || 0,
-    activeUsers: 0, // Will be calculated separately
-    recentTransactions: recentTransactions || [],
-    recentUsers: recentUsers || [],
-    transactionTrends,
-    userGrowthTrend: trends.userGrowthTrend,
-    depositsTrend: trends.depositsTrend,
-    payoutsTrend: trends.payoutsTrend,
-    plansTrend: trends.plansTrend,
-  };
-};
-
-const generateTrendData = async () => {
-  const trends = [];
-  
-  for (let i = 6; i >= 0; i--) {
-    const date = subDays(new Date(), i);
-    const startOfDay = new Date(date.setHours(0, 0, 0, 0)).toISOString();
-    const endOfDay = new Date(date.setHours(23, 59, 59, 999)).toISOString();
-    
-    try {
-      const { count, error } = await supabase
-        .from('transactions')
-        .select('*', { count: 'exact', head: true })
-        .gte('created_at', startOfDay)
-        .lte('created_at', endOfDay);
-      
-      if (error) {
-        console.error('Error fetching trend data:', error);
-        trends.push({ day: date.toISOString(), total_transactions: 0 });
-      } else {
-        trends.push({ day: date.toISOString(), total_transactions: count || 0 });
-      }
-    } catch (err) {
-      console.error('Error in trend data:', err);
-      trends.push({ day: date.toISOString(), total_transactions: 0 });
-    }
+  if (error) {
+    console.error('Error fetching recent users:', error);
+    return [];
   }
   
-  return trends;
+  return data || [];
 };
 
 export const useDashboardData = () => {
