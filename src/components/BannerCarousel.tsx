@@ -54,7 +54,6 @@ export default function BannerCarousel({
         <div className={`w-[600px] ${maxHeight} overflow-hidden rounded-2xl flex items-center justify-center`}>
           <img
             src={banner.image_url}
-            alt={banner.title}
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
             style={{ maxHeight: '100%', maxWidth: '100%' }}
             onError={(e) => {
