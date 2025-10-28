@@ -17,8 +17,8 @@ interface BannerCarouselProps {
 
 export default function BannerCarousel({
   className = '',
-  maxHeight = 'max-h-94',
-  showControls = true
+  maxHeight = 'max-h-64',
+  showControls = false
 }: BannerCarouselProps) {
   const { data: banners, isLoading, error } = useBanners(true);
   const [swiperInitialized, setSwiperInitialized] = useState(false);
