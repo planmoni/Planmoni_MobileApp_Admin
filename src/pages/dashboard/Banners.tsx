@@ -66,14 +66,14 @@ export default function Banners() {
       )}
 
       <div className="space-y-8">
-        <div className=" bg-white rounded-2xl p-6 border border-gray-100">
+        <div className="bg-white rounded-2xl p-4 md:p-6 border border-gray-100">
           <div className="mb-6">
-            <h3 className="text-lg font-semibold text-gray-900">Banner Preview</h3>
+            <h3 className="text-base md:text-lg font-semibold text-gray-900">Banner Preview</h3>
             <p className="text-sm text-gray-500 mt-1">
               This is how your banners will appear to users on the dashboard
             </p>
           </div>
-          <div className="w-[600] max-w-500 mx-auto">
+          <div className="max-w-2xl mx-auto">
             <BannerCarousel maxHeight="max-h-48 sm:max-h-56" />
           </div>
         </div>

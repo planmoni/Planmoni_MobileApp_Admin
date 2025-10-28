@@ -171,9 +171,9 @@ export default function PayoutEvents() {
         </button>
       </div>
 
-      <div className="bg-white rounded-2xl p-6 shadow-soft border border-gray-100 mb-6">
-        <div className="flex flex-col lg:flex-row gap-4">
-          <div className="flex-1 relative">
+      <div className="bg-white rounded-2xl p-4 md:p-6 shadow-soft border border-gray-100 mb-6">
+        <div className="flex flex-col gap-3">
+          <div className="relative">
             <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
             <input
               type="text"
@@ -187,23 +187,21 @@ export default function PayoutEvents() {
             />
           </div>
 
-          <div className="flex gap-3">
-            <div className="relative">
-              <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <select
-                value={statusFilter}
-                onChange={(e) => {
-                  setStatusFilter(e.target.value as any);
-                  setCurrentPage(1);
-                }}
-                className="pl-10 pr-8 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all appearance-none bg-white cursor-pointer"
-              >
-                <option value="all">All Status</option>
-                <option value="processing">Processing</option>
-                <option value="completed">Completed</option>
-                <option value="failed">Failed</option>
-              </select>
-            </div>
+          <div className="relative">
+            <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+            <select
+              value={statusFilter}
+              onChange={(e) => {
+                setStatusFilter(e.target.value as any);
+                setCurrentPage(1);
+              }}
+              className="w-full pl-10 pr-3 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all appearance-none bg-white cursor-pointer text-sm"
+            >
+              <option value="all">All Status</option>
+              <option value="processing">Processing</option>
+              <option value="completed">Completed</option>
+              <option value="failed">Failed</option>
+            </select>
           </div>
         </div>
 
@@ -237,7 +235,8 @@ export default function PayoutEvents() {
 
       <div className="bg-white rounded-2xl shadow-soft border border-gray-100 overflow-hidden">
         {events && events.length > 0 ? (
-          <div className="overflow-x-auto">
+          <>
+            <div className="hidden md:block overflow-x-auto">
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-100">
                 <tr>
@@ -346,6 +345,93 @@ export default function PayoutEvents() {
               </tbody>
             </table>
           </div>
+
+          <div className="md:hidden divide-y divide-gray-100">
+            {events.map((event: any) => (
+              <div
+                key={event.id}
+                className="p-4 hover:bg-gray-50 transition-colors cursor-pointer"
+                onClick={() => navigate(`/users/${event.user_id}`)}
+              >
+                <div className="flex items-start gap-3 mb-3">
+                  <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-primary-light flex items-center justify-center text-white shadow-sm">
+                    {event.user?.first_name && event.user?.last_name ? (
+                      <span className="text-sm font-semibold">
+                        {event.user.first_name[0]}{event.user.last_name[0]}
+                      </span>
+                    ) : (
+                      <User className="h-5 w-5" />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    {event.user?.first_name && event.user?.last_name && (
+                      <div className="font-semibold text-gray-900 mb-0.5">
+                        {event.user.first_name} {event.user.last_name}
+                      </div>
+                    )}
+                    <div className="text-sm text-gray-500 truncate">{event.user?.email}</div>
+                  </div>
+                  <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium ${getStatusColor(event.status)} flex-shrink-0`}>
+                    {getStatusIcon(event.status)}
+                    <span className="ml-1 capitalize">{event.status}</span>
+                  </span>
+                </div>
+
+                <div className="space-y-2.5">
+                  {event.payout_plan && (
+                    <div>
+                      <div className="text-sm font-semibold text-gray-900 mb-0.5">{event.payout_plan.name}</div>
+                      <div className="text-xs text-gray-500 capitalize">{event.payout_plan.frequency}</div>
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-2 gap-3 pt-2 border-t border-gray-100">
+                    <div>
+                      <div className="text-xs text-gray-500 mb-0.5">Amount</div>
+                      <div className="text-sm font-semibold text-gray-900">
+                        {new Intl.NumberFormat('en-NG', {
+                          style: 'currency',
+                          currency: 'NGN',
+                          notation: 'compact'
+                        }).format(event.amount || 0)}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-gray-500 mb-0.5">Scheduled</div>
+                      <div className="text-sm text-gray-900">
+                        {event.scheduled_date ? format(new Date(event.scheduled_date), 'MMM d, yyyy') : 'N/A'}
+                      </div>
+                    </div>
+                  </div>
+
+                  {event.transfer_reference && (
+                    <div className="pt-2 border-t border-gray-100">
+                      <div className="text-xs text-gray-500 mb-1">Transfer Reference</div>
+                      <div className="text-xs text-gray-600 font-mono break-all">
+                        {event.transfer_reference}
+                      </div>
+                    </div>
+                  )}
+
+                  {event.error_message && (
+                    <div className="pt-2 border-t border-gray-100">
+                      <div className="text-xs text-red-600 bg-red-50 p-2 rounded">
+                        {event.error_message}
+                      </div>
+                    </div>
+                  )}
+
+                  {event.execution_date && (
+                    <div className="flex items-center gap-1.5 text-xs text-gray-500 pt-2 border-t border-gray-100">
+                      <Calendar className="h-3 w-3" />
+                      Executed: {format(new Date(event.execution_date), 'MMM d, yyyy h:mm a')}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+          </>
         ) : (
           <div className="text-center py-12">
             <DollarSign className="h-12 w-12 mx-auto mb-4 text-gray-300" />
@@ -358,10 +444,11 @@ export default function PayoutEvents() {
         )}
 
         {totalPages > 1 && (
-          <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between">
-            <div className="text-sm text-gray-500">
-              Showing {((currentPage - 1) * pageSize) + 1} to {Math.min(currentPage * pageSize, totalCount)} of {totalCount} results
-            </div>
+          <div className="px-4 md:px-6 py-4 border-t border-gray-100">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-3">
+              <div className="text-sm text-gray-500 text-center md:text-left">
+                Showing {((currentPage - 1) * pageSize) + 1} to {Math.min(currentPage * pageSize, totalCount)} of {totalCount} results
+              </div>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
@@ -388,7 +475,7 @@ export default function PayoutEvents() {
                     <button
                       key={pageNum}
                       onClick={() => setCurrentPage(pageNum)}
-                      className={`px-3 py-2 rounded-lg transition-colors ${
+                      className={`px-3 py-2 rounded-lg transition-colors text-sm ${
                         currentPage === pageNum
                           ? 'bg-gray-900 text-white'
                           : 'border border-gray-200 hover:bg-gray-50'
@@ -407,6 +494,7 @@ export default function PayoutEvents() {
               >
                 <ChevronRight className="h-4 w-4" />
               </button>
+            </div>
             </div>
           </div>
         )}
