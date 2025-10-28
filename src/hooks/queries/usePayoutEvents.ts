@@ -4,14 +4,15 @@ import { supabase } from '@/lib/supabase';
 export interface PayoutEvent {
   id: string;
   user_id: string;
-  type: string;
-  title: string;
-  description: string;
-  status: string;
   payout_plan_id?: string;
-  transaction_id?: string;
+  scheduled_date: string;
+  execution_date?: string;
+  status: string;
+  amount: number;
+  transfer_reference?: string;
+  error_message?: string;
+  completed_at?: string;
   created_at: string;
-  metadata?: any;
   user?: {
     email: string;
     first_name?: string;
@@ -27,21 +28,21 @@ export interface PayoutEvent {
 
 export interface PayoutEventStats {
   total: number;
-  pending: number;
+  processing: number;
   completed: number;
   failed: number;
-  scheduled: number;
+  usersWithUpcomingPayouts: number;
 }
 
-export function usePayoutEvents(searchQuery?: string, statusFilter?: string, typeFilter?: string) {
+export function usePayoutEvents(searchQuery?: string, statusFilter?: string) {
   return useQuery({
-    queryKey: ['payout-events', searchQuery, statusFilter, typeFilter],
+    queryKey: ['payout-events', searchQuery, statusFilter],
     queryFn: async () => {
-      let eventsQuery = supabase
-        .from('events')
+      let payoutsQuery = supabase
+        .from('automated_payouts')
         .select(`
           *,
-          profiles!events_user_id_fkey (
+          profiles!automated_payouts_user_id_fkey (
             email,
             first_name,
             last_name
@@ -50,52 +51,59 @@ export function usePayoutEvents(searchQuery?: string, statusFilter?: string, typ
         .order('created_at', { ascending: false });
 
       if (statusFilter && statusFilter !== 'all') {
-        eventsQuery = eventsQuery.eq('status', statusFilter);
+        payoutsQuery = payoutsQuery.eq('status', statusFilter);
       }
 
-      if (typeFilter && typeFilter !== 'all') {
-        eventsQuery = eventsQuery.eq('type', typeFilter);
-      }
-
-      const [eventsResult, plansResult] = await Promise.all([
-        eventsQuery,
+      const [payoutsResult, plansResult, upcomingUsersResult] = await Promise.all([
+        payoutsQuery,
         supabase
           .from('payout_plans')
-          .select('id, name, payout_amount, frequency, status')
+          .select('id, name, payout_amount, frequency, status'),
+        supabase
+          .from('payout_plans')
+          .select('user_id')
+          .eq('status', 'active')
+          .not('next_payout_date', 'is', null)
+          .gt('next_payout_date', new Date().toISOString())
       ]);
 
-      if (eventsResult.error) throw eventsResult.error;
+      if (payoutsResult.error) throw payoutsResult.error;
       if (plansResult.error) throw plansResult.error;
+      if (upcomingUsersResult.error) throw upcomingUsersResult.error;
 
       const plansMap = new Map(
         (plansResult.data || []).map((plan: any) => [plan.id, plan])
       );
 
-      let events = (eventsResult.data || []).map((event: any) => ({
-        ...event,
-        user: event.profiles,
-        payout_plan: event.payout_plan_id ? plansMap.get(event.payout_plan_id) : null
+      const uniqueUsersWithUpcomingPayouts = new Set(
+        (upcomingUsersResult.data || []).map((plan: any) => plan.user_id)
+      ).size;
+
+      let events = (payoutsResult.data || []).map((payout: any) => ({
+        ...payout,
+        user: payout.profiles,
+        payout_plan: payout.payout_plan_id ? plansMap.get(payout.payout_plan_id) : null
       }));
 
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
         events = events.filter((event: any) =>
-          event.title?.toLowerCase().includes(query) ||
-          event.description?.toLowerCase().includes(query) ||
-          event.type?.toLowerCase().includes(query) ||
           event.status?.toLowerCase().includes(query) ||
+          event.transfer_reference?.toLowerCase().includes(query) ||
+          event.amount?.toString().includes(query) ||
           event.user?.email?.toLowerCase().includes(query) ||
           event.user?.first_name?.toLowerCase().includes(query) ||
-          event.user?.last_name?.toLowerCase().includes(query)
+          event.user?.last_name?.toLowerCase().includes(query) ||
+          event.payout_plan?.name?.toLowerCase().includes(query)
         );
       }
 
       const stats: PayoutEventStats = {
         total: events.length,
-        pending: events.filter((e: any) => e.status === 'pending').length,
+        processing: events.filter((e: any) => e.status === 'processing').length,
         completed: events.filter((e: any) => e.status === 'completed').length,
         failed: events.filter((e: any) => e.status === 'failed').length,
-        scheduled: events.filter((e: any) => e.status === 'scheduled').length,
+        usersWithUpcomingPayouts: uniqueUsersWithUpcomingPayouts,
       };
 
       return { events, stats };
