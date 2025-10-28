@@ -176,7 +176,7 @@ export default function Users() {
             placeholder="Search users..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="block w-full pl-10 md:pl-11 pr-3 md:pr-4 py-2.5 md:py-3 text-sm md:text-base border border-gray-200 rounded-xl bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all"
+            className="block w-full pl-10 md:pl-11 pr-3 md:pr-4 py-2.5 md:py-3 text-md md:text-base border border-gray-200 rounded-xl bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all"
           />
         </div>
         <div className="flex overflow-x-auto pb-2 -mx-1 px-1 space-x-2 scrollbar-hide">
