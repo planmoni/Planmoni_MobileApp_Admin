@@ -15,27 +15,23 @@ export default function DashboardLayout() {
   };
 
   return (
-    <div className="flex h-screen bg-background-secondary">
-      {/* Sidebar for desktop and mobile */}
+    <div className="flex h-screen bg-gray-50">
       <Sidebar isMobileMenuOpen={isMobileMenuOpen} closeMobileMenu={closeMobileMenu} />
 
-      {/* Mobile menu overlay */}
       {isMobileMenuOpen && (
-        <div 
-          className="md:hidden fixed inset-0 z-10 bg-black bg-opacity-50" 
+        <div
+          className="md:hidden fixed inset-0 z-10 bg-black bg-opacity-50"
           onClick={closeMobileMenu}
         ></div>
       )}
 
-      {/* Mobile menu button */}
-      <div className="md:hidden fixed top-0 left-0 right-0 z-10 bg-white border-b border-border">
+      <div className="md:hidden fixed top-0 left-0 right-0 z-10 bg-white border-b border-gray-100">
         <div className="flex items-center justify-between h-16 px-4">
           <img
             src="/assets/images/Planmoni-Office.png"
             alt="Planmoni Office"
             className="h-6 w-auto"
             onError={(e) => {
-              // Fallback to text if image fails to load
               e.currentTarget.style.display = 'none';
               const nextElement = e.currentTarget.nextElementSibling as HTMLElement;
               if (nextElement) {
@@ -48,20 +44,16 @@ export default function DashboardLayout() {
           </h1>
           <button
             onClick={toggleMobileMenu}
-            className="p-2 rounded-md text-text-secondary hover:text-text"
+            className="p-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-colors"
           >
             {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
           </button>
         </div>
       </div>
 
-      {/* Main content */}
       <div className="flex flex-col flex-1 md:pl-64">
-        <header className="sticky top-0 z-10 md:flex items-center justify-between h-16 bg-white border-b border-border px-4 hidden">
-          <h1 className="text-xl font-bold text-text">Dashboard</h1>
-        </header>
         <main className="flex-1 overflow-y-auto pt-16 md:pt-0">
-          <div className="py-6">
+          <div className="py-8">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
               <Outlet />
             </div>

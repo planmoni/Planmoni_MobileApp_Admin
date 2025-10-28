@@ -1,7 +1,5 @@
 import { ReactNode } from 'react';
-import { useTheme } from '@/contexts/ThemeContext';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
-import Card from './Card';
 
 type StatCardProps = {
   title: string;
@@ -12,11 +10,7 @@ type StatCardProps = {
 };
 
 export default function StatCard({ title, value, icon, trend = 0, className = '' }: StatCardProps) {
-  const { colors } = useTheme();
-
-  // Helper function to format trend value for display
   const formatTrendValue = (trendValue: number) => {
-    // For currency values (large numbers), format with K/M suffixes
     if (Math.abs(trendValue) >= 1000000) {
       return `${(trendValue / 1000000).toFixed(1)}M`;
     } else if (Math.abs(trendValue) >= 1000) {
@@ -26,36 +20,36 @@ export default function StatCard({ title, value, icon, trend = 0, className = ''
   };
 
   return (
-    <Card className={`p-4 ${className}`}>
-      <div className="flex justify-between items-center mb-3">
-        <p className="text-sm text-text-secondary dark:text-text-secondary font-medium">{title}</p>
-        <div 
-          className="w-10 h-10 rounded-full flex items-center justify-center"
-          style={{ backgroundColor: colors?.backgroundTertiary || '#f3f4f6' }}
-        >
+    <div className={`relative bg-white rounded-2xl p-6 shadow-soft hover:shadow-medium transition-all duration-300 border border-gray-100 ${className}`}>
+      <div className="flex justify-between items-start mb-4">
+        <div className="flex-1">
+          <p className="text-sm font-medium text-gray-500 mb-1">{title}</p>
+          <p className="text-3xl font-bold text-gray-900">{value}</p>
+        </div>
+        <div className="w-12 h-12 rounded-xl bg-gray-50 flex items-center justify-center">
           {icon}
         </div>
       </div>
-      <p className="text-2xl font-bold text-text dark:text-text mb-2">{value}</p>
-      
-      <div className="flex items-center gap-1">
-        {trend > 0 ? (
-          <TrendingUp size={16} color="#22C55E" />
-        ) : trend < 0 ? (
-          <TrendingDown size={16} color="#EF4444" />
-        ) : (
-          <Minus size={16} color="#94A3B8" />
-        )}
-        <span 
-          className="text-xs font-semibold"
-          style={{ 
-            color: trend > 0 ? '#22C55E' : trend < 0 ? '#EF4444' : '#94A3B8'
-          }}
-        >
-          {trend > 0 ? '+' : ''}{formatTrendValue(trend)}
-        </span>
-        <span className="text-xs text-text-tertiary dark:text-text-tertiary">vs last month</span>
+
+      <div className="flex items-center gap-2 pt-3 border-t border-gray-100">
+        <div className={`flex items-center gap-1 px-2 py-1 rounded-lg ${
+          trend > 0 ? 'bg-green-50' : trend < 0 ? 'bg-red-50' : 'bg-gray-50'
+        }`}>
+          {trend > 0 ? (
+            <TrendingUp size={14} className="text-green-600" />
+          ) : trend < 0 ? (
+            <TrendingDown size={14} className="text-red-600" />
+          ) : (
+            <Minus size={14} className="text-gray-400" />
+          )}
+          <span className={`text-xs font-semibold ${
+            trend > 0 ? 'text-green-600' : trend < 0 ? 'text-red-600' : 'text-gray-400'
+          }`}>
+            {trend > 0 ? '+' : ''}{formatTrendValue(trend)}
+          </span>
+        </div>
+        <span className="text-xs text-gray-400">vs last month</span>
       </div>
-    </Card>
+    </div>
   );
 }

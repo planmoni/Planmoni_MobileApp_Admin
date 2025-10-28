@@ -8,9 +8,14 @@ export default {
     extend: {
       colors: {
         primary: {
-          DEFAULT: '#1E3A8A',
-          light: '#3B82F6',
-          dark: '#1E40AF',
+          DEFAULT: '#0F172A',
+          light: '#1E293B',
+          dark: '#020617',
+        },
+        accent: {
+          DEFAULT: '#86EFAC',
+          light: '#BBF7D0',
+          dark: '#4ADE80',
         },
         success: {
           DEFAULT: '#22C55E',
@@ -27,6 +32,16 @@ export default {
       },
       fontFamily: {
         sans: ['Inter', 'sans-serif'],
+      },
+      boxShadow: {
+        'soft': '0 2px 8px rgba(0, 0, 0, 0.04)',
+        'medium': '0 4px 16px rgba(0, 0, 0, 0.06)',
+        'large': '0 8px 32px rgba(0, 0, 0, 0.08)',
+      },
+      borderRadius: {
+        'xl': '1rem',
+        '2xl': '1.25rem',
+        '3xl': '1.5rem',
       },
     },
   },
