@@ -50,11 +50,10 @@ export default function BannerCarousel({
   const renderBannerContent = (banner: any) => {
     const bannerElement = (
       <div className="relative w-full h-full group">
-        <div className={`w-full h-auto overflow-hidden rounded-2xl flex items-center justify-center`}>
+        <div className="w-full aspect-[16/9] sm:aspect-[21/9] overflow-hidden rounded-2xl flex items-center justify-center bg-gray-100">
           <img
             src={banner.image_url}
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-            style={{ maxHeight: '100%', maxWidth: '100%' }}
             onError={(e) => {
               const target = e.target as HTMLImageElement;
               target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzkzIiBoZWlnaHQ9IjExNiIgdmlld0JveD0iMCAwIDM5MyAxMTYiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIzOTMiIGhlaWdodD0iMTE2IiBmaWxsPSIjRjNGNEY2Ii8+Cjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjOTQ5NEE0IiBmb250LXNpemU9IjE0Ij5JbWFnZSBub3QgZm91bmQ8L3RleHQ+Cjwvc3ZnPg==';
@@ -63,20 +62,20 @@ export default function BannerCarousel({
         </div>
 
         {(banner.title || banner.description) && (
-          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-gray-900 via-gray-900/70 to-transparent p-6 rounded-b-2xl">
+          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-gray-900 via-gray-900/70 to-transparent p-3 sm:p-6 rounded-b-2xl">
             {banner.title && (
-              <h3 className="text-white text-base sm:text-lg font-bold mb-1.5 line-clamp-1 drop-shadow-lg">
+              <h3 className="text-white text-sm sm:text-base md:text-lg font-bold mb-1 sm:mb-1.5 line-clamp-1 drop-shadow-lg">
                 {banner.title}
               </h3>
             )}
             {banner.description && (
-              <p className="text-white/90 text-sm sm:text-base line-clamp-2 drop-shadow-md">
+              <p className="text-white/90 text-xs sm:text-sm md:text-base line-clamp-2 drop-shadow-md">
                 {banner.description}
               </p>
             )}
             {banner.cta_text && (
-              <div className="mt-3">
-                <span className="inline-flex items-center bg-white/95 text-gray-900 text-xs sm:text-sm px-4 py-2 rounded-xl font-semibold shadow-lg hover:bg-white transition-colors">
+              <div className="mt-2 sm:mt-3">
+                <span className="inline-flex items-center bg-white/95 text-gray-900 text-xs sm:text-sm px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl font-semibold shadow-lg hover:bg-white transition-colors">
                   {banner.cta_text}
                 </span>
               </div>
