@@ -38,10 +38,8 @@ export function usePayoutEvents(searchQuery?: string, statusFilter?: string, pag
   return useQuery({
     queryKey: ['payout-events', searchQuery, statusFilter, page, pageSize],
     queryFn: async () => {
-      const [statsQuery, plansResult, upcomingUsersResult] = await Promise.all([
-        supabase
-          .from('automated_payouts')
-          .select('status', { count: 'exact', head: false }),
+      const [statsResult, plansResult, upcomingUsersResult] = await Promise.all([
+        supabase.rpc('get_payout_stats'),
         supabase
           .from('payout_plans')
           .select('id, name, payout_amount, frequency, status'),
@@ -53,16 +51,16 @@ export function usePayoutEvents(searchQuery?: string, statusFilter?: string, pag
           .gt('next_payout_date', new Date().toISOString())
       ]);
 
-      if (statsQuery.error) throw statsQuery.error;
+      if (statsResult.error) throw statsResult.error;
       if (plansResult.error) throw plansResult.error;
       if (upcomingUsersResult.error) throw upcomingUsersResult.error;
 
-      const allStatuses = statsQuery.data || [];
+      const statsData = statsResult.data as any;
       const stats: PayoutEventStats = {
-        total: statsQuery.count || 0,
-        processing: allStatuses.filter((e: any) => e.status === 'processing').length,
-        completed: allStatuses.filter((e: any) => e.status === 'completed').length,
-        failed: allStatuses.filter((e: any) => e.status === 'failed').length,
+        total: Number(statsData?.total || 0),
+        processing: Number(statsData?.processing || 0),
+        completed: Number(statsData?.completed || 0),
+        failed: Number(statsData?.failed || 0),
         usersWithUpcomingPayouts: new Set(
           (upcomingUsersResult.data || []).map((plan: any) => plan.user_id)
         ).size,
