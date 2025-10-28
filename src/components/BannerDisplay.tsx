@@ -113,7 +113,7 @@ export default function BannerDisplay({ showAdminControls = false, className = '
   if (!banners || banners.length === 0) {
     if (showAdminControls) {
       return (
-        <div className={`bg-white rounded-2xl shadow-soft border border-gray-100 ${className}`}>
+        <div className={`bg-white shadow-soft border border-gray-100 ${className}`}>
           <div className="text-center py-12">
             <p className="text-gray-500">
               No banners uploaded yet. Upload your first banner above.
@@ -142,7 +142,7 @@ export default function BannerDisplay({ showAdminControls = false, className = '
         {banners.map((banner) => (
           <div key={banner.id} className="bg-white rounded-2xl shadow-soft border border-gray-100 overflow-hidden group hover:shadow-md transition-all duration-200">
             <div className="relative">
-              <div className="xl:w-full w-[350px] bg-gradient-to-br from-gray-50 to-gray-100">
+              <div className="xl:w-full w-[350px] overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100">
                 <img
                   src={banner.image_url}
                   alt={banner.title}
