@@ -163,39 +163,46 @@ export default function UserDetails() {
         </div>
 
         <div>
-          <h2 className="text-lg font-semibold text-text dark:text-text mb-4">Linked Bank Accounts</h2>
+          <h2 className="text-lg font-semibold text-text dark:text-text mb-4">Payout Accounts</h2>
           <Card className="overflow-hidden">
             {bankAccounts.length > 0 ? (
               <div className="divide-y divide-border dark:divide-border">
                 {bankAccounts.map((account: any) => (
-                  <div key={account.id} className="p-4 flex items-center">
-                    <div className="w-10 h-10 rounded-full bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center mr-4">
-                      <Building2 className="h-5 w-5 text-blue-500" />
+                  <div key={account.id} className="p-4">
+                    <div className="flex items-start gap-3">
+                      <div className="w-10 h-10 rounded-full bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center shrink-0">
+                        <Building2 className="h-5 w-5 text-blue-500" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <p className="text-text dark:text-text font-medium">{account.bank_name}</p>
+                          {account.is_default && (
+                            <span className="inline-block px-2 py-0.5 bg-blue-50 dark:bg-blue-900/20 text-blue-500 text-xs rounded-full">
+                              Default
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-text dark:text-text text-sm font-mono">{account.account_number}</p>
+                        <p className="text-text-secondary dark:text-text-secondary text-sm">{account.account_name}</p>
+                        <p className="text-text-tertiary dark:text-text-tertiary text-xs mt-1">
+                          Added {format(new Date(account.created_at), 'MMM d, yyyy')}
+                        </p>
+                      </div>
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium shrink-0 ${
+                        account.status === 'active'
+                          ? 'bg-green-50 dark:bg-green-900/20 text-green-500'
+                          : account.status === 'pending'
+                            ? 'bg-yellow-50 dark:bg-yellow-900/20 text-yellow-500'
+                            : 'bg-red-50 dark:bg-red-900/20 text-red-500'
+                      }`}>
+                        {account.status.charAt(0).toUpperCase() + account.status.slice(1)}
+                      </span>
                     </div>
-                    <div className="flex-1">
-                      <p className="text-text dark:text-text font-medium">{account.bank_name}</p>
-                      <p className="text-text-secondary dark:text-text-secondary text-sm">•••• {account.account_number.slice(-4)}</p>
-                      <p className="text-text-secondary dark:text-text-secondary text-sm">{account.account_name}</p>
-                      {account.is_default && (
-                        <span className="inline-block px-2 py-0.5 bg-blue-50 dark:bg-blue-900/20 text-blue-500 text-xs rounded-full mt-1">
-                          Default
-                        </span>
-                      )}
-                    </div>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      account.status === 'active' 
-                        ? 'bg-green-50 dark:bg-green-900/20 text-green-500' 
-                        : account.status === 'pending' 
-                          ? 'bg-yellow-50 dark:bg-yellow-900/20 text-yellow-500' 
-                          : 'bg-red-50 dark:bg-red-900/20 text-red-500'
-                    }`}>
-                      {account.status.charAt(0).toUpperCase() + account.status.slice(1)}
-                    </span>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-center py-6 text-text-secondary dark:text-text-secondary">No bank accounts linked</p>
+              <p className="text-center py-6 text-text-secondary dark:text-text-secondary">No payout accounts added</p>
             )}
           </Card>
         </div>
