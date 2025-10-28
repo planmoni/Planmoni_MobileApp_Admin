@@ -6,7 +6,7 @@ import AuthLayout from './layouts/AuthLayout';
 import DashboardLayout from './layouts/DashboardLayout';
 import Toast from './components/Toast';
 
-// Lazy load pagess
+// Lazy load pages
 const LoginPage = lazy(() => import('./pages/auth/Login'));
 const ForgotPasswordPage = lazy(() => import('./pages/auth/ForgotPassword'));
 const SignupPage = lazy(() => import('./pages/auth/Signup'));
