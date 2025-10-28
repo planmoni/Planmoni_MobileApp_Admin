@@ -55,40 +55,42 @@ export function useKycData(searchQuery?: string, statusFilter?: string) {
   return useQuery({
     queryKey: ['kyc-data', searchQuery, statusFilter],
     queryFn: async () => {
-      let query = supabase
+      let kycQuery = supabase
         .from('kyc_data')
         .select(`
           *,
-          profiles:user_id (
+          profiles!kyc_data_user_id_fkey (
             email
-          ),
-          kyc_progress:user_id (
-            current_step,
-            personal_info_completed,
-            bvn_verified,
-            documents_verified,
-            address_completed,
-            overall_completed
           )
         `)
         .order('created_at', { ascending: false });
 
       if (statusFilter && statusFilter !== 'all') {
         if (statusFilter === 'approved') {
-          query = query.eq('approved', true);
+          kycQuery = kycQuery.eq('approved', true);
         } else if (statusFilter === 'pending') {
-          query = query.eq('approved', false);
+          kycQuery = kycQuery.eq('approved', false);
         }
       }
 
-      const { data, error } = await query;
+      const [kycResult, progressResult] = await Promise.all([
+        kycQuery,
+        supabase
+          .from('kyc_progress')
+          .select('*')
+      ]);
 
-      if (error) throw error;
+      if (kycResult.error) throw kycResult.error;
+      if (progressResult.error) throw progressResult.error;
 
-      let kycData = (data || []).map((item: any) => ({
+      const progressMap = new Map(
+        (progressResult.data || []).map((progress: any) => [progress.user_id, progress])
+      );
+
+      let kycData = (kycResult.data || []).map((item: any) => ({
         ...item,
         user: item.profiles,
-        kyc_progress: Array.isArray(item.kyc_progress) ? item.kyc_progress[0] : item.kyc_progress
+        kyc_progress: progressMap.get(item.user_id) || null
       }));
 
       if (searchQuery) {
