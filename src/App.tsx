@@ -14,6 +14,7 @@ const DashboardPage = lazy(() => import('./pages/dashboard/Dashboard'));
 const UsersPage = lazy(() => import('./pages/dashboard/Users'));
 const TransactionsPage = lazy(() => import('./pages/dashboard/Transactions'));
 const AnalyticsPage = lazy(() => import('./pages/dashboard/Analytics'));
+const ActivityPage = lazy(() => import('./pages/dashboard/Activity'));
 const SettingsPage = lazy(() => import('./pages/dashboard/Settings'));
 const UserDetailsPage = lazy(() => import('./pages/dashboard/UserDetails'));
 const SuperAdminPage = lazy(() => import('./pages/dashboard/SuperAdmin'));
@@ -51,6 +52,7 @@ function App() {
                 <Route path="users/:id" element={<UserDetailsPage />} />
                 <Route path="transactions" element={<TransactionsPage />} />
                 <Route path="analytics" element={<AnalyticsPage />} />
+                <Route path="activity" element={<ActivityPage />} />
                 <Route path="super-admin" element={<SuperAdminPage />} />
                 <Route path="banners" element={<BannersPage />} />
                 <Route path="settings" element={<SettingsPage />} />

@@ -10,7 +10,8 @@ import {
   Settings,
   LogOut,
   Shield,
-  Image
+  Image,
+  Activity
 } from 'lucide-react';
 
 export default function Sidebar({ isMobileMenuOpen, closeMobileMenu }: { isMobileMenuOpen: boolean, closeMobileMenu: () => void }) {
@@ -112,6 +113,7 @@ export default function Sidebar({ isMobileMenuOpen, closeMobileMenu }: { isMobil
     { name: 'Users', path: '/users', icon: Users },
     { name: 'Transactions', path: '/transactions', icon: CreditCard },
     { name: 'Analytics', path: '/analytics', icon: BarChart3 },
+    { name: 'Activity', path: '/activity', icon: Activity },
     ...(isSuperAdmin ? [{ name: 'Super Admin', path: '/super-admin', icon: Shield }] : []),
     { name: 'Banners', path: '/banners', icon: Image },
     { name: 'Settings', path: '/settings', icon: Settings },
