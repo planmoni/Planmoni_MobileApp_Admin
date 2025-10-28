@@ -53,7 +53,7 @@ export default function ForgotPassword() {
       <div className="flex min-h-full flex-col justify-center">
         <div className="sm:mx-auto sm:w-full sm:max-w-md">
           <img
-            src="/assets/images/Planmoni-Office.png"
+            src="/assets/images/planmoni_logo_main.png"
             alt="Planmoni Office"
             className="mx-auto h-20 w-auto"
             onError={(e) => {
