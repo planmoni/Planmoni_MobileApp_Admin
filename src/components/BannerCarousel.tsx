@@ -42,7 +42,7 @@ export default function BannerCarousel({
 
   if (error || !banners || banners.length === 0) {
     return (
-      <div className={`flex flex-col items-center justify-center h-408 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200 ${className}`}>
+      <div className={`flex flex-col items-center justify-center h-48 rounded-2xl border-2 border-dashed border-gray-200 ${className}`}>
         <p className="text-gray-400 text-sm">No banners available</p>
       </div>
     );
