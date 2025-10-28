@@ -50,7 +50,7 @@ export default function BannerCarousel({
 
   const renderBannerContent = (banner: any) => {
     const bannerElement = (
-      <div className="relative w-full h-full group">
+      <div className="relative w-full h-[900px] group">
         <div className={`w-full ${maxHeight} overflow-hidden rounded-2xl bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center`}>
           <img
             src={banner.image_url}
