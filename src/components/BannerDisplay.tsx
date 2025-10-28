@@ -113,7 +113,7 @@ export default function BannerDisplay({ showAdminControls = false, className = '
   if (!banners || banners.length === 0) {
     if (showAdminControls) {
       return (
-        <div className={`bg-white shadow-soft border border-gray-100 ${className}`}>
+        <div className={`bg-white rounded-4xl shadow-soft border border-gray-100 ${className}`}>
           <div className="text-center py-12">
             <p className="text-gray-500">
               No banners uploaded yet. Upload your first banner above.
