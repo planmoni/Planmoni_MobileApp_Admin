@@ -49,7 +49,7 @@ export default function BannerCarousel({
 
   const renderBannerContent = (banner: any) => {
     const bannerElement = (
-      <div className="relative xl:w-full w-[400px] h-full group">
+      <div className="relative xl:w-full w-[350px] h-full group">
         <div className="w-full overflow-hidden rounded-xl sm:rounded-2xl flex items-center justify-center bg-gray-100">
           <img
             src={banner.image_url}
