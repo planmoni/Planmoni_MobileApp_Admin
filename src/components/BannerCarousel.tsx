@@ -50,7 +50,7 @@ export default function BannerCarousel({
   const renderBannerContent = (banner: any) => {
     const bannerElement = (
       <div className="relative w-full h-full group">
-        <div className="w-full aspect-[16/9] sm:aspect-[21/9] overflow-hidden rounded-2xl flex items-center justify-center bg-gray-100">
+        <div className="w-full aspect-[3/2] sm:aspect-[16/9] md:aspect-[21/9] overflow-hidden rounded-xl sm:rounded-2xl flex items-center justify-center bg-gray-100">
           <img
             src={banner.image_url}
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
@@ -62,20 +62,20 @@ export default function BannerCarousel({
         </div>
 
         {(banner.title || banner.description) && (
-          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-gray-900 via-gray-900/70 to-transparent p-3 sm:p-6 rounded-b-2xl">
+          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-gray-900 via-gray-900/70 to-transparent p-3 sm:p-4 md:p-6 rounded-b-xl sm:rounded-b-2xl">
             {banner.title && (
-              <h3 className="text-white text-sm sm:text-base md:text-lg font-bold mb-1 sm:mb-1.5 line-clamp-1 drop-shadow-lg">
+              <h3 className="text-white text-xs sm:text-sm md:text-base lg:text-lg font-bold mb-0.5 sm:mb-1 md:mb-1.5 line-clamp-1 drop-shadow-lg">
                 {banner.title}
               </h3>
             )}
             {banner.description && (
-              <p className="text-white/90 text-xs sm:text-sm md:text-base line-clamp-2 drop-shadow-md">
+              <p className="text-white/90 text-[10px] sm:text-xs md:text-sm lg:text-base line-clamp-1 sm:line-clamp-2 drop-shadow-md">
                 {banner.description}
               </p>
             )}
             {banner.cta_text && (
-              <div className="mt-2 sm:mt-3">
-                <span className="inline-flex items-center bg-white/95 text-gray-900 text-xs sm:text-sm px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl font-semibold shadow-lg hover:bg-white transition-colors">
+              <div className="mt-1.5 sm:mt-2 md:mt-3">
+                <span className="inline-flex items-center bg-white/95 text-gray-900 text-[10px] sm:text-xs md:text-sm px-2.5 sm:px-3 md:px-4 py-1 sm:py-1.5 md:py-2 rounded-md sm:rounded-lg md:rounded-xl font-semibold shadow-lg hover:bg-white transition-colors">
                   {banner.cta_text}
                 </span>
               </div>
