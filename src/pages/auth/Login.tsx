@@ -49,28 +49,12 @@ export default function Login() {
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDM0djItaDJWMzZoLTJ6bTAtNGg0djJoLTR6Ii8+PC9nPjwvZz48L3N2Zz4=')] opacity-20"></div>
 
         <div className="relative z-10 flex flex-col justify-center px-16 text-white">
-          <div className="mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-white/10 backdrop-blur-sm rounded-2xl mb-6">
-              <img
-                src="/assets/images/planmoni_logo_main.png"
-                alt="Planmoni"
-                className="h-10 w-auto"
-              />
-            </div>
-            <h1 className="text-5xl font-bold mb-4 leading-tight">
-              Welcome to<br />Planmoni Admin
-            </h1>
-            <p className="text-xl text-blue-100 leading-relaxed max-w-md">
-              Manage your platform with powerful tools and insights at your fingertips.
-            </p>
-          </div>
+          
 
           <div className="grid grid-cols-1 gap-6 max-w-md mt-8">
             <div className="flex items-start gap-4">
               <div className="flex-shrink-0 w-12 h-12 bg-white/10 backdrop-blur-sm rounded-xl flex items-center justify-center">
-                <svg className="w-6 h-6 text-blue-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
+                
               </div>
               <div>
                 <h3 className="font-semibold text-lg mb-1">Secure Access</h3>
