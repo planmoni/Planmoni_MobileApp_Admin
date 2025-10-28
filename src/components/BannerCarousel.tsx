@@ -10,11 +10,13 @@ import 'swiper/css/navigation';
 import 'swiper/css/pagination';
 
 interface BannerCarouselProps {
+  className?: string;
   maxHeight?: string;
   showControls?: boolean;
 }
 
 export default function BannerCarousel({
+  className = '',
   maxHeight = 'max-h-64',
   showControls = false
 }: BannerCarouselProps) {
