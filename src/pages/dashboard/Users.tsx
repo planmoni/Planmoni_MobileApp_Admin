@@ -257,7 +257,7 @@ export default function Users() {
                           {user.first_name} {user.last_name}
                         </h3>
                         {user.is_admin && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-50 text-blue-700 flex-shrink-0">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-sm font-medium bg-blue-50 text-blue-700 flex-shrink-0">
                             Admin
                           </span>
                         )}
