@@ -48,7 +48,7 @@ export default function Login() {
 
       <div className="flex-1 flex items-center justify-center p-8 bg-gray-50">
         <div className="w-full max-w-md">
-          <div className="lg:hidden mb-8 text-center">
+          <div className="mb-8 text-center">
             <img
               src="/assets/images/planmoni_logo_main.png"
               alt="Planmoni"
