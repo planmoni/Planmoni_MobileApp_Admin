@@ -142,11 +142,11 @@ export default function BannerDisplay({ showAdminControls = false, className = '
         {banners.map((banner) => (
           <div key={banner.id} className="bg-white rounded-2xl shadow-soft border border-gray-100 overflow-hidden group hover:shadow-md transition-all duration-200">
             <div className="relative">
-              <div className="aspect-video xl:w-full w-[350px] overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100">
+              <div className="xl:w-full w-[350px] overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100">
                 <img
                   src={banner.image_url}
                   alt={banner.title}
-                  className="w-full h-[300px] object-cover transition-transform duration-300 group-hover:scale-105"
+                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
                     target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzkzIiBoZWlnaHQ9IjExNiIgdmlld0JveD0iMCAwIDM5MyAxMTYiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIzOTMiIGhlaWdodD0iMTE2IiBmaWxsPSIjRjNGNEY2Ii8+Cjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjOTQ5NEE0IiBmb250LXNpemU9IjE0Ij5JbWFnZSBub3QgZm91bmQ8L3RleHQ+Cjwvc3ZnPg==';
