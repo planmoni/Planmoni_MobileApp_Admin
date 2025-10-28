@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ChevronLeft, ChevronRight, Clock, CheckCircle2, XCircle, Calendar as CalendarIcon, ArrowDownCircle, ArrowUpCircle } from 'lucide-react';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek } from 'date-fns';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek, addWeeks, subWeeks } from 'date-fns';
 import { useCalendarEvents } from '@/hooks/queries/useCalendarEvents';
 
 type ViewMode = 'month' | 'week' | 'list';
@@ -99,6 +99,18 @@ export default function Calendar() {
   const handleNextMonth = () => {
     setCurrentDate(addMonths(currentDate, 1));
     setListPage(1);
+  };
+
+  const handlePreviousWeek = () => {
+    const newDate = subWeeks(selectedDate || currentDate, 1);
+    setSelectedDate(newDate);
+    setCurrentDate(newDate);
+  };
+
+  const handleNextWeek = () => {
+    const newDate = addWeeks(selectedDate || currentDate, 1);
+    setSelectedDate(newDate);
+    setCurrentDate(newDate);
   };
 
   const handleToday = () => {
@@ -266,9 +278,23 @@ export default function Calendar() {
             {viewMode === 'week' && (
               <div className="p-6">
                 <div className="mb-6">
-                  <h3 className="text-lg font-bold text-gray-900 mb-4">
-                    {format(startOfWeek(selectedDate || currentDate), 'MMMM d, yyyy')} - {format(endOfWeek(selectedDate || currentDate), 'MMMM d, yyyy')}
-                  </h3>
+                  <div className="flex items-center justify-between mb-4">
+                    <button
+                      onClick={handlePreviousWeek}
+                      className="p-2 rounded-xl hover:bg-gray-50 transition-colors"
+                    >
+                      <ChevronLeft className="h-5 w-5 text-gray-600" />
+                    </button>
+                    <h3 className="text-lg font-bold text-gray-900">
+                      {format(startOfWeek(selectedDate || currentDate), 'MMMM d, yyyy')} - {format(endOfWeek(selectedDate || currentDate), 'MMMM d, yyyy')}
+                    </h3>
+                    <button
+                      onClick={handleNextWeek}
+                      className="p-2 rounded-xl hover:bg-gray-50 transition-colors"
+                    >
+                      <ChevronRight className="h-5 w-5 text-gray-600" />
+                    </button>
+                  </div>
                   <div className="grid grid-cols-7 gap-2">
                     {eachDayOfInterval({
                       start: startOfWeek(selectedDate || currentDate),
