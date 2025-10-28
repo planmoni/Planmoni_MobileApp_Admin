@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Search, RefreshCw, Users as UsersIcon, TrendingUp, Wallet } from 'lucide-react';
-import Card from '../../components/Card';
 import { useUsersData } from '@/hooks/queries/useUsersData';
 import { useRefreshData } from '@/hooks/mutations/useRefreshData';
 
@@ -27,17 +26,15 @@ export default function Users() {
 
   const filterUsers = () => {
     let filtered = [...users];
-    
-    // Apply search filter
+
     if (searchQuery) {
-      filtered = filtered.filter(user => 
+      filtered = filtered.filter(user =>
         user.first_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         user.last_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         user.email?.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
-    
-    // Apply type filter
+
     switch (filterType) {
       case 'admin':
         filtered = filtered.filter(user => user.is_admin);
@@ -49,10 +46,9 @@ export default function Users() {
         filtered = filtered.filter(user => user.active_plans > 0);
         break;
       default:
-        // 'all' - no additional filtering
         break;
     }
-    
+
     setFilteredUsers(filtered);
   };
 
@@ -65,10 +61,10 @@ export default function Users() {
   };
 
   const getFilterButtonClass = (type: string) => {
-    const baseClass = "px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors";
-    const activeClass = "bg-primary text-white";
-    const inactiveClass = "bg-background-tertiary dark:bg-background-tertiary text-text-secondary dark:text-text-secondary hover:bg-background-secondary dark:hover:bg-background-secondary";
-    
+    const baseClass = "px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all duration-200";
+    const activeClass = "bg-gray-900 text-white shadow-sm";
+    const inactiveClass = "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200";
+
     return `${baseClass} ${filterType === type ? activeClass : inactiveClass}`;
   };
 
@@ -78,7 +74,7 @@ export default function Users() {
         <p className="text-error mb-4">Failed to load users data</p>
         <button
           onClick={handleRefresh}
-          className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark"
+          className="px-4 py-2 bg-primary text-white rounded-xl hover:bg-primary-light transition-colors"
         >
           Try Again
         </button>
@@ -88,90 +84,99 @@ export default function Users() {
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-text dark:text-text">Users</h1>
-          <p className="text-text-secondary dark:text-text-secondary">Manage all users on the platform</p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-1">Users</h1>
+          <p className="text-gray-500">Manage all users on the platform</p>
         </div>
-        <button 
+        <button
           onClick={handleRefresh}
-          className="p-2 rounded-full bg-background-tertiary dark:bg-background-tertiary hover:bg-background-secondary dark:hover:bg-background-secondary transition-colors"
+          className="p-3 rounded-xl bg-white hover:bg-gray-50 transition-colors shadow-soft border border-gray-100"
           disabled={refreshData.isPending}
         >
-          <RefreshCw className={`h-5 w-5 text-primary dark:text-primary ${refreshData.isPending ? 'animate-spin' : ''}`} />
+          <RefreshCw className={`h-5 w-5 text-gray-600 ${refreshData.isPending ? 'animate-spin' : ''}`} />
         </button>
       </div>
 
-      {/* User Statistics Cards */}
       {userStats && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <Card className="flex flex-col items-center p-4">
-            <div className="flex justify-between items-center w-full mb-2">
-              <span className="text-text-secondary dark:text-text-secondary text-sm">Total Users</span>
-              <div className="w-10 h-10 rounded-full bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center">
-                <UsersIcon className="h-5 w-5 text-blue-500" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+          <div className="bg-white rounded-2xl p-6 shadow-soft border border-gray-100">
+            <div className="flex justify-between items-start mb-4">
+              <div className="flex-1">
+                <p className="text-sm font-medium text-gray-500 mb-1">Total Users</p>
+                <p className="text-3xl font-bold text-gray-900">{userStats.total_users}</p>
+              </div>
+              <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center">
+                <UsersIcon className="h-5 w-5 text-blue-600" />
               </div>
             </div>
-            <div className="text-2xl font-bold text-text dark:text-text self-start">{userStats.total_users}</div>
-            <div className="flex items-center text-xs text-success dark:text-success mt-2 self-start">
-              <TrendingUp className="h-3 w-3 mr-1" />
-              <span>+{userStats.new_users_this_month} this month</span>
+            <div className="flex items-center gap-2 pt-3 border-t border-gray-100">
+              <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-green-50">
+                <TrendingUp size={14} className="text-green-600" />
+                <span className="text-xs font-semibold text-green-600">+{userStats.new_users_this_month}</span>
+              </div>
+              <span className="text-xs text-gray-400">this month</span>
             </div>
-          </Card>
+          </div>
 
-          <Card className="flex flex-col items-center p-4">
-            <div className="flex justify-between items-center w-full mb-2">
-              <span className="text-text-secondary dark:text-text-secondary text-sm">Active Users</span>
-              <div className="w-10 h-10 rounded-full bg-green-50 dark:bg-green-900/20 flex items-center justify-center">
-                <TrendingUp className="h-5 w-5 text-green-500" />
+          <div className="bg-white rounded-2xl p-6 shadow-soft border border-gray-100">
+            <div className="flex justify-between items-start mb-4">
+              <div className="flex-1">
+                <p className="text-sm font-medium text-gray-500 mb-1">Active Users</p>
+                <p className="text-3xl font-bold text-gray-900">{userStats.active_users_this_month}</p>
+              </div>
+              <div className="w-12 h-12 rounded-xl bg-green-50 flex items-center justify-center">
+                <TrendingUp className="h-5 w-5 text-green-600" />
               </div>
             </div>
-            <div className="text-2xl font-bold text-text dark:text-text self-start">{userStats.active_users_this_month}</div>
-            <div className="flex items-center text-xs text-text-secondary dark:text-text-secondary mt-2 self-start">
-              <span>This month</span>
+            <div className="flex items-center gap-2 pt-3 border-t border-gray-100">
+              <span className="text-xs text-gray-400">This month</span>
             </div>
-          </Card>
+          </div>
 
-          <Card className="flex flex-col items-center p-4">
-            <div className="flex justify-between items-center w-full mb-2">
-              <span className="text-text-secondary dark:text-text-secondary text-sm">Users with Balance</span>
-              <div className="w-10 h-10 rounded-full bg-yellow-50 dark:bg-yellow-900/20 flex items-center justify-center">
-                <Wallet className="h-5 w-5 text-yellow-500" />
+          <div className="bg-white rounded-2xl p-6 shadow-soft border border-gray-100">
+            <div className="flex justify-between items-start mb-4">
+              <div className="flex-1">
+                <p className="text-sm font-medium text-gray-500 mb-1">Users with Balance</p>
+                <p className="text-3xl font-bold text-gray-900">{userStats.users_with_balance}</p>
+              </div>
+              <div className="w-12 h-12 rounded-xl bg-yellow-50 flex items-center justify-center">
+                <Wallet className="h-5 w-5 text-yellow-600" />
               </div>
             </div>
-            <div className="text-2xl font-bold text-text dark:text-text self-start">{userStats.users_with_balance}</div>
-            <div className="flex items-center text-xs text-text-secondary dark:text-text-secondary mt-2 self-start">
-              <span>{formatCurrency(userStats.total_wallet_balance)} total</span>
+            <div className="flex items-center gap-2 pt-3 border-t border-gray-100">
+              <span className="text-xs text-gray-500">{formatCurrency(userStats.total_wallet_balance)} total</span>
             </div>
-          </Card>
+          </div>
 
-          <Card className="flex flex-col items-center p-4">
-            <div className="flex justify-between items-center w-full mb-2">
-              <span className="text-text-secondary dark:text-text-secondary text-sm">Users with Plans</span>
-              <div className="w-10 h-10 rounded-full bg-purple-50 dark:bg-purple-900/20 flex items-center justify-center">
-                <UsersIcon className="h-5 w-5 text-purple-500" />
+          <div className="bg-white rounded-2xl p-6 shadow-soft border border-gray-100">
+            <div className="flex justify-between items-start mb-4">
+              <div className="flex-1">
+                <p className="text-sm font-medium text-gray-500 mb-1">Users with Plans</p>
+                <p className="text-3xl font-bold text-gray-900">{userStats.users_with_plans}</p>
+              </div>
+              <div className="w-12 h-12 rounded-xl bg-gray-50 flex items-center justify-center">
+                <UsersIcon className="h-5 w-5 text-gray-600" />
               </div>
             </div>
-            <div className="text-2xl font-bold text-text dark:text-text self-start">{userStats.users_with_plans}</div>
-            <div className="flex items-center text-xs text-text-secondary dark:text-text-secondary mt-2 self-start">
-              <span>Active payout plans</span>
+            <div className="flex items-center gap-2 pt-3 border-t border-gray-100">
+              <span className="text-xs text-gray-400">Active payout plans</span>
             </div>
-          </Card>
+          </div>
         </div>
       )}
 
-      {/* Search and Filter Controls */}
       <div className="mb-6 flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Search className="h-5 w-5 text-text-secondary dark:text-text-secondary" />
+          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+            <Search className="h-5 w-5 text-gray-400" />
           </div>
           <input
             type="text"
             placeholder="Search users..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="block w-full pl-10 pr-3 py-2 border border-border dark:border-border rounded-md bg-white dark:bg-background-tertiary text-text dark:text-text focus:outline-none focus:ring-2 focus:ring-primary dark:focus:ring-primary-light focus:border-primary dark:focus:border-primary-light"
+            className="block w-full pl-11 pr-4 py-3 border border-gray-200 rounded-xl bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all"
           />
         </div>
         <div className="flex overflow-x-auto pb-2 space-x-2">
@@ -202,80 +207,78 @@ export default function Users() {
         </div>
       </div>
 
-      {/* Summary Stats */}
-      <div className="bg-white dark:bg-surface rounded-lg shadow mb-6 overflow-hidden">
-        <div className="grid grid-cols-3 gap-4 p-4 border-b border-border dark:border-border">
+      <div className="bg-white rounded-2xl shadow-soft border border-gray-100 mb-6 overflow-hidden">
+        <div className="grid grid-cols-3 gap-4 p-6">
           <div className="text-center">
-            <p className="text-xl font-bold text-text dark:text-text">{filteredUsers.length}</p>
-            <p className="text-sm text-text-secondary dark:text-text-secondary">
+            <p className="text-2xl font-bold text-gray-900">{filteredUsers.length}</p>
+            <p className="text-sm text-gray-500 mt-1">
               {filterType === 'all' ? 'Total Users' : 'Filtered Results'}
             </p>
           </div>
-          <div className="text-center border-x border-border dark:border-border">
-            <p className="text-xl font-bold text-text dark:text-text">
+          <div className="text-center border-x border-gray-100">
+            <p className="text-2xl font-bold text-gray-900">
               {userStats?.new_users_this_month || 0}
             </p>
-            <p className="text-sm text-text-secondary dark:text-text-secondary">New (30d)</p>
+            <p className="text-sm text-gray-500 mt-1">New (30d)</p>
           </div>
           <div className="text-center">
-            <p className="text-xl font-bold text-text dark:text-text">
+            <p className="text-2xl font-bold text-gray-900">
               {userStats?.active_users_this_month || 0}
             </p>
-            <p className="text-sm text-text-secondary dark:text-text-secondary">Active (30d)</p>
+            <p className="text-sm text-gray-500 mt-1">Active (30d)</p>
           </div>
         </div>
       </div>
 
-      {/* Users Table */}
-      <Card className="overflow-hidden">
+      <div className="bg-white rounded-2xl shadow-soft border border-gray-100 overflow-hidden">
         {isLoading ? (
           <div className="flex justify-center items-center h-64">
-            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-accent"></div>
           </div>
         ) : filteredUsers.length > 0 ? (
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-border dark:divide-border">
-              <thead className="bg-background-tertiary dark:bg-background-tertiary">
+            <table className="min-w-full divide-y divide-gray-100">
+              <thead className="bg-gray-50">
                 <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-text-secondary dark:text-text-secondary uppercase tracking-wider">
+                  <th scope="col" className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                     User
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-text-secondary dark:text-text-secondary uppercase tracking-wider">
+                  <th scope="col" className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                     Email
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-text-secondary dark:text-text-secondary uppercase tracking-wider">
+                  <th scope="col" className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                     Joined
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-text-secondary dark:text-text-secondary uppercase tracking-wider">
+                  <th scope="col" className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                     Balance
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-text-secondary dark:text-text-secondary uppercase tracking-wider">
+                  <th scope="col" className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                     Activity
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-text-secondary dark:text-text-secondary uppercase tracking-wider">
+                  <th scope="col" className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                     Role
                   </th>
-                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-text-secondary dark:text-text-secondary uppercase tracking-wider">
+                  <th scope="col" className="px-6 py-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white dark:bg-surface divide-y divide-border dark:divide-border">
+              <tbody className="bg-white divide-y divide-gray-100">
                 {filteredUsers.map((user) => (
-                  <tr key={user.id} className="hover:bg-background-tertiary dark:hover:bg-background-tertiary/20 transition-colors">
+                  <tr key={user.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
-                        <div className="flex-shrink-0 h-10 w-10 rounded-full bg-primary flex items-center justify-center text-white">
-                          <span className="font-medium">
+                        <div className="flex-shrink-0 h-11 w-11 rounded-xl bg-gradient-to-br from-primary to-primary-light flex items-center justify-center text-white shadow-sm">
+                          <span className="font-semibold text-sm">
                             {user.first_name?.[0]}{user.last_name?.[0]}
                           </span>
                         </div>
                         <div className="ml-4">
-                          <div className="text-sm font-medium text-text dark:text-text">
+                          <div className="text-sm font-semibold text-gray-900">
                             {user.first_name} {user.last_name}
                           </div>
                           {user.is_admin && (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-blue-50 text-blue-700 mt-1">
                               Admin
                             </span>
                           )}
@@ -283,48 +286,48 @@ export default function Users() {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-text-secondary dark:text-text-secondary">{user.email}</div>
+                      <div className="text-sm text-gray-500">{user.email}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-text-secondary dark:text-text-secondary">
+                      <div className="text-sm text-gray-500">
                         {new Date(user.created_at).toLocaleDateString()}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-text dark:text-text">
+                      <div className="text-sm font-semibold text-gray-900">
                         {formatCurrency(user.balance)}
                       </div>
                       {user.locked_balance > 0 && (
-                        <div className="text-xs text-text-tertiary dark:text-text-tertiary">
+                        <div className="text-xs text-gray-400">
                           {formatCurrency(user.locked_balance)} locked
                         </div>
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-text dark:text-text">
+                      <div className="text-sm text-gray-900">
                         <div className="flex items-center space-x-4">
-                          <span className="text-xs text-text-secondary dark:text-text-secondary">
+                          <span className="text-xs text-gray-500">
                             {user.total_deposits > 0 && `${formatCurrency(user.total_deposits)} in`}
                           </span>
-                          <span className="text-xs text-text-secondary dark:text-text-secondary">
+                          <span className="text-xs text-gray-500">
                             {user.active_plans > 0 && `${user.active_plans} plans`}
                           </span>
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 py-1 text-xs rounded-full ${
-                        user.is_admin 
-                          ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300' 
-                          : 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-300'
+                      <span className={`px-3 py-1 text-xs font-medium rounded-lg ${
+                        user.is_admin
+                          ? 'bg-blue-50 text-blue-700'
+                          : 'bg-gray-50 text-gray-600'
                       }`}>
                         {user.is_admin ? 'Admin' : 'User'}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <Link 
+                      <Link
                         to={`/users/${user.id}`}
-                        className="text-primary dark:text-primary-light hover:text-primary-dark dark:hover:text-primary-light/80"
+                        className="text-primary hover:text-primary-light transition-colors"
                       >
                         View
                       </Link>
@@ -336,8 +339,8 @@ export default function Users() {
           </div>
         ) : (
           <div className="text-center py-12">
-            <UsersIcon className="mx-auto h-12 w-12 text-text-tertiary dark:text-text-tertiary mb-4" />
-            <p className="text-text-secondary dark:text-text-secondary">
+            <UsersIcon className="mx-auto h-12 w-12 text-gray-300 mb-4" />
+            <p className="text-gray-500">
               {searchQuery || filterType !== 'all' ? 'No users match your filters' : 'No users found'}
             </p>
             {(searchQuery || filterType !== 'all') && (
@@ -346,14 +349,14 @@ export default function Users() {
                   setSearchQuery('');
                   setFilterType('all');
                 }}
-                className="mt-2 text-primary dark:text-primary-light hover:underline"
+                className="mt-4 px-4 py-2 text-sm font-medium text-primary bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
               >
                 Clear filters
               </button>
             )}
           </div>
         )}
-      </Card>
+      </div>
     </div>
   );
 }

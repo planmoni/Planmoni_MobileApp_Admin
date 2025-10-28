@@ -1,12 +1,14 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
   font-family: 'Inter', system-ui, sans-serif;
-  line-height: 1.5;
+  line-height: 1.6;
   font-weight: 400;
-  
+
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -21,33 +23,37 @@ body {
 
 /* Light mode variables */
 :root {
-  --color-background: #FFFFFF;
-  --color-background-secondary: #F8FAFC;
-  --color-background-tertiary: #F1F5F9;
-  
+  --color-background: #FAFAFA;
+  --color-background-secondary: #F5F5F5;
+  --color-background-tertiary: #EFEFEF;
+
   --color-surface: #FFFFFF;
-  --color-surface-secondary: #F8FAFC;
-  
-  --color-text: #1E293B;
-  --color-text-secondary: #64748B;
+  --color-surface-secondary: #FAFAFA;
+
+  --color-text: #0F172A;
+  --color-text-secondary: #475569;
   --color-text-tertiary: #94A3B8;
-  
-  --color-primary: #1E3A8A;
-  --color-primary-light: #3B82F6;
-  --color-primary-dark: #1E40AF;
-  
+
+  --color-primary: #0F172A;
+  --color-primary-light: #1E293B;
+  --color-primary-dark: #020617;
+
+  --color-accent: #86EFAC;
+  --color-accent-light: #BBF7D0;
+  --color-accent-dark: #4ADE80;
+
   --color-success: #22C55E;
   --color-success-light: #DCFCE7;
   --color-warning: #F59E0B;
   --color-warning-light: #FEF3C7;
   --color-error: #EF4444;
   --color-error-light: #FEE2E2;
-  
-  --color-border: #E2E8F0;
-  --color-border-secondary: #CBD5E1;
-  
+
+  --color-border: #E5E7EB;
+  --color-border-secondary: #D1D5DB;
+
   --color-card: #FFFFFF;
-  --color-card-secondary: #F8FAFC;
+  --color-card-secondary: #FAFAFA;
 }
 
 /* Base styles */
@@ -56,7 +62,14 @@ body {
   color: var(--color-text);
 }
 
-/* Transition for theme changes */
 * {
-  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  ring: 2px;
+  ring-color: rgba(15, 23, 42, 0.1);
 }

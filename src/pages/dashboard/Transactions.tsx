@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Search, Filter, ArrowUpRight, ArrowDownRight, RefreshCw } from 'lucide-react';
-import Card from '../../components/Card';
 import DateRangePicker from '../../components/DateRangePicker';
 import { format } from 'date-fns';
 import { useTransactionsData } from '@/hooks/queries/useTransactionsData';
@@ -32,12 +31,11 @@ export default function Transactions() {
     setDateRange({ start: startDate, end: endDate });
   };
 
-  // Group transactions by date
   const groupTransactionsByDate = () => {
     if (!transactionsData?.transactions) return {};
-    
+
     const grouped: Record<string, any[]> = {};
-    
+
     transactionsData.transactions.forEach(transaction => {
       const date = format(new Date(transaction.created_at), 'yyyy-MM-dd');
       if (!grouped[date]) {
@@ -45,7 +43,7 @@ export default function Transactions() {
       }
       grouped[date].push(transaction);
     });
-    
+
     return grouped;
   };
 
@@ -57,7 +55,7 @@ export default function Transactions() {
         <p className="text-error mb-4">Failed to load transactions</p>
         <button
           onClick={handleRefresh}
-          className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark"
+          className="px-4 py-2 bg-primary text-white rounded-xl hover:bg-primary-light transition-colors"
         >
           Try Again
         </button>
@@ -69,34 +67,34 @@ export default function Transactions() {
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-text dark:text-text">Transactions</h1>
-          <p className="text-text-secondary dark:text-text-secondary">View and manage all transactions</p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-1">Transactions</h1>
+          <p className="text-gray-500">View and manage all transactions</p>
         </div>
-        <button 
+        <button
           onClick={handleRefresh}
-          className="p-2 rounded-full bg-background-tertiary dark:bg-background-tertiary hover:bg-background-secondary dark:hover:bg-background-secondary transition-colors"
+          className="p-3 rounded-xl bg-white hover:bg-gray-50 transition-colors shadow-soft border border-gray-100"
           disabled={refreshData.isPending}
         >
-          <RefreshCw className={`h-5 w-5 text-primary dark:text-primary ${refreshData.isPending ? 'animate-spin' : ''}`} />
+          <RefreshCw className={`h-5 w-5 text-gray-600 ${refreshData.isPending ? 'animate-spin' : ''}`} />
         </button>
       </div>
 
       <div className="mb-6 flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Search className="h-5 w-5 text-text-secondary dark:text-text-secondary" />
+          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+            <Search className="h-5 w-5 text-gray-400" />
           </div>
           <input
             type="text"
             placeholder="Search transactions..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="block w-full pl-10 pr-3 py-2 border border-border dark:border-border rounded-md bg-white dark:bg-background-tertiary text-text dark:text-text focus:outline-none focus:ring-2 focus:ring-primary dark:focus:ring-primary-light focus:border-primary dark:focus:border-primary-light"
+            className="block w-full pl-11 pr-4 py-3 border border-gray-200 rounded-xl bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all"
           />
         </div>
-        <button className="inline-flex items-center px-4 py-2 border border-border dark:border-border rounded-md bg-white dark:bg-surface text-text dark:text-text hover:bg-background-tertiary dark:hover:bg-background-tertiary focus:outline-none focus:ring-2 focus:ring-primary dark:focus:ring-primary-light">
+        <button className="inline-flex items-center px-5 py-3 border border-gray-200 rounded-xl bg-white text-gray-900 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-900 transition-all">
           <Filter className="h-5 w-5 mr-2" />
           Filter
         </button>
@@ -106,40 +104,40 @@ export default function Transactions() {
         <div className="flex overflow-x-auto pb-2 space-x-2">
           <button
             onClick={() => setActiveType('all')}
-            className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap ${
+            className={`px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all duration-200 ${
               activeType === 'all'
-                ? 'bg-primary text-white'
-                : 'bg-background-tertiary dark:bg-background-tertiary text-text-secondary dark:text-text-secondary hover:bg-background-secondary dark:hover:bg-background-secondary'
+                ? 'bg-gray-900 text-white shadow-sm'
+                : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
             }`}
           >
             All
           </button>
           <button
             onClick={() => setActiveType('deposit')}
-            className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap ${
+            className={`px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all duration-200 ${
               activeType === 'deposit'
-                ? 'bg-primary text-white'
-                : 'bg-background-tertiary dark:bg-background-tertiary text-text-secondary dark:text-text-secondary hover:bg-background-secondary dark:hover:bg-background-secondary'
+                ? 'bg-gray-900 text-white shadow-sm'
+                : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
             }`}
           >
             Deposits
           </button>
           <button
             onClick={() => setActiveType('payout')}
-            className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap ${
+            className={`px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all duration-200 ${
               activeType === 'payout'
-                ? 'bg-primary text-white'
-                : 'bg-background-tertiary dark:bg-background-tertiary text-text-secondary dark:text-text-secondary hover:bg-background-secondary dark:hover:bg-background-secondary'
+                ? 'bg-gray-900 text-white shadow-sm'
+                : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
             }`}
           >
             Payouts
           </button>
           <button
             onClick={() => setActiveType('withdrawal')}
-            className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap ${
+            className={`px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all duration-200 ${
               activeType === 'withdrawal'
-                ? 'bg-primary text-white'
-                : 'bg-background-tertiary dark:bg-background-tertiary text-text-secondary dark:text-text-secondary hover:bg-background-secondary dark:hover:bg-background-secondary'
+                ? 'bg-gray-900 text-white shadow-sm'
+                : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
             }`}
           >
             Withdrawals
@@ -154,20 +152,20 @@ export default function Transactions() {
         />
       </div>
 
-      <div className="bg-white dark:bg-surface rounded-lg shadow mb-6 overflow-hidden">
-        <div className="grid grid-cols-3 gap-4 p-4">
+      <div className="bg-white rounded-2xl shadow-soft border border-gray-100 mb-8 overflow-hidden">
+        <div className="grid grid-cols-3 gap-4 p-6">
           <div className="text-center">
-            <p className="text-sm text-text-secondary dark:text-text-secondary mb-1">Total Inflows</p>
-            <p className="text-lg font-semibold text-success dark:text-success">₦{stats.inflows.toLocaleString()}</p>
+            <p className="text-sm text-gray-500 mb-2">Total Inflows</p>
+            <p className="text-2xl font-bold text-green-600">₦{stats.inflows.toLocaleString()}</p>
           </div>
-          <div className="text-center border-x border-border dark:border-border">
-            <p className="text-sm text-text-secondary dark:text-text-secondary mb-1">Total Outflows</p>
-            <p className="text-lg font-semibold text-error dark:text-error">₦{stats.outflows.toLocaleString()}</p>
+          <div className="text-center border-x border-gray-100">
+            <p className="text-sm text-gray-500 mb-2">Total Outflows</p>
+            <p className="text-2xl font-bold text-red-600">₦{stats.outflows.toLocaleString()}</p>
           </div>
           <div className="text-center">
-            <p className="text-sm text-text-secondary dark:text-text-secondary mb-1">Net Movement</p>
-            <p className={`text-lg font-semibold ${
-              stats.netMovement >= 0 ? 'text-success dark:text-success' : 'text-error dark:text-error'
+            <p className="text-sm text-gray-500 mb-2">Net Movement</p>
+            <p className={`text-2xl font-bold ${
+              stats.netMovement >= 0 ? 'text-green-600' : 'text-red-600'
             }`}>
               ₦{stats.netMovement.toLocaleString()}
             </p>
@@ -177,53 +175,58 @@ export default function Transactions() {
 
       {isLoading ? (
         <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-accent"></div>
         </div>
       ) : Object.keys(groupedTransactions).length === 0 ? (
-        <Card className="p-12 text-center">
-          <p className="text-text-secondary dark:text-text-secondary">
+        <div className="bg-white rounded-2xl shadow-soft border border-gray-100 p-12 text-center">
+          <p className="text-gray-500">
             {searchQuery || activeType !== 'all' ? 'No transactions match your filters' : 'No transactions found'}
           </p>
-        </Card>
+        </div>
       ) : (
         <div className="space-y-6">
           {Object.entries(groupedTransactions).map(([date, transactions]) => {
             const formattedDate = format(new Date(date), 'MMMM d, yyyy');
             const isToday = new Date(date).toDateString() === new Date().toDateString();
             const isYesterday = new Date(date).toDateString() === new Date(Date.now() - 86400000).toDateString();
-            
+
             const displayDate = isToday ? 'Today' : isYesterday ? 'Yesterday' : formattedDate;
-            
+
             return (
               <div key={date}>
-                <h3 className="text-sm font-semibold text-text-secondary dark:text-text-secondary mb-3">{displayDate}</h3>
-                <Card className="overflow-hidden">
-                  <div className="divide-y divide-border dark:divide-border">
-                    {transactions.map((transaction) => {
+                <h3 className="text-sm font-semibold text-gray-500 mb-3">{displayDate}</h3>
+                <div className="bg-white rounded-2xl shadow-soft border border-gray-100 overflow-hidden">
+                  <div>
+                    {transactions.map((transaction, index) => {
                       const isPositive = transaction.type === 'deposit';
                       return (
-                        <div key={transaction.id} className="flex justify-between items-center p-4 hover:bg-background-tertiary dark:hover:bg-background-tertiary/20 transition-colors">
+                        <div
+                          key={transaction.id}
+                          className={`flex justify-between items-center p-5 hover:bg-gray-50 transition-colors ${
+                            index !== transactions.length - 1 ? 'border-b border-gray-100' : ''
+                          }`}
+                        >
                           <div className="flex items-center">
-                            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                              isPositive ? 'bg-success-light dark:bg-success-light/20' : 'bg-error-light dark:bg-error-light/20'
+                            <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${
+                              isPositive ? 'bg-green-50' : 'bg-red-50'
                             }`}>
                               {isPositive ? (
-                                <ArrowUpRight className="h-5 w-5 text-success dark:text-success" />
+                                <ArrowUpRight className="h-5 w-5 text-green-600" />
                               ) : (
-                                <ArrowDownRight className="h-5 w-5 text-error dark:text-error" />
+                                <ArrowDownRight className="h-5 w-5 text-red-600" />
                               )}
                             </div>
-                            <div className="ml-3">
-                              <p className="text-sm font-medium text-text dark:text-text">
+                            <div className="ml-4">
+                              <p className="text-sm font-semibold text-gray-900">
                                 {transaction.type.charAt(0).toUpperCase() + transaction.type.slice(1)}
                               </p>
-                              <p className="text-xs text-text-secondary dark:text-text-secondary">
+                              <p className="text-xs text-gray-500">
                                 {new Date(transaction.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                               </p>
                             </div>
                           </div>
                           <p className={`text-sm font-semibold ${
-                            isPositive ? 'text-success dark:text-success' : 'text-error dark:text-error'
+                            isPositive ? 'text-green-600' : 'text-red-600'
                           }`}>
                             {isPositive ? '+' : '-'}₦{transaction.amount.toLocaleString()}
                           </p>
@@ -231,7 +234,7 @@ export default function Transactions() {
                       );
                     })}
                   </div>
-                </Card>
+                </div>
               </div>
             );
           })}

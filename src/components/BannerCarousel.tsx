@@ -1,11 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { useBanners } from '@/hooks/queries/useBanners';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, Pagination, Autoplay } from 'swiper/modules';
 
-// Import Swiper styles
 import 'swiper/css';
 import 'swiper/css/navigation';
 import 'swiper/css/pagination';
@@ -16,16 +15,14 @@ interface BannerCarouselProps {
   showControls?: boolean;
 }
 
-export default function BannerCarousel({ 
-  className = '', 
-  maxHeight = 'max-h-64',
-  showControls = true 
+export default function BannerCarousel({
+  className = '',
+  showControls = false
 }: BannerCarouselProps) {
   const { data: banners, isLoading, error } = useBanners(true);
   const [swiperInitialized, setSwiperInitialized] = useState(false);
 
   useEffect(() => {
-    // This effect is used to force a Swiper update when banners data changes
     if (banners && banners.length > 0 && swiperInitialized) {
       const swiperInstance = (document.querySelector('.banner-carousel .swiper') as any)?.swiper;
       if (swiperInstance) {
@@ -37,23 +34,26 @@ export default function BannerCarousel({
   if (isLoading) {
     return (
       <div className={`flex justify-center items-center h-32 ${className}`}>
-        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-accent"></div>
       </div>
     );
   }
 
   if (error || !banners || banners.length === 0) {
-    return null; // Don't show anything if there's an error or no banners
+    return (
+      <div className={`flex flex-col items-center justify-center h-48 rounded-2xl border-2 border-dashed border-gray-200 ${className}`}>
+        <p className="text-gray-400 text-sm">No banners available</p>
+      </div>
+    );
   }
 
   const renderBannerContent = (banner: any) => {
     const bannerElement = (
-      <div className="relative w-full h-full">
-        <div className={`w-full ${maxHeight} overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center`}>
+      <div className="relative w-full h-full group">
+        <div className={`w-full h-auto overflow-hidden rounded-2xl flex items-center justify-center`}>
           <img
             src={banner.image_url}
-            alt={banner.title}
-            className="w-full h-full object-contain transition-transform duration-300 hover:scale-105"
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
             style={{ maxHeight: '100%', maxWidth: '100%' }}
             onError={(e) => {
               const target = e.target as HTMLImageElement;
@@ -61,22 +61,22 @@ export default function BannerCarousel({
             }}
           />
         </div>
-        
+
         {(banner.title || banner.description) && (
-          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-3 sm:p-4 rounded-b-lg">
+          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-gray-900 via-gray-900/70 to-transparent p-6 rounded-b-2xl">
             {banner.title && (
-              <h3 className="text-white text-sm sm:text-base font-semibold mb-1 line-clamp-1 drop-shadow-sm">
+              <h3 className="text-white text-base sm:text-lg font-bold mb-1.5 line-clamp-1 drop-shadow-lg">
                 {banner.title}
               </h3>
             )}
             {banner.description && (
-              <p className="text-white/90 text-xs sm:text-sm line-clamp-2 drop-shadow-sm">
+              <p className="text-white/90 text-sm sm:text-base line-clamp-2 drop-shadow-md">
                 {banner.description}
               </p>
             )}
             {banner.cta_text && (
-              <div className="mt-2">
-                <span className="inline-block bg-white/20 backdrop-blur-sm text-white text-xs px-3 py-1.5 rounded-full font-medium border border-white/20">
+              <div className="mt-3">
+                <span className="inline-flex items-center bg-white/95 text-gray-900 text-xs sm:text-sm px-4 py-2 rounded-xl font-semibold shadow-lg hover:bg-white transition-colors">
                   {banner.cta_text}
                 </span>
               </div>
@@ -86,12 +86,10 @@ export default function BannerCarousel({
       </div>
     );
 
-    // If no link URL, just return the image
     if (!banner.link_url) {
       return bannerElement;
     }
 
-    // Check if it's an external URL
     const isExternalUrl = banner.link_url.startsWith('http://') || banner.link_url.startsWith('https://');
 
     if (isExternalUrl) {
@@ -118,26 +116,26 @@ export default function BannerCarousel({
     <div className={`relative banner-carousel ${className}`}>
       <Swiper
         modules={[Navigation, Pagination, Autoplay]}
-        spaceBetween={16}
+        spaceBetween={20}
         slidesPerView={1}
         navigation={showControls ? {
           nextEl: '.banner-carousel .swiper-button-next',
           prevEl: '.banner-carousel .swiper-button-prev',
         } : false}
-        pagination={showControls ? { 
+        pagination={showControls ? {
           clickable: true,
           el: '.banner-carousel .swiper-pagination',
-          bulletClass: 'swiper-pagination-bullet !bg-white/60 !opacity-100',
-          bulletActiveClass: 'swiper-pagination-bullet-active !bg-white !scale-125',
+          bulletClass: 'swiper-pagination-bullet',
+          bulletActiveClass: 'swiper-pagination-bullet-active',
         } : false}
         autoplay={{
-          delay: 6000,
+          delay: 5000,
           disableOnInteraction: false,
           pauseOnMouseEnter: true,
         }}
         loop={banners.length > 1}
         onInit={() => setSwiperInitialized(true)}
-        className="rounded-lg overflow-hidden"
+        className="rounded-2xl overflow-hidden"
         style={{ height: 'auto' }}
       >
         {banners.map((banner) => (
@@ -146,43 +144,46 @@ export default function BannerCarousel({
           </SwiperSlide>
         ))}
       </Swiper>
-      
+
       {banners.length > 1 && showControls && (
         <>
-          {/* Previous Button */}
-          <div className="swiper-button-prev !hidden sm:!flex absolute left-3 top-1/2 transform -translate-y-1/2 z-20 items-center justify-center w-12 h-12 rounded-full bg-white/90 dark:bg-gray-800/90 shadow-lg cursor-pointer hover:bg-white dark:hover:bg-gray-800 transition-all duration-200 hover:scale-110 group">
-            <ChevronLeft className="h-6 w-6 text-gray-700 dark:text-gray-200 group-hover:text-gray-900 dark:group-hover:text-white transition-colors" />
+          <div className="swiper-button-prev !hidden md:!flex absolute left-4 top-1/2 transform -translate-y-1/2 z-20 items-center justify-center w-11 h-11 rounded-xl bg-white/95 backdrop-blur-sm shadow-lg cursor-pointer hover:bg-white hover:scale-105 transition-all duration-200 group border border-gray-200">
+            <ArrowLeft className="h-5 w-5 text-gray-700 group-hover:text-gray-900 transition-colors" strokeWidth={2.5} />
           </div>
-          
-          {/* Next Button */}
-          <div className="swiper-button-next !hidden sm:!flex absolute right-3 top-1/2 transform -translate-y-1/2 z-20 items-center justify-center w-12 h-12 rounded-full bg-white/90 dark:bg-gray-800/90 shadow-lg cursor-pointer hover:bg-white dark:hover:bg-gray-800 transition-all duration-200 hover:scale-110 group">
-            <ChevronRight className="h-6 w-6 text-gray-700 dark:text-gray-200 group-hover:text-gray-900 dark:group-hover:text-white transition-colors" />
+
+          <div className="swiper-button-next !hidden md:!flex absolute right-4 top-1/2 transform -translate-y-1/2 z-20 items-center justify-center w-11 h-11 rounded-xl bg-white/95 backdrop-blur-sm shadow-lg cursor-pointer hover:bg-white hover:scale-105 transition-all duration-200 group border border-gray-200">
+            <ArrowRight className="h-5 w-5 text-gray-700 group-hover:text-gray-900 transition-colors" strokeWidth={2.5} />
           </div>
-          
-          {/* Mobile Navigation Dots */}
-          <div className="swiper-pagination !relative !bottom-0 !top-4 flex justify-center gap-2 sm:!absolute sm:!bottom-4 sm:!top-auto"></div>
+
+          <div className="swiper-pagination !relative !bottom-0 !top-5 flex justify-center gap-2 md:!absolute md:!bottom-5 md:!top-auto"></div>
         </>
       )}
-      
-      {/* Custom styles for pagination */}
+
       <style>{`
         .banner-carousel .swiper-pagination-bullet {
-          width: 8px !important;
-          height: 8px !important;
-          margin: 0 4px !important;
+          width: 10px !important;
+          height: 10px !important;
+          margin: 0 5px !important;
           border-radius: 50% !important;
+          background: rgba(255, 255, 255, 0.5) !important;
+          backdrop-filter: blur(4px) !important;
+          opacity: 1 !important;
           transition: all 0.3s ease !important;
+          border: 1px solid rgba(255, 255, 255, 0.3) !important;
         }
-        
+
         .banner-carousel .swiper-pagination-bullet-active {
-          transform: scale(1.25) !important;
+          width: 28px !important;
+          border-radius: 5px !important;
+          background: rgba(255, 255, 255, 0.95) !important;
+          border: 1px solid rgba(255, 255, 255, 0.5) !important;
         }
-        
-        @media (max-width: 640px) {
+
+        @media (max-width: 768px) {
           .banner-carousel .swiper-pagination {
             position: relative !important;
             bottom: auto !important;
-            top: 16px !important;
+            top: 20px !important;
           }
         }
       `}</style>
