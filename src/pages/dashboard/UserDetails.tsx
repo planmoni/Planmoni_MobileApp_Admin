@@ -46,11 +46,11 @@ export default function UserDetails() {
 
   // Calculate user stats
   const totalDeposits = transactions
-    .filter((t: any) => t.type === 'deposit')
+    .filter((t: any) => t.type === 'deposit' && t.status === 'completed')
     .reduce((sum: number, t: any) => sum + t.amount, 0);
-  
+
   const totalPayouts = transactions
-    .filter((t: any) => t.type === 'payout')
+    .filter((t: any) => t.type === 'payout' && t.status === 'completed')
     .reduce((sum: number, t: any) => sum + t.amount, 0);
   
   const activePlans = payoutPlans.filter((p: any) => p.status === 'active').length;
