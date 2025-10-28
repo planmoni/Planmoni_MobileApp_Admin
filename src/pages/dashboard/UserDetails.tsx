@@ -184,18 +184,23 @@ export default function UserDetails() {
                         </div>
                         <p className="text-text dark:text-text text-sm font-mono">{account.account_number}</p>
                         <p className="text-text-secondary dark:text-text-secondary text-sm">{account.account_name}</p>
-                        <p className="text-text-tertiary dark:text-text-tertiary text-xs mt-1">
-                          Added {format(new Date(account.created_at), 'MMM d, yyyy')}
-                        </p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <p className="text-text-tertiary dark:text-text-tertiary text-xs">
+                            Added {format(new Date(account.created_at), 'MMM d, yyyy')}
+                          </p>
+                          {account.paystack_recipient_code && (
+                            <span className="text-text-tertiary dark:text-text-tertiary text-xs">
+                              • {account.paystack_recipient_code}
+                            </span>
+                          )}
+                        </div>
                       </div>
                       <span className={`px-2 py-1 rounded-full text-xs font-medium shrink-0 ${
-                        account.status === 'active'
+                        account.transfer_enabled
                           ? 'bg-green-50 dark:bg-green-900/20 text-green-500'
-                          : account.status === 'pending'
-                            ? 'bg-yellow-50 dark:bg-yellow-900/20 text-yellow-500'
-                            : 'bg-red-50 dark:bg-red-900/20 text-red-500'
+                          : 'bg-yellow-50 dark:bg-yellow-900/20 text-yellow-500'
                       }`}>
-                        {account.status.charAt(0).toUpperCase() + account.status.slice(1)}
+                        {account.transfer_enabled ? 'Enabled' : 'Disabled'}
                       </span>
                     </div>
                   </div>
