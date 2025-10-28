@@ -4,7 +4,7 @@ import { startOfMonth, endOfMonth } from 'date-fns';
 
 interface CalendarEvent {
   id: string;
-  type: 'payout_received' | 'payout_created' | 'scheduled_payout' | 'payout_failed' | 'plan_created' | 'deposit' | 'withdrawal';
+  type: 'payout_received' | 'payout_created' | 'scheduled_payout' | 'payout_failed' | 'deposit' | 'withdrawal';
   date: Date;
   title: string;
   description: string;
@@ -140,9 +140,9 @@ export function useCalendarEvents(currentDate: Date) {
 
           events.push({
             id: `plan-${plan.id}`,
-            type: 'plan_created',
+            type: 'payout_created',
             date: new Date(plan.created_at),
-            title: 'Payout Plan Created',
+            title: 'Payout Created',
             description: `${userName} created "${plan.name}"`,
             amount: parseFloat(plan.total_amount),
             user_name: userName,

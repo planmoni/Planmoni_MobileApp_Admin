@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { ChevronLeft, ChevronRight, Clock, CheckCircle2, XCircle, Calendar as CalendarIcon, PlusCircle, ArrowDownCircle, ArrowUpCircle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Clock, CheckCircle2, XCircle, Calendar as CalendarIcon, ArrowDownCircle, ArrowUpCircle } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek } from 'date-fns';
 import { useCalendarEvents } from '@/hooks/queries/useCalendarEvents';
 
 type ViewMode = 'month' | 'week' | 'list';
-type EventType = 'payout_received' | 'payout_created' | 'scheduled_payout' | 'payout_failed' | 'plan_created' | 'deposit' | 'withdrawal';
+type EventType = 'payout_received' | 'payout_created' | 'scheduled_payout' | 'payout_failed' | 'deposit' | 'withdrawal';
 
 interface CalendarEvent {
   id: string;
@@ -49,14 +49,6 @@ const eventTypeConfig = {
     bgColor: 'bg-red-50',
     borderColor: 'border-red-100',
     icon: XCircle,
-  },
-  plan_created: {
-    label: 'Plan created',
-    color: 'bg-purple-500',
-    textColor: 'text-purple-600',
-    bgColor: 'bg-purple-50',
-    borderColor: 'border-purple-100',
-    icon: PlusCircle,
   },
   deposit: {
     label: 'Deposit',
