@@ -142,7 +142,7 @@ export default function BannerDisplay({ showAdminControls = false, className = '
         {banners.map((banner) => (
           <div key={banner.id} className="bg-white rounded-2xl shadow-soft border border-gray-100 overflow-hidden group hover:shadow-md transition-all duration-200">
             <div className="relative">
-              <div className="aspect-video xl:w-full w-[350px] h-auto overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100">
+              <div className="aspect-video xl:w-full w-[350px] h-[200px] xl:h-auto overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100">
                 <img
                   src={banner.image_url}
                   alt={banner.title}
