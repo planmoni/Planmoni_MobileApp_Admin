@@ -266,7 +266,7 @@ export default function Users() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-xs w-full">
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm w-full">
                     <div className="min-w-0">
                       <p className="text-gray-400 mb-0.5">Balance</p>
                       <p className="font-semibold text-gray-900 break-words">{formatCurrency(user.balance)}</p>
