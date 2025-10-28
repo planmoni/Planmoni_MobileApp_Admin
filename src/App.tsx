@@ -17,6 +17,7 @@ const AnalyticsPage = lazy(() => import('./pages/dashboard/Analytics'));
 const ActivityPage = lazy(() => import('./pages/dashboard/Activity'));
 const KycDataPage = lazy(() => import('./pages/dashboard/KycData'));
 const PayoutEventsPage = lazy(() => import('./pages/dashboard/PayoutEvents'));
+const PayoutPlansPage = lazy(() => import('./pages/dashboard/PayoutPlans'));
 const SettingsPage = lazy(() => import('./pages/dashboard/Settings'));
 const UserDetailsPage = lazy(() => import('./pages/dashboard/UserDetails'));
 const SuperAdminPage = lazy(() => import('./pages/dashboard/SuperAdmin'));
@@ -57,6 +58,7 @@ function App() {
                 <Route path="activity" element={<ActivityPage />} />
                 <Route path="kyc-data" element={<KycDataPage />} />
                 <Route path="payout-events" element={<PayoutEventsPage />} />
+                <Route path="payout-plans" element={<PayoutPlansPage />} />
                 <Route path="super-admin" element={<SuperAdminPage />} />
                 <Route path="banners" element={<BannersPage />} />
                 <Route path="settings" element={<SettingsPage />} />

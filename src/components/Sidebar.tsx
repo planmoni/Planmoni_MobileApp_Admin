@@ -13,7 +13,8 @@ import {
   Image,
   Activity,
   FileText,
-  DollarSign
+  DollarSign,
+  CalendarDays
 } from 'lucide-react';
 
 export default function Sidebar({ isMobileMenuOpen, closeMobileMenu }: { isMobileMenuOpen: boolean, closeMobileMenu: () => void }) {
@@ -118,6 +119,7 @@ export default function Sidebar({ isMobileMenuOpen, closeMobileMenu }: { isMobil
     { name: 'Activity', path: '/activity', icon: Activity },
     { name: 'KYC Data', path: '/kyc-data', icon: FileText },
     { name: 'Payout Events', path: '/payout-events', icon: DollarSign },
+    { name: 'Payout Plans', path: '/payout-plans', icon: CalendarDays },
     ...(isSuperAdmin ? [{ name: 'Super Admin', path: '/super-admin', icon: Shield }] : []),
     { name: 'Banners', path: '/banners', icon: Image },
     { name: 'Settings', path: '/settings', icon: Settings },
