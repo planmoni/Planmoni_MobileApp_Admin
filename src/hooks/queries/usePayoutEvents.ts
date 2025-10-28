@@ -34,12 +34,14 @@ export interface PayoutEventStats {
   usersWithUpcomingPayouts: number;
 }
 
-export function usePayoutEvents(searchQuery?: string, statusFilter?: string) {
+export function usePayoutEvents(searchQuery?: string, statusFilter?: string, page: number = 1, pageSize: number = 50) {
   return useQuery({
-    queryKey: ['payout-events', searchQuery, statusFilter],
+    queryKey: ['payout-events', searchQuery, statusFilter, page, pageSize],
     queryFn: async () => {
-      const [statsResult, plansResult, upcomingUsersResult] = await Promise.all([
-        supabase.rpc('get_payout_stats'),
+      const [statsQuery, plansResult, upcomingUsersResult] = await Promise.all([
+        supabase
+          .from('automated_payouts')
+          .select('status', { count: 'exact', head: false }),
         supabase
           .from('payout_plans')
           .select('id, name, payout_amount, frequency, status'),
@@ -50,6 +52,21 @@ export function usePayoutEvents(searchQuery?: string, statusFilter?: string) {
           .not('next_payout_date', 'is', null)
           .gt('next_payout_date', new Date().toISOString())
       ]);
+
+      if (statsQuery.error) throw statsQuery.error;
+      if (plansResult.error) throw plansResult.error;
+      if (upcomingUsersResult.error) throw upcomingUsersResult.error;
+
+      const allStatuses = statsQuery.data || [];
+      const stats: PayoutEventStats = {
+        total: statsQuery.count || 0,
+        processing: allStatuses.filter((e: any) => e.status === 'processing').length,
+        completed: allStatuses.filter((e: any) => e.status === 'completed').length,
+        failed: allStatuses.filter((e: any) => e.status === 'failed').length,
+        usersWithUpcomingPayouts: new Set(
+          (upcomingUsersResult.data || []).map((plan: any) => plan.user_id)
+        ).size,
+      };
 
       let payoutsQuery = supabase
         .from('automated_payouts')
@@ -62,64 +79,39 @@ export function usePayoutEvents(searchQuery?: string, statusFilter?: string) {
           )
         `, { count: 'exact' })
         .order('created_at', { ascending: false })
-        .limit(5000);
+        .range((page - 1) * pageSize, page * pageSize - 1);
 
       if (statusFilter && statusFilter !== 'all') {
         payoutsQuery = payoutsQuery.eq('status', statusFilter);
       }
 
-      const allPayoutsResult = await payoutsQuery;
+      if (searchQuery) {
+        payoutsQuery = payoutsQuery.or(
+          `transfer_reference.ilike.%${searchQuery}%,` +
+          `amount.eq.${searchQuery}`
+        );
+      }
 
-      if (allPayoutsResult.error) throw allPayoutsResult.error;
-      if (plansResult.error) throw plansResult.error;
-      if (upcomingUsersResult.error) throw upcomingUsersResult.error;
+      const payoutsResult = await payoutsQuery;
+
+      if (payoutsResult.error) throw payoutsResult.error;
 
       const plansMap = new Map(
         (plansResult.data || []).map((plan: any) => [plan.id, plan])
       );
 
-      const uniqueUsersWithUpcomingPayouts = new Set(
-        (upcomingUsersResult.data || []).map((plan: any) => plan.user_id)
-      ).size;
-
-      const allEvents = (allPayoutsResult.data || []).map((payout: any) => ({
+      const events = (payoutsResult.data || []).map((payout: any) => ({
         ...payout,
         user: payout.profiles,
         payout_plan: payout.payout_plan_id ? plansMap.get(payout.payout_plan_id) : null
       }));
 
-      const stats: PayoutEventStats = statsResult.error
-        ? {
-            total: allPayoutsResult.count || allEvents.length,
-            processing: allEvents.filter((e: any) => e.status === 'processing').length,
-            completed: allEvents.filter((e: any) => e.status === 'completed').length,
-            failed: allEvents.filter((e: any) => e.status === 'failed').length,
-            usersWithUpcomingPayouts: uniqueUsersWithUpcomingPayouts,
-          }
-        : {
-            total: statsResult.data?.total || 0,
-            processing: statsResult.data?.processing || 0,
-            completed: statsResult.data?.completed || 0,
-            failed: statsResult.data?.failed || 0,
-            usersWithUpcomingPayouts: uniqueUsersWithUpcomingPayouts,
-          };
-
-      let filteredEvents = allEvents;
-
-      if (searchQuery) {
-        const query = searchQuery.toLowerCase();
-        filteredEvents = filteredEvents.filter((event: any) =>
-          event.status?.toLowerCase().includes(query) ||
-          event.transfer_reference?.toLowerCase().includes(query) ||
-          event.amount?.toString().includes(query) ||
-          event.user?.email?.toLowerCase().includes(query) ||
-          event.user?.first_name?.toLowerCase().includes(query) ||
-          event.user?.last_name?.toLowerCase().includes(query) ||
-          event.payout_plan?.name?.toLowerCase().includes(query)
-        );
-      }
-
-      return { events: filteredEvents, stats };
+      return {
+        events,
+        stats,
+        totalCount: payoutsResult.count || 0,
+        totalPages: Math.ceil((payoutsResult.count || 0) / pageSize)
+      };
     },
     staleTime: 30 * 1000,
   });
