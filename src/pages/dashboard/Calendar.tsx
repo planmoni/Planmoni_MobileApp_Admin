@@ -72,6 +72,8 @@ export default function Calendar() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
   const [viewMode, setViewMode] = useState<ViewMode>('month');
+  const [listPage, setListPage] = useState(1);
+  const itemsPerPage = 10;
 
   const { data: eventsData } = useCalendarEvents(currentDate);
   const events: CalendarEvent[] = eventsData || [];
@@ -91,21 +93,49 @@ export default function Calendar() {
 
   const handlePreviousMonth = () => {
     setCurrentDate(subMonths(currentDate, 1));
+    setListPage(1);
   };
 
   const handleNextMonth = () => {
     setCurrentDate(addMonths(currentDate, 1));
+    setListPage(1);
   };
 
   const handleToday = () => {
     const today = new Date();
     setCurrentDate(today);
     setSelectedDate(today);
+    setListPage(1);
   };
 
   const getEventTypeColor = (type: EventType) => {
     return eventTypeConfig[type]?.color || 'bg-gray-500';
   };
+
+  const groupEventsByDate = (events: CalendarEvent[]) => {
+    const grouped = events.reduce((acc, event) => {
+      const dateKey = format(event.date, 'yyyy-MM-dd');
+      if (!acc[dateKey]) {
+        acc[dateKey] = [];
+      }
+      acc[dateKey].push(event);
+      return acc;
+    }, {} as Record<string, CalendarEvent[]>);
+
+    return Object.entries(grouped)
+      .sort(([dateA], [dateB]) => new Date(dateB).getTime() - new Date(dateA).getTime())
+      .map(([date, events]) => ({
+        date: new Date(date),
+        events: events.sort((a, b) => b.date.getTime() - a.date.getTime()),
+      }));
+  };
+
+  const groupedEvents = groupEventsByDate(events);
+  const totalPages = Math.ceil(groupedEvents.length / itemsPerPage);
+  const paginatedGroups = groupedEvents.slice(
+    (listPage - 1) * itemsPerPage,
+    listPage * itemsPerPage
+  );
 
   return (
     <div>
@@ -234,45 +264,92 @@ export default function Calendar() {
             )}
 
             {viewMode === 'list' && (
-              <div className="divide-y divide-gray-100">
-                {events.length > 0 ? (
-                  events.map((event) => {
-                    const config = eventTypeConfig[event.type];
-                    const Icon = config.icon;
-                    return (
-                      <div key={event.id} className="p-6 hover:bg-gray-50 transition-colors">
-                        <div className="flex items-start gap-4">
-                          <div className={`w-12 h-12 rounded-xl ${config.bgColor} flex items-center justify-center`}>
-                            <Icon className={`h-5 w-5 ${config.textColor}`} />
-                          </div>
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              <h3 className="text-base font-semibold text-gray-900">{event.title}</h3>
-                              <span className={`px-2 py-1 rounded-lg text-xs font-semibold ${config.bgColor} ${config.textColor} border ${config.borderColor}`}>
-                                {config.label}
-                              </span>
-                            </div>
-                            <p className="text-sm text-gray-600 mb-2">{event.description}</p>
-                            <div className="flex items-center gap-4 text-xs text-gray-500">
-                              <span>{format(event.date, 'MMM d, yyyy')}</span>
-                              {event.amount && <span>₦{event.amount.toLocaleString()}</span>}
-                              {event.user_name && <span>{event.user_name}</span>}
-                            </div>
-                          </div>
+              <>
+                <div className="divide-y divide-gray-100">
+                  {paginatedGroups.length > 0 ? (
+                    paginatedGroups.map((group) => (
+                      <div key={group.date.toISOString()} className="p-6">
+                        <div className="flex items-center justify-between mb-4">
+                          <h3 className="text-lg font-bold text-gray-900">
+                            {format(group.date, 'MMMM d, yyyy')}
+                          </h3>
+                          <span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-xs font-semibold">
+                            {group.events.length} event{group.events.length !== 1 ? 's' : ''}
+                          </span>
+                        </div>
+                        <div className="space-y-3">
+                          {group.events.map((event) => {
+                            const config = eventTypeConfig[event.type];
+                            const Icon = config.icon;
+                            return (
+                              <div
+                                key={event.id}
+                                className={`p-4 rounded-xl ${config.bgColor} border ${config.borderColor} hover:shadow-sm transition-shadow`}
+                              >
+                                <div className="flex items-start gap-3">
+                                  <div className={`w-10 h-10 rounded-lg ${config.color} flex items-center justify-center flex-shrink-0`}>
+                                    <Icon className="h-5 w-5 text-white" />
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-start justify-between gap-2 mb-1">
+                                      <h4 className="text-sm font-bold text-gray-900">
+                                        {event.amount ? `₦${event.amount.toLocaleString()}` : event.title}
+                                      </h4>
+                                      <span className="text-xs text-gray-500 flex-shrink-0">
+                                        {format(event.date, 'h:mm a')}
+                                      </span>
+                                    </div>
+                                    <p className="text-sm text-gray-600 mb-1">{event.description}</p>
+                                    <div className="flex items-center gap-2">
+                                      <span className={`px-2 py-0.5 rounded-md text-xs font-semibold ${config.textColor} bg-white`}>
+                                        {config.label}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
-                    );
-                  })
-                ) : (
-                  <div className="p-12 text-center">
-                    <div className="w-16 h-16 rounded-2xl bg-gray-50 flex items-center justify-center mx-auto mb-4">
-                      <CalendarIcon className="h-7 w-7 text-gray-400" />
+                    ))
+                  ) : (
+                    <div className="p-12 text-center">
+                      <div className="w-16 h-16 rounded-2xl bg-gray-50 flex items-center justify-center mx-auto mb-4">
+                        <CalendarIcon className="h-7 w-7 text-gray-400" />
+                      </div>
+                      <p className="text-gray-500 font-medium">No events found</p>
+                      <p className="text-gray-400 text-sm mt-1">There are no payout events for this period</p>
                     </div>
-                    <p className="text-gray-500 font-medium">No events found</p>
-                    <p className="text-gray-400 text-sm mt-1">There are no payout events for this period</p>
+                  )}
+                </div>
+
+                {totalPages > 1 && (
+                  <div className="p-6 border-t border-gray-100">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm text-gray-600">
+                        Page {listPage} of {totalPages}
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => setListPage(listPage - 1)}
+                          disabled={listPage === 1}
+                          className="px-4 py-2 text-sm font-semibold text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                          Previous
+                        </button>
+                        <button
+                          onClick={() => setListPage(listPage + 1)}
+                          disabled={listPage === totalPages}
+                          className="px-4 py-2 text-sm font-semibold text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                          Next
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 )}
-              </div>
+              </>
             )}
           </div>
         </div>
