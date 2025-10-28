@@ -115,8 +115,8 @@ export default function Sidebar({ isMobileMenuOpen, closeMobileMenu }: { isMobil
   const navigation = [
     { name: 'Dashboard', path: '/', icon: Home },
     { name: 'Users', path: '/users', icon: Users },
-    { name: 'Transactions', path: '/transactions', icon: CreditCard },
     { name: 'Calendar', path: '/calendar', icon: CalendarDays },
+    { name: 'Transactions', path: '/transactions', icon: CreditCard },
     { name: 'Analytics', path: '/analytics', icon: BarChart3 },
     { name: 'Activity', path: '/activity', icon: Activity },
     { name: 'KYC Data', path: '/kyc-data', icon: FileText },
@@ -124,7 +124,7 @@ export default function Sidebar({ isMobileMenuOpen, closeMobileMenu }: { isMobil
     { name: 'Payout Plans', path: '/payout-plans', icon: Repeat },
     ...(isSuperAdmin ? [{ name: 'Super Admin', path: '/super-admin', icon: Shield }] : []),
     { name: 'Banners', path: '/banners', icon: Image },
-    { name: 'Settings', path: '/settings', icon: Settings },
+    // { name: 'Settings', path: '/settings', icon: Settings },
   ];
 
   console.log('🔧 Current state:');
