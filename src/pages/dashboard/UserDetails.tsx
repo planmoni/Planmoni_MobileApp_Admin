@@ -215,13 +215,7 @@ export default function UserDetails() {
                               Default
                             </span>
                           )}
-                          <span className={`ml-auto px-2.5 py-1 rounded-lg text-xs font-semibold shrink-0 ${
-                            account.transfer_enabled
-                              ? 'bg-green-50 text-green-600 border border-green-100'
-                              : 'bg-yellow-50 text-yellow-600 border border-yellow-100'
-                          }`}>
-                            {account.transfer_enabled ? 'Enabled' : 'Disabled'}
-                          </span>
+                          {/*  */}
                         </div>
                         <p className="text-gray-900 text-sm font-mono mb-1">{account.account_number}</p>
                         <p className="text-gray-600 text-sm mb-2">{account.account_name}</p>
