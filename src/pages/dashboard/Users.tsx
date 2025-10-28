@@ -61,7 +61,7 @@ export default function Users() {
   };
 
   const getFilterButtonClass = (type: string) => {
-    const baseClass = "px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all duration-200";
+    const baseClass = "px-3 md:px-4 py-1.5 md:py-2 rounded-lg md:rounded-xl text-xs md:text-sm font-medium whitespace-nowrap transition-all duration-200 flex-shrink-0";
     const activeClass = "bg-gray-900 text-white shadow-sm";
     const inactiveClass = "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200";
 
@@ -83,7 +83,7 @@ export default function Users() {
   }
 
   return (
-    <div>
+    <div className="w-full min-w-0">
       <div className="flex justify-between items-center mb-6 md:mb-8">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-1">Users</h1>
@@ -166,25 +166,25 @@ export default function Users() {
         </div>
       )}
 
-      <div className="mb-6 flex flex-col sm:flex-row gap-4">
-        <div className="relative flex-1">
-          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-            <Search className="h-5 w-5 text-gray-400" />
+      <div className="mb-6 flex flex-col gap-3 md:gap-4">
+        <div className="relative w-full">
+          <div className="absolute inset-y-0 left-0 pl-3 md:pl-4 flex items-center pointer-events-none">
+            <Search className="h-4 w-4 md:h-5 md:w-5 text-gray-400" />
           </div>
           <input
             type="text"
             placeholder="Search users..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="block w-full pl-11 pr-4 py-3 border border-gray-200 rounded-xl bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all"
+            className="block w-full pl-10 md:pl-11 pr-3 md:pr-4 py-2.5 md:py-3 text-sm md:text-base border border-gray-200 rounded-xl bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all"
           />
         </div>
-        <div className="flex overflow-x-auto pb-2 space-x-2">
+        <div className="flex overflow-x-auto pb-2 -mx-1 px-1 space-x-2 scrollbar-hide">
           <button
             onClick={() => setFilterType('all')}
             className={getFilterButtonClass('all')}
           >
-            All Users
+            All
           </button>
           <button
             onClick={() => setFilterType('admin')}
@@ -196,13 +196,13 @@ export default function Users() {
             onClick={() => setFilterType('with_balance')}
             className={getFilterButtonClass('with_balance')}
           >
-            With Balance ({userStats?.users_with_balance || 0})
+            Balance ({userStats?.users_with_balance || 0})
           </button>
           <button
             onClick={() => setFilterType('with_plans')}
             className={getFilterButtonClass('with_plans')}
           >
-            With Plans ({userStats?.users_with_plans || 0})
+            Plans ({userStats?.users_with_plans || 0})
           </button>
         </div>
       </div>
