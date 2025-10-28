@@ -735,9 +735,8 @@ export default function PayoutPlans() {
                       )}
                       <div className="text-sm text-gray-500 truncate">{plan.user?.email}</div>
                     </div>
-                    <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium ${getStatusColor(plan.status)} flex-shrink-0`}>
+                    <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium ${getStatusColor(plan.status)} flex-shrink-0`}>
                       {getStatusIcon(plan.status)}
-                      <span className="ml-1 capitalize">{plan.status}</span>
                     </span>
                   </div>
 
@@ -755,9 +754,9 @@ export default function PayoutPlans() {
                     </div>
 
                     <div className="grid grid-cols-2 gap-3 pt-2 border-t border-gray-100">
-                      <div>
+                      <div className="min-w-0">
                         <div className="text-xs text-gray-500 mb-0.5">Total Amount</div>
-                        <div className="text-sm font-semibold text-gray-900">
+                        <div className="text-sm font-semibold text-gray-900 truncate">
                           {new Intl.NumberFormat('en-NG', {
                             style: 'currency',
                             currency: 'NGN',
@@ -765,9 +764,9 @@ export default function PayoutPlans() {
                           }).format(plan.total_amount || 0)}
                         </div>
                       </div>
-                      <div>
+                      <div className="min-w-0">
                         <div className="text-xs text-gray-500 mb-0.5">Payout Amount</div>
-                        <div className="text-sm font-semibold text-green-600">
+                        <div className="text-sm font-semibold text-green-600 truncate">
                           {new Intl.NumberFormat('en-NG', {
                             style: 'currency',
                             currency: 'NGN',
@@ -775,16 +774,16 @@ export default function PayoutPlans() {
                           }).format(plan.payout_amount || 0)}
                         </div>
                       </div>
-                      <div>
+                      <div className="min-w-0">
                         <div className="text-xs text-gray-500 mb-0.5">Frequency</div>
-                        <div className="text-sm text-gray-900 capitalize">
+                        <div className="text-sm text-gray-900 capitalize truncate">
                           {plan.frequency.replace('_', ' ').replace('-', ' ')}
                         </div>
                       </div>
-                      <div>
+                      <div className="min-w-0">
                         <div className="text-xs text-gray-500 mb-0.5">Start Date</div>
-                        <div className="text-sm text-gray-900">
-                          {plan.start_date ? format(new Date(plan.start_date), 'MMM d, yyyy') : 'N/A'}
+                        <div className="text-sm text-gray-900 truncate">
+                          {plan.start_date ? format(new Date(plan.start_date), 'MMM d, yy') : 'N/A'}
                         </div>
                       </div>
                     </div>
@@ -804,7 +803,7 @@ export default function PayoutPlans() {
                       </div>
                       {plan.next_payout_date && (
                         <div className="text-xs text-gray-500 mt-1.5">
-                          Next payout: {format(new Date(plan.next_payout_date), 'MMM d, yyyy')}
+                          Next: {format(new Date(plan.next_payout_date), 'MMM d, yy')}
                         </div>
                       )}
                     </div>
