@@ -289,7 +289,7 @@ export default function PayoutPlans() {
               <DollarSign className="h-5 w-5 text-blue-600" />
             </div>
             <div>
-              <p className="text-sm text-gray-500">Total Amount in All Plans</p>
+              <p className="text-sm text-gray-500">Total Amount in all Plans</p>
               <p className="text-2xl font-bold text-gray-900">
                 {new Intl.NumberFormat('en-NG', {
                   style: 'currency',
