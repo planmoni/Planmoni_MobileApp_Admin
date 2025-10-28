@@ -3,7 +3,6 @@ import { RefreshCw, Plus, X } from 'lucide-react';
 import { useRefreshData } from '@/hooks/mutations/useRefreshData';
 import BannerUploadForm from '@/components/BannerUploadForm';
 import BannerDisplay from '@/components/BannerDisplay';
-import BannerCarousel from '@/components/BannerCarousel';
 
 export default function Banners() {
   const [isAddingBanner, setIsAddingBanner] = useState(false);
