@@ -149,10 +149,6 @@ export default function Login() {
               </button>
             </form>
           </div>
-
-          <p className="mt-6 text-center text-sm text-gray-500">
-            Secure admin access powered by Planmoni
-          </p>
         </div>
       </div>
     </div>
