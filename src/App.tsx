@@ -13,6 +13,7 @@ const SignupPage = lazy(() => import('./pages/auth/Signup'));
 const DashboardPage = lazy(() => import('./pages/dashboard/Dashboard'));
 const UsersPage = lazy(() => import('./pages/dashboard/Users'));
 const TransactionsPage = lazy(() => import('./pages/dashboard/Transactions'));
+const CalendarPage = lazy(() => import('./pages/dashboard/Calendar'));
 const AnalyticsPage = lazy(() => import('./pages/dashboard/Analytics'));
 const ActivityPage = lazy(() => import('./pages/dashboard/Activity'));
 const KycDataPage = lazy(() => import('./pages/dashboard/KycData'));
@@ -54,6 +55,7 @@ function App() {
                 <Route path="users" element={<UsersPage />} />
                 <Route path="users/:id" element={<UserDetailsPage />} />
                 <Route path="transactions" element={<TransactionsPage />} />
+                <Route path="calendar" element={<CalendarPage />} />
                 <Route path="analytics" element={<AnalyticsPage />} />
                 <Route path="activity" element={<ActivityPage />} />
                 <Route path="kyc-data" element={<KycDataPage />} />

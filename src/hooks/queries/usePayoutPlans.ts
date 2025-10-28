@@ -50,6 +50,8 @@ export interface PayoutPlansStats {
   biAnnuallyAmount: number;
   annuallyAmount: number;
   customAmount: number;
+  totalLockedBalance: number;
+  totalEmergencyWithdrawals: number;
 }
 
 export function usePayoutPlans(searchQuery?: string, statusFilter?: string, frequencyFilter?: string, page: number = 1, pageSize: number = 50) {
@@ -125,6 +127,8 @@ export function usePayoutPlans(searchQuery?: string, statusFilter?: string, freq
         biAnnuallyAmount: Number(statsData?.bi_annually_amount || 0),
         annuallyAmount: Number(statsData?.annually_amount || 0),
         customAmount: Number(statsData?.custom_amount || 0),
+        totalLockedBalance: Number(statsData?.total_locked_balance || 0),
+        totalEmergencyWithdrawals: Number(statsData?.total_emergency_withdrawals || 0),
       };
 
       const plans = (plansResult.data || []).map((plan: any) => ({

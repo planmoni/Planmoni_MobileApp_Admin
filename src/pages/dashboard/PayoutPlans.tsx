@@ -282,14 +282,14 @@ export default function PayoutPlans() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-6">
         <div className="bg-white rounded-2xl p-6 shadow-soft border border-gray-100">
           <div className="flex items-center gap-3 mb-2">
             <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center">
               <DollarSign className="h-5 w-5 text-blue-600" />
             </div>
             <div>
-              <p className="text-sm text-gray-500">Total Plan Amount</p>
+              <p className="text-sm text-gray-500">Total Amount in all Plans</p>
               <p className="text-2xl font-bold text-gray-900">
                 {new Intl.NumberFormat('en-NG', {
                   style: 'currency',
@@ -312,6 +312,40 @@ export default function PayoutPlans() {
                   style: 'currency',
                   currency: 'NGN'
                 }).format(stats?.totalPayoutAmount || 0)}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl p-6 shadow-soft border border-gray-100">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center">
+              <DollarSign className="h-5 w-5 text-orange-600" />
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Total Locked for Payouts</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {new Intl.NumberFormat('en-NG', {
+                  style: 'currency',
+                  currency: 'NGN'
+                }).format(stats?.totalLockedBalance || 0)}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl p-6 shadow-soft border border-gray-100">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center">
+              <DollarSign className="h-5 w-5 text-red-600" />
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Emergency Withdrawals</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {new Intl.NumberFormat('en-NG', {
+                  style: 'currency',
+                  currency: 'NGN'
+                }).format(stats?.totalEmergencyWithdrawals || 0)}
               </p>
             </div>
           </div>

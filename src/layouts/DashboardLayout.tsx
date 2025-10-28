@@ -28,7 +28,7 @@ export default function DashboardLayout() {
       <div className="md:hidden fixed top-0 left-0 right-0 z-10 bg-white border-b border-gray-100">
         <div className="flex items-center justify-between h-16 px-4">
           <img
-            src="/assets/images/Planmoni-Office.png"
+            src="/assets/images/planmoni_logo_main.png"
             alt="Planmoni Office"
             className="h-6 w-auto"
             onError={(e) => {

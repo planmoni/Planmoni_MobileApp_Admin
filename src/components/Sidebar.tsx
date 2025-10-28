@@ -14,7 +14,8 @@ import {
   Activity,
   FileText,
   DollarSign,
-  CalendarDays
+  CalendarDays,
+  Repeat
 } from 'lucide-react';
 
 export default function Sidebar({ isMobileMenuOpen, closeMobileMenu }: { isMobileMenuOpen: boolean, closeMobileMenu: () => void }) {
@@ -115,11 +116,12 @@ export default function Sidebar({ isMobileMenuOpen, closeMobileMenu }: { isMobil
     { name: 'Dashboard', path: '/', icon: Home },
     { name: 'Users', path: '/users', icon: Users },
     { name: 'Transactions', path: '/transactions', icon: CreditCard },
+    { name: 'Calendar', path: '/calendar', icon: CalendarDays },
     { name: 'Analytics', path: '/analytics', icon: BarChart3 },
     { name: 'Activity', path: '/activity', icon: Activity },
     { name: 'KYC Data', path: '/kyc-data', icon: FileText },
     { name: 'Payout Events', path: '/payout-events', icon: DollarSign },
-    { name: 'Payout Plans', path: '/payout-plans', icon: CalendarDays },
+    { name: 'Payout Plans', path: '/payout-plans', icon: Repeat },
     ...(isSuperAdmin ? [{ name: 'Super Admin', path: '/super-admin', icon: Shield }] : []),
     { name: 'Banners', path: '/banners', icon: Image },
     { name: 'Settings', path: '/settings', icon: Settings },
@@ -166,7 +168,7 @@ export default function Sidebar({ isMobileMenuOpen, closeMobileMenu }: { isMobil
     <aside className={sidebarClasses}>
       <div className="flex items-center h-16 flex-shrink-0 px-6 border-b border-gray-100">
         <img
-          src="/assets/images/Planmoni-Office.png"
+          src="/assets/images/planmoni_logo_main.png"
           alt="Planmoni Office"
           className="h-12 w-auto"
           onError={(e) => {

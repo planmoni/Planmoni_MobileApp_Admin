@@ -124,9 +124,9 @@ export const useUserDetails = (userId: string) => {
       
       const userInfo = userData[0];
       
-      // Fetch bank accounts separately
+      // Fetch payout accounts separately
       const { data: accountData, error: accountError } = await supabase
-        .from('bank_accounts')
+        .from('payout_accounts')
         .select('*')
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
