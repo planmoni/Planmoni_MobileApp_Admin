@@ -262,7 +262,7 @@ export default function Users() {
                           </span>
                         )}
                       </div>
-                      <p className="text-xs text-gray-500 break-all">{user.email}</p>
+                      <p className="text-sm text-gray-500 break-all">{user.email}</p>
                     </div>
                   </div>
 
