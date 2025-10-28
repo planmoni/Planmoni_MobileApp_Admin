@@ -45,7 +45,10 @@ export default function Login() {
 
   return (
     <div className="min-h-screen flex">
-      
+      <div className="hidden lg:flex lg:flex-1 bg-gradient-to-br from-blue-600 via-blue-700 to-blue-900 relative overflow-hidden">
+        
+
+      </div>
 
       <div className="flex-1 flex items-center justify-center p-8 bg-gray-50">
         <div className="w-full max-w-md">
