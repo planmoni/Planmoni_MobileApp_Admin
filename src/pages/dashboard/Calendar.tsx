@@ -263,6 +263,108 @@ export default function Calendar() {
               </div>
             )}
 
+            {viewMode === 'week' && (
+              <div className="p-6">
+                <div className="mb-6">
+                  <h3 className="text-lg font-bold text-gray-900 mb-4">
+                    {format(startOfWeek(selectedDate || currentDate), 'MMMM d, yyyy')} - {format(endOfWeek(selectedDate || currentDate), 'MMMM d, yyyy')}
+                  </h3>
+                  <div className="grid grid-cols-7 gap-2">
+                    {eachDayOfInterval({
+                      start: startOfWeek(selectedDate || currentDate),
+                      end: endOfWeek(selectedDate || currentDate),
+                    }).map((day) => {
+                      const dayEvents = getEventsForDate(day);
+                      const isSelected = selectedDate && isSameDay(day, selectedDate);
+                      const isToday = isSameDay(day, new Date());
+
+                      return (
+                        <button
+                          key={day.toISOString()}
+                          onClick={() => setSelectedDate(day)}
+                          className={`
+                            p-3 rounded-xl text-center transition-all
+                            ${isSelected ? 'bg-gray-900 text-white' : 'bg-white hover:bg-gray-50'}
+                            ${isToday && !isSelected ? 'ring-2 ring-blue-500' : ''}
+                          `}
+                        >
+                          <div className={`text-xs font-medium mb-1 ${isSelected ? 'text-gray-300' : 'text-gray-500'}`}>
+                            {format(day, 'EEE')}
+                          </div>
+                          <div className={`text-2xl font-bold mb-2 ${isSelected ? 'text-white' : 'text-gray-900'}`}>
+                            {format(day, 'd')}
+                          </div>
+                          <div className="flex items-center justify-center gap-1">
+                            {dayEvents.slice(0, 3).map((event) => (
+                              <div
+                                key={event.id}
+                                className={`w-1.5 h-1.5 rounded-full ${getEventTypeColor(event.type)}`}
+                              />
+                            ))}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="border-t border-gray-100 pt-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-bold text-gray-900">
+                      {format(selectedDate || currentDate, 'EEEE, MMMM d, yyyy')}
+                    </h3>
+                    <span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-xs font-semibold">
+                      {selectedDateEvents.length} event{selectedDateEvents.length !== 1 ? 's' : ''}
+                    </span>
+                  </div>
+
+                  {selectedDateEvents.length > 0 ? (
+                    <div className="space-y-3">
+                      {selectedDateEvents.map((event) => {
+                        const config = eventTypeConfig[event.type];
+                        const Icon = config.icon;
+                        return (
+                          <div
+                            key={event.id}
+                            className={`p-4 rounded-xl ${config.bgColor} border ${config.borderColor} hover:shadow-sm transition-shadow`}
+                          >
+                            <div className="flex items-start gap-3">
+                              <div className={`w-10 h-10 rounded-lg ${config.color} flex items-center justify-center flex-shrink-0`}>
+                                <Icon className="h-5 w-5 text-white" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-start justify-between gap-2 mb-1">
+                                  <h4 className="text-sm font-bold text-gray-900">
+                                    {event.amount ? `₦${event.amount.toLocaleString()}` : event.title}
+                                  </h4>
+                                  <span className="text-xs text-gray-500 flex-shrink-0">
+                                    {format(event.date, 'h:mm a')}
+                                  </span>
+                                </div>
+                                <p className="text-sm text-gray-600 mb-1">{event.description}</p>
+                                <div className="flex items-center gap-2">
+                                  <span className={`px-2 py-0.5 rounded-md text-xs font-semibold ${config.textColor} bg-white`}>
+                                    {config.label}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <div className="w-12 h-12 rounded-xl bg-gray-50 flex items-center justify-center mx-auto mb-3">
+                        <CalendarIcon className="h-6 w-6 text-gray-400" />
+                      </div>
+                      <p className="text-gray-500 text-sm">No events on this day</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             {viewMode === 'list' && (
               <>
                 <div className="divide-y divide-gray-100">
