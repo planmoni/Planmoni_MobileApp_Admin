@@ -52,15 +52,6 @@ export default function Login() {
           
 
           <div className="grid grid-cols-1 gap-6 max-w-md mt-8">
-            <div className="flex items-start gap-4">
-              <div className="flex-shrink-0 w-12 h-12 bg-white/10 backdrop-blur-sm rounded-xl flex items-center justify-center">
-                
-              </div>
-              <div>
-                <h3 className="font-semibold text-lg mb-1">Secure Access</h3>
-                <p className="text-blue-100 text-sm leading-relaxed">Enterprise-grade security protecting your data</p>
-              </div>
-            </div>
 
             <div className="flex items-start gap-4">
               <div className="flex-shrink-0 w-12 h-12 bg-white/10 backdrop-blur-sm rounded-xl flex items-center justify-center">
