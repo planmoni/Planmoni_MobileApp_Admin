@@ -40,6 +40,16 @@ export interface PayoutPlansStats {
   custom: number;
   totalAmount: number;
   totalPayoutAmount: number;
+  dailyAmount: number;
+  specificDaysAmount: number;
+  weeklyAmount: number;
+  biWeeklyAmount: number;
+  monthlyAmount: number;
+  monthEndAmount: number;
+  quarterlyAmount: number;
+  biAnnuallyAmount: number;
+  annuallyAmount: number;
+  customAmount: number;
 }
 
 export function usePayoutPlans(searchQuery?: string, statusFilter?: string, frequencyFilter?: string, page: number = 1, pageSize: number = 50) {
@@ -105,6 +115,16 @@ export function usePayoutPlans(searchQuery?: string, statusFilter?: string, freq
         custom: Number(statsData?.custom || 0),
         totalAmount: Number(statsData?.total_amount || 0),
         totalPayoutAmount: Number(statsData?.total_payout_amount || 0),
+        dailyAmount: Number(statsData?.daily_amount || 0),
+        specificDaysAmount: Number(statsData?.specific_days_amount || 0),
+        weeklyAmount: Number(statsData?.weekly_amount || 0),
+        biWeeklyAmount: Number(statsData?.bi_weekly_amount || 0),
+        monthlyAmount: Number(statsData?.monthly_amount || 0),
+        monthEndAmount: Number(statsData?.month_end_amount || 0),
+        quarterlyAmount: Number(statsData?.quarterly_amount || 0),
+        biAnnuallyAmount: Number(statsData?.bi_annually_amount || 0),
+        annuallyAmount: Number(statsData?.annually_amount || 0),
+        customAmount: Number(statsData?.custom_amount || 0),
       };
 
       const plans = (plansResult.data || []).map((plan: any) => ({
