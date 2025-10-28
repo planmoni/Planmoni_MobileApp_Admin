@@ -215,7 +215,7 @@ export default function UserDetails() {
                               Default
                             </span>
                           )}
-                          {/*  */}
+                   
                         </div>
                         <p className="text-gray-900 text-sm font-mono mb-1">{account.account_number}</p>
                         <p className="text-gray-600 text-sm mb-2">{account.account_name}</p>
