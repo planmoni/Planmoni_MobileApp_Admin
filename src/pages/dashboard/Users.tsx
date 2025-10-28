@@ -274,7 +274,7 @@ export default function Users() {
                         <p className="text-gray-400 text-[10px] mt-0.5 break-words">{formatCurrency(user.locked_balance)} locked</p>
                       )}
                     </div>
-                    <div className="">
+                    <div className="d">
                       <p className="text-gray-400 mb-0.5">Activity</p>
                       {user.total_deposits > 0 && (
                         <p className="text-gray-600 break-words">{formatCurrency(user.total_deposits)} in</p>
