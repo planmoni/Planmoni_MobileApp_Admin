@@ -122,8 +122,8 @@ export default function Sidebar({ isMobileMenuOpen, closeMobileMenu }: { isMobil
     { name: 'KYC Data', path: '/kyc-data', icon: FileText },
     { name: 'Payout Events', path: '/payout-events', icon: DollarSign },
     { name: 'Payout Plans', path: '/payout-plans', icon: Repeat },
-    ...(isSuperAdmin ? [{ name: 'Super Admin', path: '/super-admin', icon: Shield }] : []),
     { name: 'Banners', path: '/banners', icon: Image },
+    ...(isSuperAdmin ? [{ name: 'Super Admin', path: '/super-admin', icon: Shield }] : []),
     // { name: 'Settings', path: '/settings', icon: Settings },
   ];
 
