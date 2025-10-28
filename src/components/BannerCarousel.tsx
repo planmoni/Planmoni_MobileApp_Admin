@@ -51,7 +51,7 @@ export default function BannerCarousel({
   const renderBannerContent = (banner: any) => {
     const bannerElement = (
       <div className="relative w-full h-full group">
-        <div className={`w-[600px] ${maxHeight} overflow-hidden rounded-2xl flex items-center justify-center`}>
+        <div className={`w-[600px] h-[400px] overflow-hidden rounded-2xl flex items-center justify-center`}>
           <img
             src={banner.image_url}
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
@@ -65,7 +65,7 @@ export default function BannerCarousel({
 
         {(banner.title || banner.description) && (
           <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-gray-900 via-gray-900/70 to-transparent p-6 rounded-b-2xl">
-            { (
+            {banner.title && (
               <h3 className="text-white text-base sm:text-lg font-bold mb-1.5 line-clamp-1 drop-shadow-lg">
                 {banner.title}
               </h3>
