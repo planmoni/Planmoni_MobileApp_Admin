@@ -63,7 +63,7 @@ function App() {
                 <Route path="payout-plans" element={<PayoutPlansPage />} />
                 <Route path="super-admin" element={<SuperAdminPage />} />
                 <Route path="banners" element={<BannersPage />} />
-                {/* <Route path="settings" element={<SettingsPage />} /> */}
+                <Route path="settings" element={<SettingsPage />} />
                 <Route path="*" element={<NotFoundPage />} />
               </Route>
             </>
