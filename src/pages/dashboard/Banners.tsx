@@ -74,7 +74,7 @@ export default function Banners() {
             </p>
           </div>
           <div className="w-full max-w-full mx-auto">
-            <BannerCarousel maxHeight="max-h-48 sm:max-h-56" />
+            <BannerCarousel maxHeight="max-h-full sm:max-h-56" />
           </div>
         </div>
 
