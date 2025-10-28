@@ -73,7 +73,7 @@ export default function Banners() {
               This is how your banners will appear to users on the dashboard
             </p>
           </div>
-          <div className="w-auto max-w-full mx-auto">
+          <div className="w-auto max-w-auto mx-auto">
             <BannerCarousel maxHeight="max-h-48 sm:max-h-56" />
           </div>
         </div>
