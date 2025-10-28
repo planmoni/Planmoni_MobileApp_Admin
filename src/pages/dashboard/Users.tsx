@@ -246,7 +246,7 @@ export default function Users() {
                   className="block p-4 hover:bg-gray-50 transition-colors w-full"
                 >
                   <div className="flex items-start gap-3 mb-3 w-full">
-                    <div className="flex-shrink-0 h-120 w-12 rounded-xl bg-gradient-to-br from-primary to-primary-light flex items-center justify-center text-white shadow-sm">
+                    <div className="flex-shrink-0 h-12 w-12 rounded-xl bg-gradient-to-br from-primary to-primary-light flex items-center justify-center text-white shadow-sm">
                       <span className="font-semibold text-sm">
                         {user.first_name?.[0]}{user.last_name?.[0]}
                       </span>
