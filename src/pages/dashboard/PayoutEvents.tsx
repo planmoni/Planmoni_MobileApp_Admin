@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Filter, RefreshCw, CheckCircle, XCircle, Clock, DollarSign, Calendar, User, Users as UsersIcon, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Filter, RefreshCw, CheckCircle, XCircle, Clock, DollarSign, Calendar, User, ChevronLeft, ChevronRight } from 'lucide-react';
 import { usePayoutEvents } from '@/hooks/queries/usePayoutEvents';
 import { useRefreshData } from '@/hooks/mutations/useRefreshData';
 import { format } from 'date-fns';
@@ -111,26 +111,6 @@ export default function PayoutEvents() {
         </button>
 
         <button
-          onClick={() => handleCardClick('all')}
-          className={`bg-white rounded-2xl p-6 shadow-soft border transition-all hover:shadow-md ${
-            statusFilter === 'all' ? 'border-gray-900 ring-2 ring-gray-900' : 'border-gray-100'
-          }`}
-        >
-          <div className="flex justify-between items-start mb-4">
-            <div className="flex-1 text-left">
-              <p className="text-sm font-medium text-gray-500 mb-1">Upcoming Payouts</p>
-              <p className="text-3xl font-bold text-blue-600">{stats?.usersWithUpcomingPayouts || 0}</p>
-            </div>
-            <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center">
-              <UsersIcon className="h-5 w-5 text-blue-600" />
-            </div>
-          </div>
-          <div className="flex items-center gap-2 pt-3 border-t border-gray-100">
-            <span className="text-xs text-gray-500">Users with scheduled payouts</span>
-          </div>
-        </button>
-
-        <button
           onClick={() => handleCardClick('processing')}
           className={`bg-white rounded-2xl p-6 shadow-soft border transition-all hover:shadow-md ${
             statusFilter === 'processing' ? 'border-yellow-600 ring-2 ring-yellow-600' : 'border-gray-100'
@@ -169,24 +149,24 @@ export default function PayoutEvents() {
             <span className="text-xs text-gray-500">Successfully paid</span>
           </div>
         </button>
-      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-1 gap-5 mb-6">
         <button
           onClick={() => handleCardClick('failed')}
           className={`bg-white rounded-2xl p-6 shadow-soft border transition-all hover:shadow-md ${
             statusFilter === 'failed' ? 'border-red-600 ring-2 ring-red-600' : 'border-gray-100'
           }`}
         >
-          <div className="flex justify-between items-start">
+          <div className="flex justify-between items-start mb-4">
             <div className="flex-1 text-left">
-              <p className="text-sm font-medium text-gray-500 mb-1">Failed Payouts</p>
+              <p className="text-sm font-medium text-gray-500 mb-1">Failed</p>
               <p className="text-3xl font-bold text-red-600">{stats?.failed || 0}</p>
-              <p className="text-xs text-gray-500 mt-2">These transactions require immediate attention</p>
             </div>
             <div className="w-12 h-12 rounded-xl bg-red-50 flex items-center justify-center">
               <XCircle className="h-5 w-5 text-red-600" />
             </div>
+          </div>
+          <div className="flex items-center gap-2 pt-3 border-t border-gray-100">
+            <span className="text-xs text-gray-500">Require attention</span>
           </div>
         </button>
       </div>
