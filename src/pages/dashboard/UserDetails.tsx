@@ -80,7 +80,7 @@ export default function UserDetails() {
 
       <div className="bg-white rounded-2xl p-6 shadow-soft border border-gray-100 mb-6">
         <div className="flex items-start gap-4">
-          <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white text-2xl font-bold shadow-lg">
+          <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-grey-500 to-grey-600 flex items-center justify-center text-white text-2xl font-bold shadow-lg">
             {user.first_name?.[0]}{user.last_name?.[0]}
           </div>
           <div className="flex-1">
