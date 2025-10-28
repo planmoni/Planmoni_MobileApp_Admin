@@ -101,7 +101,6 @@ export default function Login() {
               alt="Planmoni"
               className="h-12 w-auto mx-auto mb-4"
             />
-            <h1 className="text-2xl font-bold text-gray-900">Planmoni Admin</h1>
           </div>
 
           <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
