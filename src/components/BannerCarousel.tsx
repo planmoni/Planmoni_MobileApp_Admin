@@ -51,7 +51,7 @@ export default function BannerCarousel({
   const renderBannerContent = (banner: any) => {
     const bannerElement = (
       <div className="relative w-full h-full group">
-        <div className={`w-[600px] h-[400px] overflow-hidden rounded-2xl flex items-center justify-center`}>
+        <div className={`w-full h-[400px] overflow-hidden rounded-2xl flex items-center justify-center`}>
           <img
             src={banner.image_url}
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
