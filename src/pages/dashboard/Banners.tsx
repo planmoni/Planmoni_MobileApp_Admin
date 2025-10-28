@@ -66,7 +66,7 @@ export default function Banners() {
       )}
 
       <div className="space-y-8">
-        <div className="bg-white rounded-2xl p-6 shadow-soft border border-gray-100">
+        <div className="bg-white rounded-2xl p-60 shadow-soft border border-gray-100">
           <div className="mb-6">
             <h3 className="text-lg font-semibold text-gray-900">Banner Preview</h3>
             <p className="text-sm text-gray-500 mt-1">
