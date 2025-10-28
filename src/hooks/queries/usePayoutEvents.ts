@@ -55,7 +55,10 @@ export function usePayoutEvents(searchQuery?: string, statusFilter?: string, pag
       if (plansResult.error) throw plansResult.error;
       if (upcomingUsersResult.error) throw upcomingUsersResult.error;
 
-      const statsData = statsResult.data as any;
+      const statsData = Array.isArray(statsResult.data) && statsResult.data.length > 0
+        ? statsResult.data[0]
+        : null;
+
       const stats: PayoutEventStats = {
         total: Number(statsData?.total || 0),
         processing: Number(statsData?.processing || 0),
