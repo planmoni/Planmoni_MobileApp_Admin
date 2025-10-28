@@ -17,7 +17,7 @@ interface BannerCarouselProps {
 
 export default function BannerCarousel({
   className = '',
-  maxHeight = 'max-h-64',
+  maxHeight = 'max-h-94',
   showControls = true
 }: BannerCarouselProps) {
   const { data: banners, isLoading, error } = useBanners(true);
