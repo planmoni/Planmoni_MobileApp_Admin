@@ -26,7 +26,7 @@ export default function Banners() {
         <div className="flex items-center gap-3 flex-shrink-0">
           <button
             onClick={handleRefresh}
-            className="p-3 rounded-xl bg-white hover:bg-gray-50 transition-colors shadow-soft border border-gray-100"
+            className="p-3 rounded-xl bg-white hover:bg-gray-50 transition-colors border border-gray-100"
             disabled={refreshData.isPending}
             title="Refresh banners"
           >
