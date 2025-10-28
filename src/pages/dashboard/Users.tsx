@@ -253,7 +253,7 @@ export default function Users() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start gap-2 mb-1 flex-wrap">
-                        <h3 className="text-sm font-semibold text-gray-900">
+                        <h3 className="text-md font-semibold text-gray-900">
                           {user.first_name} {user.last_name}
                         </h3>
                         {user.is_admin && (
