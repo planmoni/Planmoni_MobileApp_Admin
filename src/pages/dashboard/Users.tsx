@@ -277,7 +277,7 @@ export default function Users() {
                     <div className="min-w-0">
                       <p className="text-gray-400 mb-0.5">Activity</p>
                       {user.total_deposits > 0 && (
-                        <p className="text-gray-600">{formatCurrency(user.total_deposits)} in</p>
+                        <p className="text-gray-600 break-words">{formatCurrency(user.total_deposits)} in</p>
                       )}
                       {user.active_plans > 0 && (
                         <p className="text-gray-600">{user.active_plans} plans</p>
