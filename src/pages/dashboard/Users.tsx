@@ -243,17 +243,17 @@ export default function Users() {
                 <Link
                   key={user.id}
                   to={`/users/${user.id}`}
-                  className="block p-4 hover:bg-gray-50 transition-colors"
+                  className="block p-4 hover:bg-gray-50 transition-colors w-full"
                 >
-                  <div className="flex items-start gap-3 mb-3">
+                  <div className="flex items-start gap-3 mb-3 w-full">
                     <div className="flex-shrink-0 h-12 w-12 rounded-xl bg-gradient-to-br from-primary to-primary-light flex items-center justify-center text-white shadow-sm">
                       <span className="font-semibold text-sm">
                         {user.first_name?.[0]}{user.last_name?.[0]}
                       </span>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h3 className="text-sm font-semibold text-gray-900 truncate">
+                      <div className="flex items-start gap-2 mb-1 flex-wrap">
+                        <h3 className="text-sm font-semibold text-gray-900">
                           {user.first_name} {user.last_name}
                         </h3>
                         {user.is_admin && (
@@ -262,22 +262,22 @@ export default function Users() {
                           </span>
                         )}
                       </div>
-                      <p className="text-xs text-gray-500 truncate">{user.email}</p>
+                      <p className="text-xs text-gray-500 break-all">{user.email}</p>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3 text-xs">
-                    <div>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-xs w-full">
+                    <div className="min-w-0">
                       <p className="text-gray-400 mb-0.5">Balance</p>
-                      <p className="font-semibold text-gray-900">{formatCurrency(user.balance)}</p>
+                      <p className="font-semibold text-gray-900 break-words">{formatCurrency(user.balance)}</p>
                       {user.locked_balance > 0 && (
-                        <p className="text-gray-400">{formatCurrency(user.locked_balance)} locked</p>
+                        <p className="text-gray-400 text-[10px] mt-0.5 break-words">{formatCurrency(user.locked_balance)} locked</p>
                       )}
                     </div>
-                    <div>
+                    <div className="min-w-0">
                       <p className="text-gray-400 mb-0.5">Activity</p>
                       {user.total_deposits > 0 && (
-                        <p className="text-gray-600">{formatCurrency(user.total_deposits)} in</p>
+                        <p className="text-gray-600 break-words">{formatCurrency(user.total_deposits)} in</p>
                       )}
                       {user.active_plans > 0 && (
                         <p className="text-gray-600">{user.active_plans} plans</p>
@@ -286,11 +286,11 @@ export default function Users() {
                         <p className="text-gray-400">No activity</p>
                       )}
                     </div>
-                    <div>
+                    <div className="min-w-0">
                       <p className="text-gray-400 mb-0.5">Joined</p>
                       <p className="text-gray-600">{new Date(user.created_at).toLocaleDateString()}</p>
                     </div>
-                    <div>
+                    <div className="min-w-0">
                       <p className="text-gray-400 mb-0.5">Role</p>
                       <span className={`inline-flex px-2 py-0.5 text-xs font-medium rounded ${
                         user.is_admin
