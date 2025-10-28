@@ -176,7 +176,7 @@ export default function Users() {
             placeholder="Search users..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="block w-full pl-10 md:pl-11 pr-3 md:pr-4 py-2.5 md:py-3 text-md md:text-base border border-gray-200 rounded-xl bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all"
+            className="block w-full pl-10 md:pl-11 pr-3 md:pr-4 py-2.5 md:py-3 text-sm md:text-base border border-gray-200 rounded-xl bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all"
           />
         </div>
         <div className="flex overflow-x-auto pb-2 -mx-1 px-1 space-x-2 scrollbar-hide">
@@ -247,7 +247,7 @@ export default function Users() {
                 >
                   <div className="flex items-start gap-3 mb-3 w-full">
                     <div className="flex-shrink-0 h-12 w-12 rounded-xl bg-gradient-to-br from-primary to-primary-light flex items-center justify-center text-white shadow-sm">
-                      <span className="font-semibold text-sm">
+                      <span className="font-semibold text-md">
                         {user.first_name?.[0]}{user.last_name?.[0]}
                       </span>
                     </div>
