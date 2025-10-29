@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { RefreshCw, Plus, X } from 'lucide-react';
 import { useRefreshData } from '@/hooks/mutations/useRefreshData';
+import { usePermissions } from '@/contexts/PermissionsContext';
 import BannerUploadForm from '@/components/BannerUploadForm';
 import BannerDisplay from '@/components/BannerDisplay';
 
 export default function Banners() {
   const [isAddingBanner, setIsAddingBanner] = useState(false);
   const refreshData = useRefreshData();
+  const { hasPermission, isSuperAdmin } = usePermissions();
 
   const handleRefresh = () => {
     refreshData.mutate(['banners']);
@@ -32,29 +34,31 @@ export default function Banners() {
             <RefreshCw className={`h-5 w-5 text-gray-600 ${refreshData.isPending ? 'animate-spin' : ''}`} />
           </button>
 
-          <button
-            onClick={() => setIsAddingBanner(!isAddingBanner)}
-            className={`
-              flex items-center gap-2 px-5 py-3 rounded-xl font-medium transition-all shadow-soft
-              ${isAddingBanner
-                ? 'bg-gray-500 hover:bg-gray-600 text-white'
-                : 'bg-gray-900 hover:bg-gray-800 text-white'
-              }
-            `}
-          >
-            {isAddingBanner ? (
-              <>
-                <X className="h-4 w-4" />
-                <span>Cancel</span>
-              </>
-            ) : (
-              <>
-                <Plus className="h-4 w-4" />
-                <span className="hidden sm:inline">Add Banner</span>
-                <span className="sm:hidden">Add</span>
-              </>
-            )}
-          </button>
+          {(isSuperAdmin || hasPermission('banners', 'create')) && (
+            <button
+              onClick={() => setIsAddingBanner(!isAddingBanner)}
+              className={`
+                flex items-center gap-2 px-5 py-3 rounded-xl font-medium transition-all shadow-soft
+                ${isAddingBanner
+                  ? 'bg-gray-500 hover:bg-gray-600 text-white'
+                  : 'bg-gray-900 hover:bg-gray-800 text-white'
+                }
+              `}
+            >
+              {isAddingBanner ? (
+                <>
+                  <X className="h-4 w-4" />
+                  <span>Cancel</span>
+                </>
+              ) : (
+                <>
+                  <Plus className="h-4 w-4" />
+                  <span className="hidden sm:inline">Add Banner</span>
+                  <span className="sm:hidden">Add</span>
+                </>
+              )}
+            </button>
+          )}
         </div>
       </div>
 

@@ -2,6 +2,7 @@ import { ExternalLink, Eye, EyeOff, Trash2 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/contexts/ToastContext';
+import { usePermissions } from '@/contexts/PermissionsContext';
 import BannerCarousel from './BannerCarousel';
 
 interface Banner {
@@ -25,6 +26,7 @@ interface BannerDisplayProps {
 export default function BannerDisplay({ showAdminControls = false, className = '' }: BannerDisplayProps) {
   const { showToast } = useToast();
   const queryClient = useQueryClient();
+  const { hasPermission, isSuperAdmin } = usePermissions();
 
   const { data: banners, isLoading, error } = useQuery({
     queryKey: ['banners'],
@@ -155,24 +157,28 @@ export default function BannerDisplay({ showAdminControls = false, className = '
               </div>
 
               <div className="absolute top-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                <button
-                  onClick={() => handleToggleActive(banner)}
-                  className="p-2 bg-white/95 backdrop-blur-sm rounded-lg shadow-md hover:bg-white transition-all duration-200 hover:scale-110"
-                  title={banner.is_active ? 'Hide banner' : 'Show banner'}
-                >
-                  {banner.is_active ? (
-                    <Eye className="h-4 w-4 text-green-600" />
-                  ) : (
-                    <EyeOff className="h-4 w-4 text-gray-400" />
-                  )}
-                </button>
-                <button
-                  onClick={() => handleDelete(banner)}
-                  className="p-2 bg-white/95 backdrop-blur-sm rounded-lg shadow-md hover:bg-red-50 transition-all duration-200 hover:scale-110"
-                  title="Delete banner"
-                >
-                  <Trash2 className="h-4 w-4 text-red-600" />
-                </button>
+                {(isSuperAdmin || hasPermission('banners', 'edit')) && (
+                  <button
+                    onClick={() => handleToggleActive(banner)}
+                    className="p-2 bg-white/95 backdrop-blur-sm rounded-lg shadow-md hover:bg-white transition-all duration-200 hover:scale-110"
+                    title={banner.is_active ? 'Hide banner' : 'Show banner'}
+                  >
+                    {banner.is_active ? (
+                      <Eye className="h-4 w-4 text-green-600" />
+                    ) : (
+                      <EyeOff className="h-4 w-4 text-gray-400" />
+                    )}
+                  </button>
+                )}
+                {(isSuperAdmin || hasPermission('banners', 'delete')) && (
+                  <button
+                    onClick={() => handleDelete(banner)}
+                    className="p-2 bg-white/95 backdrop-blur-sm rounded-lg shadow-md hover:bg-red-50 transition-all duration-200 hover:scale-110"
+                    title="Delete banner"
+                  >
+                    <Trash2 className="h-4 w-4 text-red-600" />
+                  </button>
+                )}
               </div>
             </div>
 
