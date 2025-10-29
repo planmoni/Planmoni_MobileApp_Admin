@@ -27,7 +27,6 @@ export interface EmergencyWithdrawal {
     first_name: string | null;
     last_name: string | null;
     email: string | null;
-    phone: string | null;
   };
   payout_plans?: {
     plan_name: string | null;
@@ -59,8 +58,7 @@ export function useEmergencyWithdrawals(filters: EmergencyWithdrawalsFilters = {
           profiles:user_id (
             first_name,
             last_name,
-            email,
-            phone
+            email
           ),
           payout_plans:payout_plan_id (
             plan_name,
