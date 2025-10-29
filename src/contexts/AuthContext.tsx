@@ -24,8 +24,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsLoading(false);
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('Auth state change event:', event, 'Session:', session);
+      if (event === 'SIGNED_OUT') {
+        setSession(null);
+      } else {
+        setSession(session);
+      }
       setIsLoading(false);
     });
 
@@ -149,16 +154,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     try {
-      setIsLoading(true);
-      await supabase.auth.signOut();
+      console.log('Starting sign out process...');
+
+      // Clear session immediately
       setSession(null);
+
+      // Sign out from Supabase
+      const { error } = await supabase.auth.signOut({ scope: 'local' });
+      if (error) {
+        console.error('Sign out error:', error);
+      }
+
+      // Clear all local storage related to auth
+      localStorage.clear();
+      sessionStorage.clear();
+
       showToast('Successfully signed out', 'success');
-      window.location.href = '/login';
+
+      // Force redirect to login page
+      window.location.replace('/login');
     } catch (error) {
-      console.error('Sign out error:', error);
+      console.error('Unexpected sign out error:', error);
       showToast('Failed to sign out', 'error');
-    } finally {
-      setIsLoading(false);
+      // Still try to redirect even if there's an error
+      window.location.replace('/login');
     }
   };
 
