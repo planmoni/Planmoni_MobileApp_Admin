@@ -353,10 +353,10 @@ export default function Analytics() {
             <div className="flex-1">
               <p className="text-sm font-medium text-gray-500 mb-1">Active Plans</p>
               <p className="text-3xl font-bold text-gray-900">
-                {data.payoutDistribution.daily + data.payoutDistribution.weekly + data.payoutDistribution.biweekly +
-                 data.payoutDistribution.specificDays + data.payoutDistribution.monthEnd + data.payoutDistribution.monthly +
-                 data.payoutDistribution.quarterly + data.payoutDistribution.biAnnually + data.payoutDistribution.annually +
-                 data.payoutDistribution.custom}
+                {(data.payoutDistribution.daily || 0) + (data.payoutDistribution.weekly || 0) + (data.payoutDistribution.biweekly || 0) +
+                 (data.payoutDistribution.specificDays || 0) + (data.payoutDistribution.monthEnd || 0) + (data.payoutDistribution.monthly || 0) +
+                 (data.payoutDistribution.quarterly || 0) + (data.payoutDistribution.biAnnually || 0) + (data.payoutDistribution.annually || 0) +
+                 (data.payoutDistribution.custom || 0)}
               </p>
             </div>
             <div className="w-12 h-12 rounded-xl bg-gray-50 flex items-center justify-center">
