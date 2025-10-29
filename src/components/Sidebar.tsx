@@ -127,9 +127,11 @@ export default function Sidebar({ isMobileMenuOpen, closeMobileMenu }: { isMobil
     ...(isSuperAdmin ? [{ name: 'Super Admin', path: '/super-admin', icon: Shield, resource: 'roles', action: 'manage' }] : []),
   ];
 
-  const navigation = allNavigationItems.filter(item =>
-    item.alwaysShow || hasPermission(item.resource, item.action)
-  );
+  const navigation = isSuperAdmin
+    ? allNavigationItems
+    : allNavigationItems.filter(item =>
+        item.alwaysShow || hasPermission(item.resource, item.action)
+      );
 
   console.log('🔧 Current state:');
   console.log('  - isSuperAdmin:', isSuperAdmin);
