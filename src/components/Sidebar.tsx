@@ -113,8 +113,22 @@ export default function Sidebar({ isMobileMenuOpen, closeMobileMenu }: { isMobil
     await signOut();
   };
 
+  const hasDashboardPermissions = () => {
+    if (isSuperAdmin) return true;
+
+    const dashboardPermissions = [
+      'stats.new_users', 'stats.deposits', 'stats.payouts', 'stats.new_plans',
+      'stats.kyc_completed', 'stats.locked_balance', 'stats.cancelled_plans',
+      'stats.withdrawals', 'stats.payout_due_today', 'charts.transaction_volume',
+      'charts.plan_distribution', 'lists.todays_transactions', 'lists.users_joined_today',
+      'lists.todays_payout_events', 'lists.todays_activities'
+    ];
+
+    return dashboardPermissions.some(action => hasPermission('dashboard', action));
+  };
+
   const allNavigationItems = [
-    { name: 'Dashboard', path: '/', icon: Home, resource: 'dashboard', action: 'view', alwaysShow: true },
+    { name: 'Dashboard', path: '/', icon: Home, resource: 'dashboard', action: 'view', customCheck: hasDashboardPermissions },
     { name: 'Users', path: '/users', icon: Users, resource: 'users', action: 'list' },
     { name: 'Calendar', path: '/calendar', icon: CalendarDays, resource: 'calendar', action: 'view' },
     { name: 'Transactions', path: '/transactions', icon: CreditCard, resource: 'transactions', action: 'list' },
@@ -129,9 +143,12 @@ export default function Sidebar({ isMobileMenuOpen, closeMobileMenu }: { isMobil
 
   const navigation = isSuperAdmin
     ? allNavigationItems
-    : allNavigationItems.filter(item =>
-        item.alwaysShow || hasPermission(item.resource, item.action)
-      );
+    : allNavigationItems.filter(item => {
+        if (item.customCheck) {
+          return item.customCheck();
+        }
+        return hasPermission(item.resource, item.action);
+      });
 
   console.log('🔧 Current state:');
   console.log('  - isSuperAdmin:', isSuperAdmin);

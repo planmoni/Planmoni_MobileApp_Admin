@@ -18,6 +18,7 @@ import { Link } from 'react-router-dom';
 import { useDashboardData } from '@/hooks/queries/useDashboardData';
 import { useRefreshData } from '@/hooks/mutations/useRefreshData';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePermissions } from '@/contexts/PermissionsContext';
 import { supabase } from '@/lib/supabase';
 import { useState, useEffect } from 'react';
 
@@ -27,6 +28,7 @@ export default function Dashboard() {
   const { data: dashboardData, isLoading, error } = useDashboardData();
   const refreshData = useRefreshData();
   const { session } = useAuth();
+  const { hasPermission, isSuperAdmin } = usePermissions();
   const [userProfile, setUserProfile] = useState<any>(null);
 
   useEffect(() => {
@@ -274,6 +276,7 @@ export default function Dashboard() {
       <div className="mb-6 md:mb-8">
         <h2 className="text-lg md:text-xl font-semibold text-gray-900 mb-4">Today's Overview</h2>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-5">
+          {(isSuperAdmin || hasPermission('dashboard', 'stats.new_users')) && (
           <div className="bg-white rounded-2xl p-4 md:p-6 shadow-soft border border-gray-100">
             <div className="flex justify-between items-start mb-2">
               <div className="flex-1">
@@ -286,7 +289,9 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
+          )}
 
+          {(isSuperAdmin || hasPermission('dashboard', 'stats.deposits')) && (
           <div className="bg-white rounded-2xl p-4 md:p-6 shadow-soft border border-gray-100">
             <div className="flex justify-between items-start mb-2">
               <div className="flex-1 min-w-0">
@@ -299,7 +304,9 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
+          )}
 
+          {(isSuperAdmin || hasPermission('dashboard', 'stats.payouts')) && (
           <div className="bg-white rounded-2xl p-4 md:p-6 shadow-soft border border-gray-100">
             <div className="flex justify-between items-start mb-2">
               <div className="flex-1 min-w-0">
@@ -312,7 +319,9 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
+          )}
 
+          {(isSuperAdmin || hasPermission('dashboard', 'stats.new_plans')) && (
           <div className="bg-white rounded-2xl p-4 md:p-6 shadow-soft border border-gray-100">
             <div className="flex justify-between items-start mb-2">
               <div className="flex-1">
@@ -325,7 +334,9 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
+          )}
 
+          {(isSuperAdmin || hasPermission('dashboard', 'stats.kyc_completed')) && (
           <div className="bg-white rounded-2xl p-4 md:p-6 shadow-soft border border-gray-100">
             <div className="flex justify-between items-start mb-2">
               <div className="flex-1">
@@ -338,7 +349,9 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
+          )}
 
+          {(isSuperAdmin || hasPermission('dashboard', 'stats.locked_balance')) && (
           <div className="bg-white rounded-2xl p-4 md:p-6 shadow-soft border border-gray-100">
             <div className="flex justify-between items-start mb-2">
               <div className="flex-1 min-w-0">
@@ -351,7 +364,9 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
+          )}
 
+          {(isSuperAdmin || hasPermission('dashboard', 'stats.cancelled_plans')) && (
           <div className="bg-white rounded-2xl p-4 md:p-6 shadow-soft border border-gray-100">
             <div className="flex justify-between items-start mb-2">
               <div className="flex-1">
@@ -364,7 +379,9 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
+          )}
 
+          {(isSuperAdmin || hasPermission('dashboard', 'stats.withdrawals')) && (
           <div className="bg-white rounded-2xl p-4 md:p-6 shadow-soft border border-gray-100">
             <div className="flex justify-between items-start mb-2">
               <div className="flex-1 min-w-0">
@@ -377,7 +394,9 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
+          )}
 
+          {(isSuperAdmin || hasPermission('dashboard', 'stats.payout_due_today')) && (
           <div className="bg-white rounded-2xl p-4 md:p-6 shadow-soft border border-gray-100">
             <div className="flex justify-between items-start mb-2">
               <div className="flex-1">
@@ -390,7 +409,9 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
+          )}
 
+          {(isSuperAdmin || hasPermission('dashboard', 'stats.payout_due_today')) && (
           <div className="bg-white rounded-2xl p-4 md:p-6 shadow-soft border border-gray-100">
             <div className="flex justify-between items-start mb-2">
               <div className="flex-1 min-w-0">
@@ -403,7 +424,9 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
+          )}
 
+          {(isSuperAdmin || hasPermission('dashboard', 'stats.payout_due_today')) && (
           <div className="bg-white rounded-2xl p-4 md:p-6 shadow-soft border border-gray-100">
             <div className="flex justify-between items-start mb-2">
               <div className="flex-1 min-w-0">
@@ -423,10 +446,12 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
+          )}
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        {(isSuperAdmin || hasPermission('dashboard', 'charts.transaction_volume')) && (
         <div className="bg-white rounded-2xl p-4 md:p-6 shadow-soft border border-gray-100">
           <div className="mb-4 md:mb-6">
             <h3 className="text-base md:text-lg font-semibold text-gray-900">Transaction Volume</h3>
@@ -436,7 +461,9 @@ export default function Dashboard() {
             <Bar data={transactionVolumeData} options={chartOptions} />
           </div>
         </div>
+        )}
 
+        {(isSuperAdmin || hasPermission('dashboard', 'charts.plan_distribution')) && (
         <div className="bg-white rounded-2xl p-4 md:p-6 shadow-soft border border-gray-100">
           <div className="mb-4 md:mb-6">
             <h3 className="text-base md:text-lg font-semibold text-gray-900">Plan Distribution</h3>
@@ -452,9 +479,11 @@ export default function Dashboard() {
             )}
           </div>
         </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        {(isSuperAdmin || hasPermission('dashboard', 'lists.todays_transactions')) && (
         <div>
           <h2 className="text-base md:text-lg font-semibold text-gray-900 mb-4">Today's Transactions</h2>
           <div className="bg-white rounded-2xl shadow-soft border border-gray-100 overflow-hidden">
@@ -510,7 +539,9 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
+        )}
 
+        {(isSuperAdmin || hasPermission('dashboard', 'lists.users_joined_today')) && (
         <div>
           <h2 className="text-base md:text-lg font-semibold text-gray-900 mb-4">Users Joined Today</h2>
           <div className="bg-white rounded-2xl shadow-soft border border-gray-100 overflow-hidden">
@@ -561,9 +592,11 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {(isSuperAdmin || hasPermission('dashboard', 'lists.todays_payout_events')) && (
         <div>
           <h2 className="text-base md:text-lg font-semibold text-gray-900 mb-4">Today's Payout Events</h2>
           <div className="bg-white rounded-2xl shadow-soft border border-gray-100 overflow-hidden">
@@ -608,7 +641,9 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
+        )}
 
+        {(isSuperAdmin || hasPermission('dashboard', 'lists.todays_activities')) && (
         <div>
           <h2 className="text-base md:text-lg font-semibold text-gray-900 mb-4">Today's Activities</h2>
           <div className="bg-white rounded-2xl shadow-soft border border-gray-100 overflow-hidden">
@@ -662,6 +697,7 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
+        )}
       </div>
     </div>
   );
