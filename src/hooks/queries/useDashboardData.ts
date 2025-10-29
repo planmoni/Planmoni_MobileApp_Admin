@@ -150,15 +150,16 @@ const fetchTodayStats = async () => {
     .gte('created_at', startOfToday.toISOString())
     .lte('created_at', endOfToday.toISOString());
 
-  // Payouts due today (from automated_payouts scheduled for today)
-  const today = new Date();
-  const todayDateStr = today.toISOString().split('T')[0];
+  // Payouts due today (from payout_plans with next_payout_date today and time not yet passed)
+  const now = new Date();
 
   const { data: todayPayoutsDueData, count: todayPayoutsDueCount } = await supabase
-    .from('automated_payouts')
-    .select('amount', { count: 'exact' })
-    .eq('scheduled_date', todayDateStr)
-    .in('status', ['pending', 'processing', 'scheduled']);
+    .from('payout_plans')
+    .select('payout_amount', { count: 'exact' })
+    .gte('next_payout_date', startOfToday.toISOString())
+    .lte('next_payout_date', endOfToday.toISOString())
+    .gte('next_payout_date', now.toISOString())
+    .eq('status', 'active');
 
   return {
     todayUsers: todayUsersCount || 0,
@@ -170,7 +171,7 @@ const fetchTodayStats = async () => {
     todayKyc: todayKycCount || 0,
     todayLockedBalance: todayLockedBalanceData?.reduce((sum, p) => sum + Number(p.total_amount), 0) || 0,
     todayPayoutsDueCount: todayPayoutsDueCount || 0,
-    todayPayoutsDueAmount: todayPayoutsDueData?.reduce((sum, p) => sum + Number(p.amount), 0) || 0,
+    todayPayoutsDueAmount: todayPayoutsDueData?.reduce((sum, p) => sum + Number(p.payout_amount), 0) || 0,
   };
 };
 
@@ -238,15 +239,13 @@ const fetchYesterdayStats = async () => {
     .gte('created_at', startOfYesterday.toISOString())
     .lte('created_at', endOfYesterday.toISOString());
 
-  // Payouts due yesterday (from automated_payouts scheduled for yesterday)
-  const yesterday = subDays(new Date(), 1);
-  const yesterdayDateStr = yesterday.toISOString().split('T')[0];
-
+  // Payouts due yesterday (from payout_plans with next_payout_date yesterday)
   const { data: yesterdayPayoutsDueData, count: yesterdayPayoutsDueCount } = await supabase
-    .from('automated_payouts')
-    .select('amount', { count: 'exact' })
-    .eq('scheduled_date', yesterdayDateStr)
-    .in('status', ['pending', 'processing', 'scheduled', 'completed']);
+    .from('payout_plans')
+    .select('payout_amount', { count: 'exact' })
+    .gte('next_payout_date', startOfYesterday.toISOString())
+    .lte('next_payout_date', endOfYesterday.toISOString())
+    .eq('status', 'active');
 
   return {
     yesterdayUsers: yesterdayUsersCount || 0,
@@ -258,7 +257,7 @@ const fetchYesterdayStats = async () => {
     yesterdayKyc: yesterdayKycCount || 0,
     yesterdayLockedBalance: yesterdayLockedBalanceData?.reduce((sum, p) => sum + Number(p.total_amount), 0) || 0,
     yesterdayPayoutsDueCount: yesterdayPayoutsDueCount || 0,
-    yesterdayPayoutsDueAmount: yesterdayPayoutsDueData?.reduce((sum, p) => sum + Number(p.amount), 0) || 0,
+    yesterdayPayoutsDueAmount: yesterdayPayoutsDueData?.reduce((sum, p) => sum + Number(p.payout_amount), 0) || 0,
   };
 };
 
