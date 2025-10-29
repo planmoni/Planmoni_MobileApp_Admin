@@ -364,15 +364,6 @@ export default function AuditLogs() {
                 onClick={() => setSelectedLog(log)}
               >
                 <div className="flex items-start gap-4">
-                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                    log.type === 'kyc' ? 'bg-blue-50' : 'bg-green-50'
-                  }`}>
-                    {log.type === 'kyc' ? (
-                      <Shield className={`h-6 w-6 ${log.type === 'kyc' ? 'text-blue-600' : 'text-green-600'}`} />
-                    ) : (
-                      <Database className="h-6 w-6 text-green-600" />
-                    )}
-                  </div>
 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-4 mb-2">
