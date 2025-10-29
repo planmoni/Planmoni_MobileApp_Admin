@@ -132,17 +132,7 @@ export default function SuperAdmin() {
     user.email?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const getHealthScoreColor = (score: number) => {
-    if (score >= 90) return 'text-green-600';
-    if (score >= 70) return 'text-yellow-600';
-    return 'text-red-600';
-  };
-
-  const getHealthScoreBg = (score: number) => {
-    if (score >= 90) return 'bg-green-50';
-    if (score >= 70) return 'bg-yellow-50';
-    return 'bg-red-50';
-  };
+  
 
   return (
     <div className="space-y-8">
