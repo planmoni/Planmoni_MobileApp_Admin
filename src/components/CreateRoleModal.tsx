@@ -154,33 +154,80 @@ export function CreateRoleModal({ isOpen, onClose, onSubmit, permissions }: Crea
               <label className="block text-sm font-medium text-gray-700 mb-3">
                 Permissions ({formData.permissions.length} selected)
               </label>
-              <div className="border border-gray-200 rounded-lg max-h-80 overflow-y-auto">
-                {permissions.map((permission) => (
-                  <label
-                    key={permission.id}
-                    className="flex items-start gap-3 p-4 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={formData.permissions.includes(permission.id)}
-                      onChange={() => togglePermission(permission.id)}
-                      className="mt-1 h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                    />
-                    <div className="flex-1">
-                      <div className="font-medium text-gray-900">
-                        {permission.name}
+              <div className="border border-gray-200 rounded-lg max-h-96 overflow-y-auto">
+                {Object.entries(
+                  permissions.reduce((acc, permission) => {
+                    const category = permission.resource.charAt(0).toUpperCase() + permission.resource.slice(1).replace('_', ' ');
+                    if (!acc[category]) acc[category] = [];
+                    acc[category].push(permission);
+                    return acc;
+                  }, {} as Record<string, typeof permissions>)
+                ).map(([category, categoryPermissions]) => {
+                  const allSelected = categoryPermissions.every(p => formData.permissions.includes(p.id));
+                  const someSelected = categoryPermissions.some(p => formData.permissions.includes(p.id));
+
+                  const toggleCategory = () => {
+                    if (allSelected) {
+                      setFormData(prev => ({
+                        ...prev,
+                        permissions: prev.permissions.filter(id =>
+                          !categoryPermissions.map(p => p.id).includes(id)
+                        )
+                      }));
+                    } else {
+                      setFormData(prev => ({
+                        ...prev,
+                        permissions: [...new Set([...prev.permissions, ...categoryPermissions.map(p => p.id)])]
+                      }));
+                    }
+                  };
+
+                  return (
+                    <div key={category} className="border-b border-gray-100 last:border-b-0">
+                      <div className="bg-gray-50 p-3 sticky top-0 z-10">
+                        <label className="flex items-center gap-3 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={allSelected}
+                            ref={input => {
+                              if (input) input.indeterminate = someSelected && !allSelected;
+                            }}
+                            onChange={toggleCategory}
+                            className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                          />
+                          <span className="font-semibold text-gray-900">
+                            {category} ({categoryPermissions.filter(p => formData.permissions.includes(p.id)).length}/{categoryPermissions.length})
+                          </span>
+                        </label>
                       </div>
-                      <div className="text-sm text-gray-500">
-                        {permission.action} on {permission.resource}
+                      <div className="divide-y divide-gray-100">
+                        {categoryPermissions.map((permission) => (
+                          <label
+                            key={permission.id}
+                            className="flex items-start gap-3 p-4 hover:bg-gray-50 cursor-pointer"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={formData.permissions.includes(permission.id)}
+                              onChange={() => togglePermission(permission.id)}
+                              className="mt-1 h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                            />
+                            <div className="flex-1">
+                              <div className="font-medium text-gray-900 text-sm">
+                                {permission.name}
+                              </div>
+                              {permission.description && (
+                                <div className="text-xs text-gray-500 mt-1">
+                                  {permission.description}
+                                </div>
+                              )}
+                            </div>
+                          </label>
+                        ))}
                       </div>
-                      {permission.description && (
-                        <div className="text-xs text-gray-400 mt-1">
-                          {permission.description}
-                        </div>
-                      )}
                     </div>
-                  </label>
-                ))}
+                  );
+                })}
               </div>
             </div>
           </div>
