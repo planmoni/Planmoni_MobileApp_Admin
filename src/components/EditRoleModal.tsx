@@ -1,6 +1,13 @@
 import { useState, useEffect } from 'react';
 import { X, Save } from 'lucide-react';
 
+const formatPermissionName = (name: string): string => {
+  return name
+    .split('.')
+    .map(part => part.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' '))
+    .join(' - ');
+};
+
 interface EditRoleModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -239,7 +246,7 @@ export function EditRoleModal({ isOpen, onClose, onSubmit, role, permissions }: 
                             />
                             <div className="flex-1">
                               <div className="font-medium text-gray-900 text-sm">
-                                {permission.name}
+                                {formatPermissionName(permission.name)}
                               </div>
                               {permission.description && (
                                 <div className="text-xs text-gray-500 mt-1">
