@@ -1,42 +1,92 @@
-import { RefreshCw } from 'lucide-react';
-import { Line } from 'react-chartjs-2';
-import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js';
-import { format, subDays } from 'date-fns';
+import { RefreshCw, Users, ArrowUpRight, ArrowDownRight, Calendar, Lock, XCircle, Wallet, CheckCircle2, Clock } from 'lucide-react';
+import { Bar, Pie } from 'react-chartjs-2';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  ArcElement,
+} from 'chart.js';
+import { format } from 'date-fns';
 import { Link } from 'react-router-dom';
 import { useDashboardData } from '@/hooks/queries/useDashboardData';
 import { useRefreshData } from '@/hooks/mutations/useRefreshData';
-import StatCard from '@/components/StatCard';
-import { Users, ArrowUpRight, ArrowDownRight, Calendar } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/lib/supabase';
+import { useState, useEffect } from 'react';
 
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
+ChartJS.register(CategoryScale, LinearScale, BarElement, PointElement, LineElement, Title, Tooltip, Legend, ArcElement);
 
 export default function Dashboard() {
   const { data: dashboardData, isLoading, error } = useDashboardData();
   const refreshData = useRefreshData();
+  const { session } = useAuth();
+  const [userProfile, setUserProfile] = useState<any>(null);
+
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      if (session?.user) {
+        const { data } = await supabase
+          .from('profiles')
+          .select('first_name, last_name, is_admin')
+          .eq('id', session.user.id)
+          .single();
+
+        setUserProfile(data);
+      }
+    };
+
+    fetchUserProfile();
+  }, [session]);
 
   const handleRefresh = () => {
     refreshData.mutate(['dashboard']);
   };
 
-  const labels = Array.from({ length: 7 }, (_, i) => {
-    return format(subDays(new Date(), 6 - i), 'dd/MM');
-  });
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-NG', {
+      style: 'currency',
+      currency: 'NGN',
+      minimumFractionDigits: 0,
+    }).format(amount);
+  };
 
-  const chartData = {
-    labels,
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 18) return 'Good afternoon';
+    return 'Good evening';
+  };
+
+  const planDistributionData = {
+    labels: ['Weekly', 'Biweekly', 'Monthly', 'Custom'],
     datasets: [
       {
-        label: 'Daily Transactions',
-        data: dashboardData?.transactionTrends.map(trend => trend.total_transactions || 0) || [],
-        borderColor: '#86EFAC',
-        backgroundColor: 'rgba(134, 239, 172, 0.1)',
-        tension: 0.4,
-        fill: true,
-        pointRadius: 4,
-        pointHoverRadius: 6,
-        pointBackgroundColor: '#86EFAC',
-        pointBorderColor: '#fff',
-        pointBorderWidth: 2,
+        data: [
+          dashboardData?.planDistribution.weekly || 0,
+          dashboardData?.planDistribution.biweekly || 0,
+          dashboardData?.planDistribution.monthly || 0,
+          dashboardData?.planDistribution.custom || 0,
+        ],
+        backgroundColor: ['#22C55E', '#3B82F6', '#F59E0B', '#8B5CF6'],
+        borderWidth: 0,
+      },
+    ],
+  };
+
+  const transactionVolumeData = {
+    labels: dashboardData?.transactionVolumeTrends.map(trend => format(new Date(trend.day), 'dd/MM')) || [],
+    datasets: [
+      {
+        label: 'Transaction Volume',
+        data: dashboardData?.transactionVolumeTrends.map(trend => trend.volume) || [],
+        backgroundColor: '#86EFAC',
+        borderRadius: 8,
       },
     ],
   };
@@ -59,6 +109,11 @@ export default function Dashboard() {
         bodyFont: {
           size: 14,
         },
+        callbacks: {
+          label: function(context: any) {
+            return formatCurrency(context.parsed.y);
+          }
+        }
       },
     },
     scales: {
@@ -73,6 +128,9 @@ export default function Dashboard() {
           font: {
             size: 11,
           },
+          callback: function(value: any) {
+            return '₦' + (value / 1000) + 'k';
+          }
         },
       },
       x: {
@@ -85,6 +143,28 @@ export default function Dashboard() {
             size: 11,
           },
         },
+      },
+    },
+  };
+
+  const pieOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'right' as const,
+        labels: {
+          boxWidth: 12,
+          padding: 10,
+          font: {
+            size: 12,
+          },
+        },
+      },
+      tooltip: {
+        backgroundColor: '#0F172A',
+        padding: 12,
+        borderRadius: 8,
       },
     },
   };
@@ -112,130 +192,227 @@ export default function Dashboard() {
   }
 
   const stats = dashboardData || {
+    todayUsers: 0,
+    todayDeposits: 0,
+    todayPayouts: 0,
+    todayPlans: 0,
+    todayKyc: 0,
+    todayLockedBalance: 0,
+    todayCancelledPlans: 0,
+    todayWithdrawals: 0,
     totalUsers: 0,
     totalDeposits: 0,
     totalPayouts: 0,
     totalPlans: 0,
     activeUsers: 0,
-    recentTransactions: [],
-    recentUsers: [],
-    transactionTrends: [],
-    userGrowthTrend: 0,
-    depositsTrend: 0,
-    payoutsTrend: 0,
-    plansTrend: 0,
+    todayTransactions: [],
+    todayUsersJoined: [],
+    todayPayoutEvents: [],
+    todayKycSubmissions: [],
+    todayActivities: [],
+    planDistribution: { weekly: 0, biweekly: 0, monthly: 0, custom: 0 },
+    transactionVolumeTrends: [],
   };
 
   return (
-    <div>
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-1">Dashboard</h1>
-          <p className="text-gray-500">Overview of Planmoni platform</p>
+    <div className="w-full min-w-0">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 md:mb-8">
+        <div className="flex-1 min-w-0">
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-1">
+            {getGreeting()}, {userProfile?.first_name || 'Admin'}!
+          </h1>
+          <p className="text-sm md:text-base text-gray-500">
+            {userProfile?.is_admin ? 'Super Admin' : 'Admin'} Dashboard - Today's Overview
+          </p>
         </div>
         <button
           onClick={handleRefresh}
-          className="p-3 rounded-xl bg-white hover:bg-gray-50 transition-colors shadow-soft border border-gray-100"
+          className="p-2.5 md:p-3 rounded-xl bg-white hover:bg-gray-50 transition-colors shadow-soft border border-gray-100"
           disabled={refreshData.isPending}
         >
           <RefreshCw className={`h-5 w-5 text-gray-600 ${refreshData.isPending ? 'animate-spin' : ''}`} />
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
-        <StatCard
-          title="Total Users"
-          value={stats.totalUsers.toString()}
-          icon={<Users className="h-5 w-5 text-primary" />}
-          trend={stats.userGrowthTrend}
-        />
-
-        <StatCard
-          title="Total Deposits"
-          value={`₦${stats.totalDeposits.toLocaleString()}`}
-          icon={<ArrowUpRight className="h-5 w-5 text-success" />}
-          trend={stats.depositsTrend}
-        />
-
-        <StatCard
-          title="Total Payouts"
-          value={`₦${stats.totalPayouts.toLocaleString()}`}
-          icon={<ArrowDownRight className="h-5 w-5 text-error" />}
-          trend={stats.payoutsTrend}
-        />
-
-        <StatCard
-          title="Total Plans"
-          value={stats.totalPlans.toString()}
-          icon={<Calendar className="h-5 w-5 text-warning" />}
-          trend={stats.plansTrend}
-        />
-      </div>
-
-      <div className="mb-8">
-        <div className="bg-white rounded-2xl p-6 shadow-soft border border-gray-100">
-          <div className="flex justify-between items-center mb-6">
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900">Transaction Trends</h3>
-              <p className="text-sm text-gray-500">Last 7 days</p>
+      <div className="mb-6 md:mb-8">
+        <h2 className="text-lg md:text-xl font-semibold text-gray-900 mb-4">Today's Overview</h2>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-5">
+          <div className="bg-white rounded-2xl p-4 md:p-6 shadow-soft border border-gray-100">
+            <div className="flex justify-between items-start mb-3 md:mb-4">
+              <div className="flex-1">
+                <p className="text-xs md:text-sm font-medium text-gray-500 mb-1">New Users</p>
+                <p className="text-xl md:text-3xl font-bold text-gray-900">{stats.todayUsers}</p>
+              </div>
+              <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-blue-50 flex items-center justify-center flex-shrink-0">
+                <Users className="h-4 w-4 md:h-5 md:w-5 text-blue-600" />
+              </div>
             </div>
           </div>
-          <div className="h-64">
-            <Line data={chartData} options={chartOptions} />
+
+          <div className="bg-white rounded-2xl p-4 md:p-6 shadow-soft border border-gray-100">
+            <div className="flex justify-between items-start mb-3 md:mb-4">
+              <div className="flex-1 min-w-0">
+                <p className="text-xs md:text-sm font-medium text-gray-500 mb-1">Deposits</p>
+                <p className="text-lg md:text-2xl font-bold text-gray-900 break-words">{formatCurrency(stats.todayDeposits)}</p>
+              </div>
+              <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-green-50 flex items-center justify-center flex-shrink-0">
+                <ArrowUpRight className="h-4 w-4 md:h-5 md:w-5 text-green-600" />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl p-4 md:p-6 shadow-soft border border-gray-100">
+            <div className="flex justify-between items-start mb-3 md:mb-4">
+              <div className="flex-1 min-w-0">
+                <p className="text-xs md:text-sm font-medium text-gray-500 mb-1">Payouts</p>
+                <p className="text-lg md:text-2xl font-bold text-gray-900 break-words">{formatCurrency(stats.todayPayouts)}</p>
+              </div>
+              <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-red-50 flex items-center justify-center flex-shrink-0">
+                <ArrowDownRight className="h-4 w-4 md:h-5 md:w-5 text-red-600" />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl p-4 md:p-6 shadow-soft border border-gray-100">
+            <div className="flex justify-between items-start mb-3 md:mb-4">
+              <div className="flex-1">
+                <p className="text-xs md:text-sm font-medium text-gray-500 mb-1">New Plans</p>
+                <p className="text-xl md:text-3xl font-bold text-gray-900">{stats.todayPlans}</p>
+              </div>
+              <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-purple-50 flex items-center justify-center flex-shrink-0">
+                <Calendar className="h-4 w-4 md:h-5 md:w-5 text-purple-600" />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl p-4 md:p-6 shadow-soft border border-gray-100">
+            <div className="flex justify-between items-start mb-3 md:mb-4">
+              <div className="flex-1">
+                <p className="text-xs md:text-sm font-medium text-gray-500 mb-1">KYC Completed</p>
+                <p className="text-xl md:text-3xl font-bold text-gray-900">{stats.todayKyc}</p>
+              </div>
+              <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-green-50 flex items-center justify-center flex-shrink-0">
+                <CheckCircle2 className="h-4 w-4 md:h-5 md:w-5 text-green-600" />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl p-4 md:p-6 shadow-soft border border-gray-100">
+            <div className="flex justify-between items-start mb-3 md:mb-4">
+              <div className="flex-1 min-w-0">
+                <p className="text-xs md:text-sm font-medium text-gray-500 mb-1">Locked Balance</p>
+                <p className="text-lg md:text-2xl font-bold text-gray-900 break-words">{formatCurrency(stats.todayLockedBalance)}</p>
+              </div>
+              <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-yellow-50 flex items-center justify-center flex-shrink-0">
+                <Lock className="h-4 w-4 md:h-5 md:w-5 text-yellow-600" />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl p-4 md:p-6 shadow-soft border border-gray-100">
+            <div className="flex justify-between items-start mb-3 md:mb-4">
+              <div className="flex-1">
+                <p className="text-xs md:text-sm font-medium text-gray-500 mb-1">Cancelled Plans</p>
+                <p className="text-xl md:text-3xl font-bold text-gray-900">{stats.todayCancelledPlans}</p>
+              </div>
+              <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-red-50 flex items-center justify-center flex-shrink-0">
+                <XCircle className="h-4 w-4 md:h-5 md:w-5 text-red-600" />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl p-4 md:p-6 shadow-soft border border-gray-100">
+            <div className="flex justify-between items-start mb-3 md:mb-4">
+              <div className="flex-1 min-w-0">
+                <p className="text-xs md:text-sm font-medium text-gray-500 mb-1">Withdrawals</p>
+                <p className="text-lg md:text-2xl font-bold text-gray-900 break-words">{formatCurrency(stats.todayWithdrawals)}</p>
+              </div>
+              <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-gray-50 flex items-center justify-center flex-shrink-0">
+                <Wallet className="h-4 w-4 md:h-5 md:w-5 text-gray-600" />
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <div className="bg-white rounded-2xl p-4 md:p-6 shadow-soft border border-gray-100">
+          <div className="mb-4 md:mb-6">
+            <h3 className="text-base md:text-lg font-semibold text-gray-900">Transaction Volume</h3>
+            <p className="text-xs md:text-sm text-gray-500">Last 7 days</p>
+          </div>
+          <div className="h-48 md:h-64">
+            <Bar data={transactionVolumeData} options={chartOptions} />
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl p-4 md:p-6 shadow-soft border border-gray-100">
+          <div className="mb-4 md:mb-6">
+            <h3 className="text-base md:text-lg font-semibold text-gray-900">Plan Distribution</h3>
+            <p className="text-xs md:text-sm text-gray-500">Today's plans by type</p>
+          </div>
+          <div className="h-48 md:h-64">
+            {stats.todayPlans > 0 ? (
+              <Pie data={planDistributionData} options={pieOptions} />
+            ) : (
+              <div className="flex items-center justify-center h-full text-gray-400 text-sm">
+                No plans created today
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         <div>
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Recent Transactions</h2>
+          <h2 className="text-base md:text-lg font-semibold text-gray-900 mb-4">Today's Transactions</h2>
           <div className="bg-white rounded-2xl shadow-soft border border-gray-100 overflow-hidden">
-            {stats.recentTransactions.length > 0 ? (
+            {stats.todayTransactions.length > 0 ? (
               <div>
-                {stats.recentTransactions.map((transaction, index) => (
+                {stats.todayTransactions.slice(0, 5).map((transaction, index) => (
                   <div
                     key={transaction.id}
-                    className={`flex justify-between items-center p-5 hover:bg-gray-50 transition-colors ${
-                      index !== stats.recentTransactions.length - 1 ? 'border-b border-gray-100' : ''
+                    className={`flex justify-between items-center p-4 md:p-5 hover:bg-gray-50 transition-colors ${
+                      index !== Math.min(stats.todayTransactions.length, 5) - 1 ? 'border-b border-gray-100' : ''
                     }`}
                   >
-                    <div className="flex items-center">
-                      <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${
+                    <div className="flex items-center min-w-0 flex-1">
+                      <div className={`w-10 h-10 md:w-11 md:h-11 rounded-xl flex items-center justify-center flex-shrink-0 ${
                         transaction.type === 'deposit' ? 'bg-green-50' : 'bg-red-50'
                       }`}>
                         {transaction.type === 'deposit' ? (
-                          <ArrowUpRight className="h-5 w-5 text-green-600" />
+                          <ArrowUpRight className="h-4 w-4 md:h-5 md:w-5 text-green-600" />
                         ) : (
-                          <ArrowDownRight className="h-5 w-5 text-red-600" />
+                          <ArrowDownRight className="h-4 w-4 md:h-5 md:w-5 text-red-600" />
                         )}
                       </div>
-                      <div className="ml-4">
-                        <p className="text-sm font-semibold text-gray-900">
+                      <div className="ml-3 md:ml-4 min-w-0 flex-1">
+                        <p className="text-xs md:text-sm font-semibold text-gray-900 truncate">
                           {transaction.type.charAt(0).toUpperCase() + transaction.type.slice(1)}
                         </p>
-                        <p className="text-xs text-gray-500">
+                        <p className="text-xs text-gray-500 truncate">
                           {transaction.profiles?.first_name} {transaction.profiles?.last_name}
                         </p>
                         <p className="text-xs text-gray-400">
-                          {new Date(transaction.created_at).toLocaleDateString()}
+                          {new Date(transaction.created_at).toLocaleTimeString()}
                         </p>
                       </div>
                     </div>
-                    <p className={`text-sm font-semibold ${
+                    <p className={`text-xs md:text-sm font-semibold whitespace-nowrap ml-2 ${
                       transaction.type === 'deposit' ? 'text-green-600' : 'text-red-600'
                     }`}>
-                      {transaction.type === 'deposit' ? '+' : '-'}₦{transaction.amount.toLocaleString()}
+                      {transaction.type === 'deposit' ? '+' : '-'}{formatCurrency(transaction.amount)}
                     </p>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-center py-8 text-gray-500">No recent transactions</p>
+              <p className="text-center py-8 text-gray-500 text-sm">No transactions today</p>
             )}
-            <div className="border-t border-gray-100 p-4 text-center bg-gray-50">
+            <div className="border-t border-gray-100 p-3 md:p-4 text-center bg-gray-50">
               <Link
                 to="/transactions"
-                className="text-primary hover:text-primary-light text-sm font-medium transition-colors"
+                className="text-primary hover:text-primary-light text-xs md:text-sm font-medium transition-colors"
               >
                 View All Transactions
               </Link>
@@ -244,36 +421,36 @@ export default function Dashboard() {
         </div>
 
         <div>
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Recent Users</h2>
+          <h2 className="text-base md:text-lg font-semibold text-gray-900 mb-4">Users Joined Today</h2>
           <div className="bg-white rounded-2xl shadow-soft border border-gray-100 overflow-hidden">
-            {stats.recentUsers.length > 0 ? (
+            {stats.todayUsersJoined.length > 0 ? (
               <div>
-                {stats.recentUsers.map((user, index) => (
+                {stats.todayUsersJoined.slice(0, 5).map((user, index) => (
                   <div
                     key={user.id}
-                    className={`flex justify-between items-center p-5 hover:bg-gray-50 transition-colors ${
-                      index !== stats.recentUsers.length - 1 ? 'border-b border-gray-100' : ''
+                    className={`flex justify-between items-center p-4 md:p-5 hover:bg-gray-50 transition-colors ${
+                      index !== Math.min(stats.todayUsersJoined.length, 5) - 1 ? 'border-b border-gray-100' : ''
                     }`}
                   >
-                    <div className="flex items-center">
-                      <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-primary to-primary-light flex items-center justify-center text-white shadow-sm">
-                        <span className="text-sm font-semibold">
+                    <div className="flex items-center min-w-0 flex-1">
+                      <div className="w-10 h-10 md:w-11 md:h-11 rounded-xl bg-gradient-to-br from-primary to-primary-light flex items-center justify-center text-white shadow-sm flex-shrink-0">
+                        <span className="text-xs md:text-sm font-semibold">
                           {user.first_name?.[0]}{user.last_name?.[0]}
                         </span>
                       </div>
-                      <div className="ml-4">
-                        <p className="text-sm font-semibold text-gray-900">
+                      <div className="ml-3 md:ml-4 min-w-0 flex-1">
+                        <p className="text-xs md:text-sm font-semibold text-gray-900 truncate">
                           {user.first_name} {user.last_name}
                         </p>
-                        <p className="text-xs text-gray-500">{user.email}</p>
+                        <p className="text-xs text-gray-500 truncate">{user.email}</p>
                         <p className="text-xs text-gray-400">
-                          Joined: {new Date(user.created_at).toLocaleDateString()}
+                          {new Date(user.created_at).toLocaleTimeString()}
                         </p>
                       </div>
                     </div>
                     <Link
                       to={`/users/${user.id}`}
-                      className="px-4 py-2 text-xs font-medium text-primary bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                      className="px-3 md:px-4 py-1.5 md:py-2 text-xs font-medium text-primary bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors whitespace-nowrap ml-2"
                     >
                       View
                     </Link>
@@ -281,14 +458,115 @@ export default function Dashboard() {
                 ))}
               </div>
             ) : (
-              <p className="text-center py-8 text-gray-500">No recent users</p>
+              <p className="text-center py-8 text-gray-500 text-sm">No users joined today</p>
             )}
-            <div className="border-t border-gray-100 p-4 text-center bg-gray-50">
+            <div className="border-t border-gray-100 p-3 md:p-4 text-center bg-gray-50">
               <Link
                 to="/users"
-                className="text-primary hover:text-primary-light text-sm font-medium transition-colors"
+                className="text-primary hover:text-primary-light text-xs md:text-sm font-medium transition-colors"
               >
                 View All Users
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div>
+          <h2 className="text-base md:text-lg font-semibold text-gray-900 mb-4">Today's Payout Events</h2>
+          <div className="bg-white rounded-2xl shadow-soft border border-gray-100 overflow-hidden">
+            {stats.todayPayoutEvents.length > 0 ? (
+              <div>
+                {stats.todayPayoutEvents.slice(0, 5).map((event, index) => (
+                  <div
+                    key={event.id}
+                    className={`p-4 md:p-5 hover:bg-gray-50 transition-colors ${
+                      index !== Math.min(stats.todayPayoutEvents.length, 5) - 1 ? 'border-b border-gray-100' : ''
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-xs md:text-sm font-semibold text-gray-900">
+                        {event.payout_plans?.profiles?.first_name} {event.payout_plans?.profiles?.last_name}
+                      </p>
+                      <span className={`px-2 py-1 text-xs font-medium rounded ${
+                        event.status === 'completed' ? 'bg-green-50 text-green-700' :
+                        event.status === 'pending' ? 'bg-yellow-50 text-yellow-700' :
+                        'bg-gray-50 text-gray-600'
+                      }`}>
+                        {event.status}
+                      </span>
+                    </div>
+                    <p className="text-xs md:text-sm font-semibold text-gray-900">{formatCurrency(event.amount)}</p>
+                    <p className="text-xs text-gray-400 mt-1">
+                      {new Date(event.scheduled_date).toLocaleTimeString()}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-center py-8 text-gray-500 text-sm">No payout events today</p>
+            )}
+            <div className="border-t border-gray-100 p-3 md:p-4 text-center bg-gray-50">
+              <Link
+                to="/payout-events"
+                className="text-primary hover:text-primary-light text-xs md:text-sm font-medium transition-colors"
+              >
+                View All Payout Events
+              </Link>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h2 className="text-base md:text-lg font-semibold text-gray-900 mb-4">Today's Activities</h2>
+          <div className="bg-white rounded-2xl shadow-soft border border-gray-100 overflow-hidden">
+            {stats.todayActivities.length > 0 ? (
+              <div>
+                {stats.todayActivities.slice(0, 5).map((activity, index) => (
+                  <div
+                    key={index}
+                    className={`flex items-start p-4 md:p-5 hover:bg-gray-50 transition-colors ${
+                      index !== Math.min(stats.todayActivities.length, 5) - 1 ? 'border-b border-gray-100' : ''
+                    }`}
+                  >
+                    <div className={`w-8 h-8 md:w-10 md:h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                      activity.type === 'user_joined' ? 'bg-blue-50' :
+                      activity.type === 'deposit' ? 'bg-green-50' :
+                      activity.type === 'payout' ? 'bg-red-50' :
+                      activity.type === 'kyc_submission' ? 'bg-purple-50' :
+                      'bg-gray-50'
+                    }`}>
+                      {activity.type === 'user_joined' ? (
+                        <Users className="h-4 w-4 md:h-5 md:w-5 text-blue-600" />
+                      ) : activity.type === 'deposit' ? (
+                        <ArrowUpRight className="h-4 w-4 md:h-5 md:w-5 text-green-600" />
+                      ) : activity.type === 'payout' ? (
+                        <ArrowDownRight className="h-4 w-4 md:h-5 md:w-5 text-red-600" />
+                      ) : activity.type === 'kyc_submission' ? (
+                        <CheckCircle2 className="h-4 w-4 md:h-5 md:w-5 text-purple-600" />
+                      ) : (
+                        <Clock className="h-4 w-4 md:h-5 md:w-5 text-gray-600" />
+                      )}
+                    </div>
+                    <div className="ml-3 md:ml-4 flex-1 min-w-0">
+                      <p className="text-xs md:text-sm text-gray-900 break-words">{activity.description}</p>
+                      <p className="text-xs text-gray-400 mt-1">
+                        {new Date(activity.timestamp).toLocaleTimeString()}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-center py-8 text-gray-500 text-sm">No activities today</p>
+            )}
+            <div className="border-t border-gray-100 p-3 md:p-4 text-center bg-gray-50">
+              <Link
+                to="/activity"
+                className="text-primary hover:text-primary-light text-xs md:text-sm font-medium transition-colors"
+              >
+                View All Activities
               </Link>
             </div>
           </div>
