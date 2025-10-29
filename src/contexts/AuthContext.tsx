@@ -151,7 +151,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       setIsLoading(true);
       await supabase.auth.signOut();
+      setSession(null);
       showToast('Successfully signed out', 'success');
+      window.location.href = '/login';
     } catch (error) {
       console.error('Sign out error:', error);
       showToast('Failed to sign out', 'error');
