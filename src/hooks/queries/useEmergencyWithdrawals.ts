@@ -29,7 +29,7 @@ export interface EmergencyWithdrawal {
     email: string | null;
   };
   payout_plans?: {
-    plan_name: string | null;
+    name: string | null;
     total_amount: string | null;
   };
   payout_accounts?: {
@@ -61,7 +61,7 @@ export function useEmergencyWithdrawals(filters: EmergencyWithdrawalsFilters = {
             email
           ),
           payout_plans:payout_plan_id (
-            plan_name,
+            name,
             total_amount
           ),
           payout_accounts:payout_account_id (
