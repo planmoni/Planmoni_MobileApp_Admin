@@ -150,9 +150,6 @@ export default function SuperAdmin() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center">
-              <Shield className="h-6 w-6 text-white" />
-            </div>
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Super Admin</h1>
               <p className="text-gray-500">Manage system roles and permissions</p>
