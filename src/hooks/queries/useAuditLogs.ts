@@ -1,6 +1,21 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 
+export interface KycAuditAttachment {
+  id: string;
+  audit_log_id: string;
+  file_name: string;
+  file_type: string;
+  file_size: number;
+  file_hash: string;
+  file_path: string;
+  encryption_key_id: string | null;
+  access_level: string | null;
+  description: string | null;
+  tags: string[] | null;
+  created_at: string;
+}
+
 export interface KycAuditLog {
   id: string;
   user_id: string;
@@ -41,6 +56,7 @@ export interface KycAuditLog {
     last_name: string | null;
     email: string | null;
   };
+  kyc_audit_attachments?: KycAuditAttachment[];
 }
 
 export interface SafehavenAuditLog {
@@ -103,6 +119,20 @@ export function useAuditLogs(filters: AuditLogsFilters) {
               first_name,
               last_name,
               email
+            ),
+            kyc_audit_attachments (
+              id,
+              audit_log_id,
+              file_name,
+              file_type,
+              file_size,
+              file_hash,
+              file_path,
+              encryption_key_id,
+              access_level,
+              description,
+              tags,
+              created_at
             )
           `, { count: 'exact' })
           .order('created_at', { ascending: false });

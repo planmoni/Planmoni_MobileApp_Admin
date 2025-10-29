@@ -16,14 +16,18 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  Paperclip,
+  BarChart3,
   X
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useAuditLogs, AuditLogsFilters } from '@/hooks/queries/useAuditLogs';
+import { useAuditTrailSummary } from '@/hooks/queries/useAuditTrailSummary';
 import { useRefreshData } from '@/hooks/mutations/useRefreshData';
 
 export default function AuditLogs() {
   const refreshData = useRefreshData();
+  const [activeTab, setActiveTab] = useState<'logs' | 'summary'>('logs');
   const [searchQuery, setSearchQuery] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [selectedLog, setSelectedLog] = useState<any>(null);
@@ -44,6 +48,8 @@ export default function AuditLogs() {
   const totalLogs = data?.total || 0;
   const currentPage = data?.page || 1;
   const totalPages = data?.totalPages || 1;
+
+  const { data: summaryData, isLoading: summaryLoading } = useAuditTrailSummary();
 
   const handleRefresh = () => {
     refreshData.mutate(['audit-logs']);
@@ -180,7 +186,38 @@ export default function AuditLogs() {
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl shadow-soft border border-gray-100 p-6 mb-6">
+      <div className="bg-white rounded-2xl shadow-soft border border-gray-100 mb-6">
+        <div className="border-b border-gray-200">
+          <div className="flex gap-1 p-2">
+            <button
+              onClick={() => setActiveTab('logs')}
+              className={`flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-colors ${
+                activeTab === 'logs'
+                  ? 'bg-gray-900 text-white'
+                  : 'text-gray-600 hover:bg-gray-100'
+              }`}
+            >
+              <FileText className="h-4 w-4" />
+              Audit Logs
+            </button>
+            <button
+              onClick={() => setActiveTab('summary')}
+              className={`flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-colors ${
+                activeTab === 'summary'
+                  ? 'bg-gray-900 text-white'
+                  : 'text-gray-600 hover:bg-gray-100'
+              }`}
+            >
+              <BarChart3 className="h-4 w-4" />
+              Trail Summary
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {activeTab === 'logs' && (
+        <>
+          <div className="bg-white rounded-2xl shadow-soft border border-gray-100 p-6 mb-6">
         <div className="flex flex-col lg:flex-row gap-4">
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
@@ -376,6 +413,12 @@ export default function AuditLogs() {
                               <span>{log.data.response_time_ms}ms</span>
                             </div>
                           )}
+                          {log.type === 'kyc' && 'kyc_audit_attachments' in log.data && log.data.kyc_audit_attachments && log.data.kyc_audit_attachments.length > 0 && (
+                            <div className="flex items-center gap-1.5">
+                              <Paperclip className="h-4 w-4" />
+                              <span>{log.data.kyc_audit_attachments.length} attachment{log.data.kyc_audit_attachments.length !== 1 ? 's' : ''}</span>
+                            </div>
+                          )}
                         </div>
 
                         {'result_message' in log.data && log.data.result_message && (
@@ -477,6 +520,74 @@ export default function AuditLogs() {
           </div>
         )}
       </div>
+        </>
+      )}
+
+      {activeTab === 'summary' && (
+        <div className="bg-white rounded-2xl shadow-soft border border-gray-100">
+          {summaryLoading ? (
+            <div className="flex justify-center items-center h-64">
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-accent"></div>
+            </div>
+          ) : summaryData && summaryData.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">User</th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Operation</th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Verification</th>
+                    <th className="px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">Total</th>
+                    <th className="px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">Success</th>
+                    <th className="px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">Failed</th>
+                    <th className="px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">Violations</th>
+                    <th className="px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">Avg Time</th>
+                    <th className="px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">Total Cost</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {summaryData.map((summary, index) => {
+                    const userName = summary.profiles?.first_name && summary.profiles?.last_name
+                      ? `${summary.profiles.first_name} ${summary.profiles.last_name}`
+                      : summary.profiles?.email || summary.user_id.slice(0, 8);
+                    const successRate = summary.total_operations > 0
+                      ? ((summary.successful_operations / summary.total_operations) * 100).toFixed(1)
+                      : '0';
+
+                    return (
+                      <tr key={`${summary.user_id}-${summary.operation_type}-${index}`} className="hover:bg-gray-50 transition-colors">
+                        <td className="px-6 py-4 text-sm text-gray-900">{userName}</td>
+                        <td className="px-6 py-4 text-sm font-medium text-gray-900">{summary.operation_type}</td>
+                        <td className="px-6 py-4 text-sm text-gray-600">{summary.verification_type || summary.verification_provider || '-'}</td>
+                        <td className="px-6 py-4 text-center text-sm font-medium text-gray-900">{summary.total_operations}</td>
+                        <td className="px-6 py-4 text-center">
+                          <div className="flex flex-col items-center">
+                            <span className="text-sm font-medium text-green-600">{summary.successful_operations}</span>
+                            <span className="text-xs text-gray-500">{successRate}%</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-center text-sm font-medium text-red-600">{summary.failed_operations}</td>
+                        <td className="px-6 py-4 text-center text-sm font-medium text-orange-600">{summary.integrity_violations}</td>
+                        <td className="px-6 py-4 text-center text-sm text-gray-600">
+                          {summary.avg_response_time_ms ? `${Math.round(summary.avg_response_time_ms)}ms` : '-'}
+                        </td>
+                        <td className="px-6 py-4 text-center text-sm text-gray-900">
+                          {summary.total_cost ? `$${parseFloat(summary.total_cost.toString()).toFixed(2)}` : '-'}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="p-12 text-center">
+              <BarChart3 className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+              <p className="text-gray-500">No audit trail summary data available</p>
+            </div>
+          )}
+        </div>
+      )}
 
       {selectedLog && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -619,6 +730,42 @@ export default function AuditLogs() {
                     <pre className="bg-gray-50 p-4 rounded-xl text-xs overflow-x-auto border border-gray-200">
                       {JSON.stringify(selectedLog.data.metadata, null, 2)}
                     </pre>
+                  </div>
+                )}
+
+                {selectedLog.type === 'kyc' && selectedLog.data.kyc_audit_attachments && selectedLog.data.kyc_audit_attachments.length > 0 && (
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-700 mb-3">Attachments</h3>
+                    <div className="space-y-3">
+                      {selectedLog.data.kyc_audit_attachments.map((attachment: any) => (
+                        <div key={attachment.id} className="flex items-start gap-3 p-4 bg-gray-50 rounded-xl border border-gray-200">
+                          <div className="p-2 bg-white rounded-lg border border-gray-200">
+                            <Paperclip className="h-5 w-5 text-gray-600" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-gray-900 truncate">{attachment.file_name}</p>
+                                <p className="text-xs text-gray-500 mt-1">
+                                  {attachment.file_type} • {(attachment.file_size / 1024).toFixed(2)} KB
+                                </p>
+                              </div>
+                            </div>
+                            {attachment.description && (
+                              <p className="text-xs text-gray-600 mt-2">{attachment.description}</p>
+                            )}
+                            <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
+                              <span>Hash: {attachment.file_hash.slice(0, 12)}...</span>
+                              {attachment.access_level && (
+                                <span className="px-2 py-1 bg-blue-50 text-blue-700 rounded">
+                                  {attachment.access_level}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
