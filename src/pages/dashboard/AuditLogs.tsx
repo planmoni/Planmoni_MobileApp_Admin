@@ -14,6 +14,8 @@ import {
   Database,
   Activity,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   X
 } from 'lucide-react';
 import { format } from 'date-fns';
@@ -33,16 +35,22 @@ export default function AuditLogs() {
     dateFrom: undefined,
     dateTo: undefined,
     searchQuery: undefined,
+    page: 1,
+    pageSize: 20,
   });
 
-  const { data: logs, isLoading, error } = useAuditLogs(filters);
+  const { data, isLoading, error } = useAuditLogs(filters);
+  const logs = data?.logs || [];
+  const totalLogs = data?.total || 0;
+  const currentPage = data?.page || 1;
+  const totalPages = data?.totalPages || 1;
 
   const handleRefresh = () => {
     refreshData.mutate(['audit-logs']);
   };
 
   const handleSearch = () => {
-    setFilters({ ...filters, searchQuery: searchQuery || undefined });
+    setFilters({ ...filters, searchQuery: searchQuery || undefined, page: 1 });
   };
 
   const handleClearFilters = () => {
@@ -53,8 +61,19 @@ export default function AuditLogs() {
       dateFrom: undefined,
       dateTo: undefined,
       searchQuery: undefined,
+      page: 1,
+      pageSize: 20,
     });
     setSearchQuery('');
+  };
+
+  const handlePageChange = (newPage: number) => {
+    setFilters({ ...filters, page: newPage });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handlePageSizeChange = (newPageSize: number) => {
+    setFilters({ ...filters, pageSize: newPageSize, page: 1 });
   };
 
   const getStatusIcon = (status: string) => {
@@ -262,18 +281,38 @@ export default function AuditLogs() {
 
       <div className="bg-white rounded-2xl shadow-soft border border-gray-100 mb-4">
         <div className="p-6 border-b border-gray-100">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-gray-900">
-              {logs?.length || 0} Log{logs?.length !== 1 ? 's' : ''} Found
-            </h2>
-            <div className="flex items-center gap-4 text-sm text-gray-500">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-                <span>KYC Logs</span>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900">
+                {totalLogs.toLocaleString()} Total Log{totalLogs !== 1 ? 's' : ''}
+              </h2>
+              <p className="text-sm text-gray-500 mt-1">
+                Showing {((currentPage - 1) * (filters.pageSize || 20)) + 1} - {Math.min(currentPage * (filters.pageSize || 20), totalLogs)} of {totalLogs.toLocaleString()}
+              </p>
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-4 text-sm text-gray-500">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                  <span>KYC</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                  <span>SafeHaven</span>
+                </div>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                <span>SafeHaven Logs</span>
+                <label className="text-sm text-gray-600">Per page:</label>
+                <select
+                  value={filters.pageSize}
+                  onChange={(e) => handlePageSizeChange(Number(e.target.value))}
+                  className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-transparent"
+                >
+                  <option value={10}>10</option>
+                  <option value={20}>20</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                </select>
               </div>
             </div>
           </div>
@@ -358,6 +397,83 @@ export default function AuditLogs() {
             <FileText className="h-12 w-12 text-gray-300 mx-auto mb-4" />
             <p className="text-gray-500">No audit logs found</p>
             <p className="text-sm text-gray-400 mt-2">Try adjusting your filters</p>
+          </div>
+        )}
+
+        {logs && logs.length > 0 && totalPages > 1 && (
+          <div className="p-6 border-t border-gray-100">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="text-sm text-gray-600">
+                Page {currentPage} of {totalPages}
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => handlePageChange(1)}
+                  disabled={currentPage === 1}
+                  className="px-3 py-2 rounded-lg border border-gray-200 text-sm font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  First
+                </button>
+
+                <button
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className="p-2 rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  <ChevronLeft className="h-5 w-5" />
+                </button>
+
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    let pageNum;
+                    if (totalPages <= 5) {
+                      pageNum = i + 1;
+                    } else if (currentPage <= 3) {
+                      pageNum = i + 1;
+                    } else if (currentPage >= totalPages - 2) {
+                      pageNum = totalPages - 4 + i;
+                    } else {
+                      pageNum = currentPage - 2 + i;
+                    }
+
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => handlePageChange(pageNum)}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                          currentPage === pageNum
+                            ? 'bg-gray-900 text-white'
+                            : 'border border-gray-200 hover:bg-gray-50'
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <button
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className="p-2 rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  <ChevronRight className="h-5 w-5" />
+                </button>
+
+                <button
+                  onClick={() => handlePageChange(totalPages)}
+                  disabled={currentPage === totalPages}
+                  className="px-3 py-2 rounded-lg border border-gray-200 text-sm font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  Last
+                </button>
+              </div>
+
+              <div className="text-sm text-gray-600">
+                {totalLogs.toLocaleString()} total
+              </div>
+            </div>
           </div>
         )}
       </div>

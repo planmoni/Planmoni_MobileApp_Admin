@@ -77,13 +77,22 @@ export interface AuditLogsFilters {
   dateFrom?: string;
   dateTo?: string;
   searchQuery?: string;
+  page?: number;
+  pageSize?: number;
 }
 
 export function useAuditLogs(filters: AuditLogsFilters) {
+  const page = filters.page || 1;
+  const pageSize = filters.pageSize || 20;
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
+
   return useQuery({
     queryKey: ['audit-logs', filters],
     queryFn: async () => {
       const logs: Array<{ type: 'kyc' | 'safehaven'; data: KycAuditLog | SafehavenAuditLog }> = [];
+      let kycTotal = 0;
+      let safehavenTotal = 0;
 
       if (filters.logType === 'all' || filters.logType === 'kyc') {
         let kycQuery = supabase
@@ -95,9 +104,8 @@ export function useAuditLogs(filters: AuditLogsFilters) {
               last_name,
               email
             )
-          `)
-          .order('created_at', { ascending: false })
-          .limit(100);
+          `, { count: 'exact' })
+          .order('created_at', { ascending: false });
 
         if (filters.status) {
           kycQuery = kycQuery.eq('status', filters.status);
@@ -115,11 +123,16 @@ export function useAuditLogs(filters: AuditLogsFilters) {
           kycQuery = kycQuery.or(`operation_type.ilike.%${filters.searchQuery}%,verification_type.ilike.%${filters.searchQuery}%,result_message.ilike.%${filters.searchQuery}%`);
         }
 
-        const { data: kycData, error: kycError } = await kycQuery;
+        if (filters.logType === 'kyc') {
+          kycQuery = kycQuery.range(from, to);
+        }
+
+        const { data: kycData, error: kycError, count } = await kycQuery;
 
         if (kycError) {
           console.error('Error fetching KYC audit logs:', kycError);
         } else if (kycData) {
+          kycTotal = count || 0;
           logs.push(...kycData.map(log => ({ type: 'kyc' as const, data: log })));
         }
       }
@@ -134,9 +147,8 @@ export function useAuditLogs(filters: AuditLogsFilters) {
               last_name,
               email
             )
-          `)
-          .order('created_at', { ascending: false })
-          .limit(100);
+          `, { count: 'exact' })
+          .order('created_at', { ascending: false });
 
         if (filters.status) {
           safehavenQuery = safehavenQuery.eq('status', filters.status);
@@ -154,11 +166,16 @@ export function useAuditLogs(filters: AuditLogsFilters) {
           safehavenQuery = safehavenQuery.or(`operation_type.ilike.%${filters.searchQuery}%,safehaven_endpoint.ilike.%${filters.searchQuery}%`);
         }
 
-        const { data: safehavenData, error: safehavenError } = await safehavenQuery;
+        if (filters.logType === 'safehaven') {
+          safehavenQuery = safehavenQuery.range(from, to);
+        }
+
+        const { data: safehavenData, error: safehavenError, count } = await safehavenQuery;
 
         if (safehavenError) {
           console.error('Error fetching SafeHaven audit logs:', safehavenError);
         } else if (safehavenData) {
+          safehavenTotal = count || 0;
           logs.push(...safehavenData.map(log => ({ type: 'safehaven' as const, data: log })));
         }
       }
@@ -169,7 +186,24 @@ export function useAuditLogs(filters: AuditLogsFilters) {
         return dateB - dateA;
       });
 
-      return logs;
+      if (filters.logType === 'all') {
+        const totalLogs = logs.slice(from, to + 1);
+        return {
+          logs: totalLogs,
+          total: kycTotal + safehavenTotal,
+          page,
+          pageSize,
+          totalPages: Math.ceil((kycTotal + safehavenTotal) / pageSize),
+        };
+      }
+
+      return {
+        logs,
+        total: filters.logType === 'kyc' ? kycTotal : safehavenTotal,
+        page,
+        pageSize,
+        totalPages: Math.ceil((filters.logType === 'kyc' ? kycTotal : safehavenTotal) / pageSize),
+      };
     },
     staleTime: 30000,
   });
