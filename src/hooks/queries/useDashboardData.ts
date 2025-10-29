@@ -14,6 +14,8 @@ type DashboardStats = {
   todayWithdrawals: number;
   todayPayoutsDueCount: number;
   todayPayoutsDueAmount: number;
+  nextPayoutDate: string | null;
+  nextPayoutAmount: number;
 
   // Yesterday's stats (for comparison)
   yesterdayUsers: number;
@@ -161,6 +163,16 @@ const fetchTodayStats = async () => {
     .gte('next_payout_date', now.toISOString())
     .eq('status', 'active');
 
+  // Get the next upcoming payout (earliest next_payout_date in the future)
+  const { data: nextPayoutData } = await supabase
+    .from('payout_plans')
+    .select('next_payout_date, payout_amount')
+    .gte('next_payout_date', now.toISOString())
+    .eq('status', 'active')
+    .order('next_payout_date', { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
   return {
     todayUsers: todayUsersCount || 0,
     todayDeposits: todayDepositsData?.reduce((sum, t) => sum + t.amount, 0) || 0,
@@ -172,6 +184,8 @@ const fetchTodayStats = async () => {
     todayLockedBalance: todayLockedBalanceData?.reduce((sum, p) => sum + Number(p.total_amount), 0) || 0,
     todayPayoutsDueCount: todayPayoutsDueCount || 0,
     todayPayoutsDueAmount: todayPayoutsDueData?.reduce((sum, p) => sum + Number(p.payout_amount), 0) || 0,
+    nextPayoutDate: nextPayoutData?.next_payout_date || null,
+    nextPayoutAmount: nextPayoutData ? Number(nextPayoutData.payout_amount) : 0,
   };
 };
 

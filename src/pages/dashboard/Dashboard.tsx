@@ -1,4 +1,5 @@
-import { RefreshCw, Users, ArrowUpRight, ArrowDownRight, Calendar, Lock, XCircle, Wallet, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
+import { RefreshCw, Users, ArrowUpRight, ArrowDownRight, Calendar, Lock, XCircle, Wallet, CheckCircle2, Clock, AlertCircle, Timer } from 'lucide-react';
+import { PayoutCountdown } from '@/components/PayoutCountdown';
 import { Bar, Pie } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -224,6 +225,8 @@ export default function Dashboard() {
     todayWithdrawals: 0,
     todayPayoutsDueCount: 0,
     todayPayoutsDueAmount: 0,
+    nextPayoutDate: null,
+    nextPayoutAmount: 0,
     yesterdayUsers: 0,
     yesterdayDeposits: 0,
     yesterdayPayouts: 0,
@@ -397,6 +400,26 @@ export default function Dashboard() {
               </div>
               <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-orange-50 flex items-center justify-center flex-shrink-0">
                 <ArrowDownRight className="h-4 w-4 md:h-5 md:w-5 text-orange-600" />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl p-4 md:p-6 shadow-soft border border-gray-100">
+            <div className="flex justify-between items-start mb-2">
+              <div className="flex-1 min-w-0">
+                <p className="text-xs md:text-sm font-medium text-gray-500 mb-1">Next Payout</p>
+                {stats.nextPayoutDate ? (
+                  <div className="space-y-2">
+                    <PayoutCountdown targetDate={stats.nextPayoutDate} />
+                    <p className="text-sm text-gray-600">{formatCurrency(stats.nextPayoutAmount)}</p>
+                    <p className="text-xs text-gray-400">{format(new Date(stats.nextPayoutDate), 'MMM d, yyyy h:mm a')}</p>
+                  </div>
+                ) : (
+                  <p className="text-lg md:text-xl font-medium text-gray-400">No upcoming payouts</p>
+                )}
+              </div>
+              <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-blue-50 flex items-center justify-center flex-shrink-0">
+                <Timer className="h-4 w-4 md:h-5 md:w-5 text-blue-600" />
               </div>
             </div>
           </div>
