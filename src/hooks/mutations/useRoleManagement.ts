@@ -10,6 +10,14 @@ interface CreateRoleData {
   permissions: string[];
 }
 
+interface UpdateRoleData {
+  name: string;
+  description: string;
+  level: number;
+  color: string;
+  permissions: string[];
+}
+
 interface AssignRolesData {
   userId: string;
   roleIds: string[];
@@ -113,6 +121,67 @@ export function useAssignRoles() {
     },
     onError: (error: any) => {
       showToast(error.message || 'Failed to assign roles', 'error');
+    },
+  });
+}
+
+export function useUpdateRole() {
+  const queryClient = useQueryClient();
+  const { showToast } = useToast();
+
+  return useMutation({
+    mutationFn: async ({ roleId, data }: { roleId: string; data: UpdateRoleData }) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      const { error: roleError } = await supabase
+        .from('roles')
+        .update({
+          name: data.name,
+          description: data.description,
+          level: data.level,
+          color: data.color,
+        })
+        .eq('id', roleId);
+
+      if (roleError) throw roleError;
+
+      const { error: deletePermError } = await supabase
+        .from('role_permissions')
+        .delete()
+        .eq('role_id', roleId);
+
+      if (deletePermError) throw deletePermError;
+
+      if (data.permissions.length > 0) {
+        const rolePermissions = data.permissions.map(permissionId => ({
+          role_id: roleId,
+          permission_id: permissionId,
+        }));
+
+        const { error: insertPermError } = await supabase
+          .from('role_permissions')
+          .insert(rolePermissions);
+
+        if (insertPermError) throw insertPermError;
+      }
+
+      await supabase.from('audit_logs').insert({
+        user_id: user.id,
+        action: 'update_role',
+        resource_type: 'roles',
+        resource_id: roleId,
+        new_values: data,
+      });
+
+      return roleId;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['super-admin'] });
+      showToast('Role updated successfully', 'success');
+    },
+    onError: (error: any) => {
+      showToast(error.message || 'Failed to update role', 'error');
     },
   });
 }

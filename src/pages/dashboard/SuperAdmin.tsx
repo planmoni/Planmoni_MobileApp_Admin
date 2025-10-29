@@ -13,25 +13,33 @@ import {
   Clock,
   BarChart3,
   Award,
-  TrendingUp
+  TrendingUp,
+  Edit,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import { useSuperAdminData } from '@/hooks/queries/useSuperAdminData';
 import { useRefreshData } from '@/hooks/mutations/useRefreshData';
-import { useCreateRole, useAssignRoles, useDeleteRole } from '@/hooks/mutations/useRoleManagement';
+import { useCreateRole, useAssignRoles, useDeleteRole, useUpdateRole } from '@/hooks/mutations/useRoleManagement';
 import { CreateRoleModal } from '@/components/CreateRoleModal';
 import { AssignRoleModal } from '@/components/AssignRoleModal';
+import { EditRoleModal } from '@/components/EditRoleModal';
 
 export default function SuperAdmin() {
   const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'roles'>('overview');
   const [searchQuery, setSearchQuery] = useState('');
   const [isCreateRoleModalOpen, setIsCreateRoleModalOpen] = useState(false);
   const [isAssignRoleModalOpen, setIsAssignRoleModalOpen] = useState(false);
+  const [isEditRoleModalOpen, setIsEditRoleModalOpen] = useState(false);
+  const [selectedRole, setSelectedRole] = useState<any>(null);
+  const [expandedRoleId, setExpandedRoleId] = useState<string | null>(null);
 
   const { data: superAdminData, isLoading, error } = useSuperAdminData();
   const refreshData = useRefreshData();
   const createRole = useCreateRole();
   const assignRoles = useAssignRoles();
   const deleteRole = useDeleteRole();
+  const updateRole = useUpdateRole();
 
   const handleRefresh = () => {
     refreshData.mutate(['super-admin']);
@@ -57,6 +65,24 @@ export default function SuperAdmin() {
     if (window.confirm('Are you sure you want to delete this role? This action cannot be undone.')) {
       deleteRole.mutate(roleId);
     }
+  };
+
+  const handleEditRole = (role: any) => {
+    setSelectedRole(role);
+    setIsEditRoleModalOpen(true);
+  };
+
+  const handleUpdateRole = (roleId: string, roleData: any) => {
+    updateRole.mutate({ roleId, data: roleData }, {
+      onSuccess: () => {
+        setIsEditRoleModalOpen(false);
+        setSelectedRole(null);
+      }
+    });
+  };
+
+  const toggleRoleExpand = (roleId: string) => {
+    setExpandedRoleId(expandedRoleId === roleId ? null : roleId);
   };
 
   if (error) {
@@ -396,71 +422,96 @@ export default function SuperAdmin() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {roles.map((role) => (
-              <div key={role.role_id} className="bg-white rounded-2xl p-6 shadow-soft border border-gray-100 hover:shadow-lg transition-shadow">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <div
-                      className="w-4 h-4 rounded-full"
-                      style={{ backgroundColor: role.role_color }}
-                    />
-                    <div>
-                      <h3 className="font-bold text-gray-900">{role.role_name}</h3>
-                      <p className="text-sm text-gray-500">Level {role.role_level}</p>
+            {roles.map((role) => {
+              const isExpanded = expandedRoleId === role.role_id;
+              return (
+                <div
+                  key={role.role_id}
+                  className="bg-white rounded-2xl p-6 shadow-soft border border-gray-100 hover:shadow-lg transition-all cursor-pointer"
+                  onClick={() => toggleRoleExpand(role.role_id)}
+                >
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className="w-4 h-4 rounded-full"
+                        style={{ backgroundColor: role.role_color }}
+                      />
+                      <div>
+                        <h3 className="font-bold text-gray-900">{role.role_name}</h3>
+                        <p className="text-sm text-gray-500">Level {role.role_level}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {role.is_system && (
+                        <span className="px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded-lg font-semibold">
+                          System
+                        </span>
+                      )}
+                      {isExpanded ? (
+                        <ChevronUp className="h-5 w-5 text-gray-400" />
+                      ) : (
+                        <ChevronDown className="h-5 w-5 text-gray-400" />
+                      )}
                     </div>
                   </div>
-                  {role.is_system && (
-                    <span className="px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded-lg font-semibold">
-                      System
+
+                  <p className={`text-gray-600 text-sm mb-4 ${isExpanded ? '' : 'line-clamp-2'}`}>
+                    {role.role_description}
+                  </p>
+
+                  <div className="flex items-center justify-between text-sm mb-4 py-3 px-3 bg-gray-50 rounded-lg">
+                    <span className="text-gray-600">
+                      <span className="font-semibold text-gray-900">{role.user_count}</span> users
                     </span>
+                    <span className="text-gray-600">
+                      <span className="font-semibold text-gray-900">{role.permissions.length}</span> permissions
+                    </span>
+                  </div>
+
+                  <div className="mb-4">
+                    <h4 className="text-xs font-bold text-gray-500 uppercase mb-2">
+                      Permissions
+                    </h4>
+                    <div className="flex flex-wrap gap-1">
+                      {(isExpanded ? role.permissions : role.permissions.slice(0, 3)).map((permission: any) => (
+                        <span
+                          key={permission.id}
+                          className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded font-medium"
+                        >
+                          {permission.name}
+                        </span>
+                      ))}
+                      {!isExpanded && role.permissions.length > 3 && (
+                        <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded font-medium">
+                          +{role.permissions.length - 3}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {isExpanded && (
+                    <div className="space-y-2 mb-4" onClick={(e) => e.stopPropagation()}>
+                      <button
+                        onClick={() => handleEditRole(role)}
+                        className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 font-semibold text-sm"
+                      >
+                        <Edit className="h-3.5 w-3.5" />
+                        Edit Role
+                      </button>
+                      {!role.is_system && (
+                        <button
+                          onClick={() => handleDeleteRole(role.role_id)}
+                          className="w-full px-4 py-2 text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors flex items-center justify-center gap-2 font-semibold text-sm"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                          Delete Role
+                        </button>
+                      )}
+                    </div>
                   )}
                 </div>
-
-                <p className="text-gray-600 text-sm mb-4 line-clamp-2">
-                  {role.role_description}
-                </p>
-
-                <div className="flex items-center justify-between text-sm mb-4 py-3 px-3 bg-gray-50 rounded-lg">
-                  <span className="text-gray-600">
-                    <span className="font-semibold text-gray-900">{role.user_count}</span> users
-                  </span>
-                  <span className="text-gray-600">
-                    <span className="font-semibold text-gray-900">{role.permissions.length}</span> permissions
-                  </span>
-                </div>
-
-                <div className="mb-4">
-                  <h4 className="text-xs font-bold text-gray-500 uppercase mb-2">
-                    Permissions
-                  </h4>
-                  <div className="flex flex-wrap gap-1">
-                    {role.permissions.slice(0, 3).map((permission: any) => (
-                      <span
-                        key={permission.id}
-                        className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded font-medium"
-                      >
-                        {permission.action}
-                      </span>
-                    ))}
-                    {role.permissions.length > 3 && (
-                      <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded font-medium">
-                        +{role.permissions.length - 3}
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                {!role.is_system && (
-                  <button
-                    onClick={() => handleDeleteRole(role.role_id)}
-                    className="w-full px-4 py-2 text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors flex items-center justify-center gap-2 font-semibold text-sm"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                    Delete Role
-                  </button>
-                )}
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           {roles.length === 0 && (
@@ -486,6 +537,17 @@ export default function SuperAdmin() {
         onSubmit={handleAssignRoles}
         users={users}
         roles={roles}
+      />
+
+      <EditRoleModal
+        isOpen={isEditRoleModalOpen}
+        onClose={() => {
+          setIsEditRoleModalOpen(false);
+          setSelectedRole(null);
+        }}
+        onSubmit={handleUpdateRole}
+        role={selectedRole}
+        permissions={permissions}
       />
     </div>
   );
