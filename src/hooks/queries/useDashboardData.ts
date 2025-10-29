@@ -12,6 +12,8 @@ type DashboardStats = {
   todayLockedBalance: number;
   todayCancelledPlans: number;
   todayWithdrawals: number;
+  todayPayoutsDueCount: number;
+  todayPayoutsDueAmount: number;
 
   // Yesterday's stats (for comparison)
   yesterdayUsers: number;
@@ -22,6 +24,8 @@ type DashboardStats = {
   yesterdayLockedBalance: number;
   yesterdayCancelledPlans: number;
   yesterdayWithdrawals: number;
+  yesterdayPayoutsDueCount: number;
+  yesterdayPayoutsDueAmount: number;
 
   // Totals
   totalUsers: number;
@@ -146,6 +150,14 @@ const fetchTodayStats = async () => {
     .gte('created_at', startOfToday.toISOString())
     .lte('created_at', endOfToday.toISOString());
 
+  // Payouts due today (from payout_events scheduled for today)
+  const { data: todayPayoutsDueData, count: todayPayoutsDueCount } = await supabase
+    .from('payout_events')
+    .select('amount', { count: 'exact' })
+    .gte('scheduled_date', startOfToday.toISOString())
+    .lte('scheduled_date', endOfToday.toISOString())
+    .in('status', ['pending', 'processing']);
+
   return {
     todayUsers: todayUsersCount || 0,
     todayDeposits: todayDepositsData?.reduce((sum, t) => sum + t.amount, 0) || 0,
@@ -155,6 +167,8 @@ const fetchTodayStats = async () => {
     todayCancelledPlans: todayCancelledPlansCount || 0,
     todayKyc: todayKycCount || 0,
     todayLockedBalance: todayLockedBalanceData?.reduce((sum, p) => sum + Number(p.total_amount), 0) || 0,
+    todayPayoutsDueCount: todayPayoutsDueCount || 0,
+    todayPayoutsDueAmount: todayPayoutsDueData?.reduce((sum, p) => sum + Number(p.amount), 0) || 0,
   };
 };
 
@@ -222,6 +236,14 @@ const fetchYesterdayStats = async () => {
     .gte('created_at', startOfYesterday.toISOString())
     .lte('created_at', endOfYesterday.toISOString());
 
+  // Payouts due yesterday (from payout_events scheduled for yesterday)
+  const { data: yesterdayPayoutsDueData, count: yesterdayPayoutsDueCount } = await supabase
+    .from('payout_events')
+    .select('amount', { count: 'exact' })
+    .gte('scheduled_date', startOfYesterday.toISOString())
+    .lte('scheduled_date', endOfYesterday.toISOString())
+    .in('status', ['pending', 'processing', 'completed']);
+
   return {
     yesterdayUsers: yesterdayUsersCount || 0,
     yesterdayDeposits: yesterdayDepositsData?.reduce((sum, t) => sum + t.amount, 0) || 0,
@@ -231,6 +253,8 @@ const fetchYesterdayStats = async () => {
     yesterdayCancelledPlans: yesterdayCancelledPlansCount || 0,
     yesterdayKyc: yesterdayKycCount || 0,
     yesterdayLockedBalance: yesterdayLockedBalanceData?.reduce((sum, p) => sum + Number(p.total_amount), 0) || 0,
+    yesterdayPayoutsDueCount: yesterdayPayoutsDueCount || 0,
+    yesterdayPayoutsDueAmount: yesterdayPayoutsDueData?.reduce((sum, p) => sum + Number(p.amount), 0) || 0,
   };
 };
 

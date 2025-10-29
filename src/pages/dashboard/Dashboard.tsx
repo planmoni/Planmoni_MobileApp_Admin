@@ -1,4 +1,4 @@
-import { RefreshCw, Users, ArrowUpRight, ArrowDownRight, Calendar, Lock, XCircle, Wallet, CheckCircle2, Clock } from 'lucide-react';
+import { RefreshCw, Users, ArrowUpRight, ArrowDownRight, Calendar, Lock, XCircle, Wallet, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
 import { Bar, Pie } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -222,6 +222,8 @@ export default function Dashboard() {
     todayLockedBalance: 0,
     todayCancelledPlans: 0,
     todayWithdrawals: 0,
+    todayPayoutsDueCount: 0,
+    todayPayoutsDueAmount: 0,
     yesterdayUsers: 0,
     yesterdayDeposits: 0,
     yesterdayPayouts: 0,
@@ -230,6 +232,8 @@ export default function Dashboard() {
     yesterdayLockedBalance: 0,
     yesterdayCancelledPlans: 0,
     yesterdayWithdrawals: 0,
+    yesterdayPayoutsDueCount: 0,
+    yesterdayPayoutsDueAmount: 0,
     totalUsers: 0,
     totalDeposits: 0,
     totalPayouts: 0,
@@ -367,6 +371,32 @@ export default function Dashboard() {
               </div>
               <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-gray-50 flex items-center justify-center flex-shrink-0">
                 <Wallet className="h-4 w-4 md:h-5 md:w-5 text-gray-600" />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl p-4 md:p-6 shadow-soft border border-gray-100">
+            <div className="flex justify-between items-start mb-2">
+              <div className="flex-1">
+                <p className="text-xs md:text-sm font-medium text-gray-500 mb-1">Payouts Due Today</p>
+                <p className="text-xl md:text-3xl font-bold text-gray-900">{stats.todayPayoutsDueCount}</p>
+                {renderComparison(stats.todayPayoutsDueCount, stats.yesterdayPayoutsDueCount, true)}
+              </div>
+              <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-orange-50 flex items-center justify-center flex-shrink-0">
+                <AlertCircle className="h-4 w-4 md:h-5 md:w-5 text-orange-600" />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl p-4 md:p-6 shadow-soft border border-gray-100">
+            <div className="flex justify-between items-start mb-2">
+              <div className="flex-1 min-w-0">
+                <p className="text-xs md:text-sm font-medium text-gray-500 mb-1">Payouts Due Amount</p>
+                <p className="text-lg md:text-2xl font-bold text-gray-900 break-words">{formatCurrency(stats.todayPayoutsDueAmount)}</p>
+                {renderComparison(stats.todayPayoutsDueAmount, stats.yesterdayPayoutsDueAmount, false)}
+              </div>
+              <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-orange-50 flex items-center justify-center flex-shrink-0">
+                <ArrowDownRight className="h-4 w-4 md:h-5 md:w-5 text-orange-600" />
               </div>
             </div>
           </div>
