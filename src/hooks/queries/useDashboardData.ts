@@ -117,13 +117,12 @@ const fetchTodayStats = async () => {
     .gte('created_at', startOfToday.toISOString())
     .lte('created_at', endOfToday.toISOString());
 
-  // Today's locked balance (sum of all locked balance changes today)
+  // Today's locked balance (sum of total_amount from plans created today)
   const { data: todayLockedBalanceData } = await supabase
-    .from('profiles')
-    .select('locked_balance')
-    .gt('locked_balance', 0)
-    .gte('updated_at', startOfToday.toISOString())
-    .lte('updated_at', endOfToday.toISOString());
+    .from('payout_plans')
+    .select('total_amount')
+    .gte('created_at', startOfToday.toISOString())
+    .lte('created_at', endOfToday.toISOString());
 
   return {
     todayUsers: todayUsersCount || 0,
@@ -133,7 +132,7 @@ const fetchTodayStats = async () => {
     todayPlans: todayPlansCount || 0,
     todayCancelledPlans: todayCancelledPlansCount || 0,
     todayKyc: todayKycCount || 0,
-    todayLockedBalance: todayLockedBalanceData?.reduce((sum, p) => sum + p.locked_balance, 0) || 0,
+    todayLockedBalance: todayLockedBalanceData?.reduce((sum, p) => sum + Number(p.total_amount), 0) || 0,
   };
 };
 
