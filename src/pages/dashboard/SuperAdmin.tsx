@@ -193,35 +193,7 @@ export default function SuperAdmin() {
       {activeTab === 'overview' && stats && (
         <div className="space-y-6">
           <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl p-8 shadow-xl">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className={`w-16 h-16 rounded-xl ${getHealthScoreBg(stats.system_health_score)} flex items-center justify-center`}>
-                  {stats.system_health_score >= 90 ? (
-                    <CheckCircle className="h-8 w-8 text-green-600" />
-                  ) : stats.system_health_score >= 70 ? (
-                    <Clock className="h-8 w-8 text-yellow-600" />
-                  ) : (
-                    <AlertTriangle className="h-8 w-8 text-red-600" />
-                  )}
-                </div>
-                <div>
-                  <h3 className="text-2xl font-bold text-white mb-1">
-                    System Health
-                  </h3>
-                  <p className="text-gray-300">
-                    Overall performance and security metrics
-                  </p>
-                </div>
-              </div>
-              <div className="text-right">
-                <div className={`text-5xl font-bold ${getHealthScoreColor(stats.system_health_score)}`}>
-                  {stats.system_health_score}%
-                </div>
-                <p className="text-gray-400 mt-1">
-                  {stats.system_health_score >= 90 ? 'Excellent' : stats.system_health_score >= 70 ? 'Good' : 'Needs Attention'}
-                </p>
-              </div>
-            </div>
+            
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
