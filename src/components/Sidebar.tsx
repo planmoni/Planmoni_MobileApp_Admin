@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { usePermissions } from '../contexts/PermissionsContext';
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import {
@@ -19,6 +20,7 @@ import {
 
 export default function Sidebar({ isMobileMenuOpen, closeMobileMenu }: { isMobileMenuOpen: boolean, closeMobileMenu: () => void }) {
   const { signOut, session } = useAuth();
+  const { hasPermission } = usePermissions();
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [userProfile, setUserProfile] = useState<{
     first_name: string | null;
@@ -111,20 +113,23 @@ export default function Sidebar({ isMobileMenuOpen, closeMobileMenu }: { isMobil
     await signOut();
   };
 
-  const navigation = [
-    { name: 'Dashboard', path: '/', icon: Home },
-    { name: 'Users', path: '/users', icon: Users },
-    { name: 'Calendar', path: '/calendar', icon: CalendarDays },
-    { name: 'Transactions', path: '/transactions', icon: CreditCard },
-    { name: 'Analytics', path: '/analytics', icon: BarChart3 },
-    { name: 'Activity', path: '/activity', icon: Activity },
-    { name: 'KYC Data', path: '/kyc-data', icon: FileText },
-    { name: 'Payout Events', path: '/payout-events', icon: DollarSign },
-    { name: 'Payout Plans', path: '/payout-plans', icon: Repeat },
-    { name: 'Banners', path: '/banners', icon: Image },
-    ...(isSuperAdmin ? [{ name: 'Super Admin', path: '/super-admin', icon: Shield }] : []),
-    // { name: 'Settings', path: '/settings', icon: Settings },
+  const allNavigationItems = [
+    { name: 'Dashboard', path: '/', icon: Home, resource: 'dashboard', action: 'read', alwaysShow: true },
+    { name: 'Users', path: '/users', icon: Users, resource: 'users', action: 'read' },
+    { name: 'Calendar', path: '/calendar', icon: CalendarDays, resource: 'payouts', action: 'read' },
+    { name: 'Transactions', path: '/transactions', icon: CreditCard, resource: 'transactions', action: 'read' },
+    { name: 'Analytics', path: '/analytics', icon: BarChart3, resource: 'analytics', action: 'read' },
+    { name: 'Activity', path: '/activity', icon: Activity, resource: 'audit', action: 'read' },
+    { name: 'KYC Data', path: '/kyc-data', icon: FileText, resource: 'users', action: 'read' },
+    { name: 'Payout Events', path: '/payout-events', icon: DollarSign, resource: 'payouts', action: 'manage' },
+    { name: 'Payout Plans', path: '/payout-plans', icon: Repeat, resource: 'payouts', action: 'read' },
+    { name: 'Banners', path: '/banners', icon: Image, resource: 'system', action: 'settings' },
+    ...(isSuperAdmin ? [{ name: 'Super Admin', path: '/super-admin', icon: Shield, resource: 'roles', action: 'manage' }] : []),
   ];
+
+  const navigation = allNavigationItems.filter(item =>
+    item.alwaysShow || hasPermission(item.resource, item.action)
+  );
 
   console.log('🔧 Current state:');
   console.log('  - isSuperAdmin:', isSuperAdmin);
