@@ -45,9 +45,15 @@ type DashboardStats = {
 
   // Plan distribution (today)
   planDistribution: {
+    daily: number;
     weekly: number;
     biweekly: number;
+    specificDays: number;
+    monthEnd: number;
     monthly: number;
+    quarterly: number;
+    biAnnually: number;
+    annually: number;
     custom: number;
   };
 
@@ -285,12 +291,18 @@ const fetchTodayPlanDistribution = async () => {
     .gte('created_at', startOfToday.toISOString())
     .lte('created_at', endOfToday.toISOString());
 
+  const daily = todayPlans?.filter(p => p.frequency === 'daily').length || 0;
   const weekly = todayPlans?.filter(p => p.frequency === 'weekly').length || 0;
   const biweekly = todayPlans?.filter(p => p.frequency === 'biweekly').length || 0;
+  const specificDays = todayPlans?.filter(p => p.frequency === 'specific_days').length || 0;
+  const monthEnd = todayPlans?.filter(p => p.frequency === 'month_end').length || 0;
   const monthly = todayPlans?.filter(p => p.frequency === 'monthly').length || 0;
+  const quarterly = todayPlans?.filter(p => p.frequency === 'quarterly').length || 0;
+  const biAnnually = todayPlans?.filter(p => p.frequency === 'bi_annually').length || 0;
+  const annually = todayPlans?.filter(p => p.frequency === 'annually').length || 0;
   const custom = todayPlans?.filter(p => p.frequency === 'custom').length || 0;
 
-  return { weekly, biweekly, monthly, custom };
+  return { daily, weekly, biweekly, specificDays, monthEnd, monthly, quarterly, biAnnually, annually, custom };
 };
 
 // Fetch transaction volume for last 7 days

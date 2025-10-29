@@ -89,16 +89,22 @@ export default function Dashboard() {
   };
 
   const planDistributionData = {
-    labels: ['Weekly', 'Biweekly', 'Monthly', 'Custom'],
+    labels: ['Daily', 'Weekly', 'Biweekly', 'Specific Days', 'Month-End', 'Monthly', 'Quarterly', 'Bi-Annually', 'Annually', 'Custom'],
     datasets: [
       {
         data: [
+          dashboardData?.planDistribution.daily || 0,
           dashboardData?.planDistribution.weekly || 0,
           dashboardData?.planDistribution.biweekly || 0,
+          dashboardData?.planDistribution.specificDays || 0,
+          dashboardData?.planDistribution.monthEnd || 0,
           dashboardData?.planDistribution.monthly || 0,
+          dashboardData?.planDistribution.quarterly || 0,
+          dashboardData?.planDistribution.biAnnually || 0,
+          dashboardData?.planDistribution.annually || 0,
           dashboardData?.planDistribution.custom || 0,
         ],
-        backgroundColor: ['#22C55E', '#3B82F6', '#F59E0B', '#8B5CF6'],
+        backgroundColor: ['#EF4444', '#22C55E', '#3B82F6', '#F59E0B', '#8B5CF6', '#EC4899', '#06B6D4', '#14B8A6', '#84CC16', '#64748B'],
         borderWidth: 0,
       },
     ],
@@ -249,7 +255,7 @@ export default function Dashboard() {
     todayPayoutEvents: [],
     todayKycSubmissions: [],
     todayActivities: [],
-    planDistribution: { weekly: 0, biweekly: 0, monthly: 0, custom: 0 },
+    planDistribution: { daily: 0, weekly: 0, biweekly: 0, specificDays: 0, monthEnd: 0, monthly: 0, quarterly: 0, biAnnually: 0, annually: 0, custom: 0 },
     transactionVolumeTrends: [],
   };
 
