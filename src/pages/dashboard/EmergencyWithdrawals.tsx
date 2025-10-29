@@ -172,9 +172,6 @@ export default function EmergencyWithdrawals() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 bg-orange-100 rounded-xl">
-              <AlertTriangle className="h-6 w-6 text-orange-600" />
-            </div>
             <h1 className="text-3xl font-bold text-gray-900">Emergency Withdrawals</h1>
           </div>
           <p className="text-gray-500">
