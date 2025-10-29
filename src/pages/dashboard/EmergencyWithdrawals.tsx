@@ -246,9 +246,9 @@ export default function EmergencyWithdrawals() {
         <div className="bg-white rounded-2xl shadow-soft border border-gray-100 p-6">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm text-gray-600">Total Fees</span>
-            <CreditCard className="h-5 w-5 text-purple-500" />
+            <CreditCard className="h-5 w-5 text-grey-500" />
           </div>
-          <div className="text-2xl font-bold text-purple-600">
+          <div className="text-2xl font-bold text-grey-600">
             {formatCurrency(stats.totalFees)}
           </div>
         </div>
