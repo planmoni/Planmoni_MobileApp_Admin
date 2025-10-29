@@ -128,7 +128,7 @@ export default function EmergencyWithdrawals() {
   };
 
   const calculateStats = () => {
-    if (!withdrawals) return { total: 0, pending: 0, completed: 0, failed: 0, totalAmount: 0 };
+    if (!withdrawals) return { total: 0, pending: 0, completed: 0, failed: 0, totalAmount: 0, totalFees: 0 };
 
     return {
       total: withdrawals.length,
@@ -136,6 +136,7 @@ export default function EmergencyWithdrawals() {
       completed: withdrawals.filter(w => w.status === 'completed' || w.status === 'success' || w.status === 'transferred').length,
       failed: withdrawals.filter(w => w.status === 'failed' || w.status === 'cancelled' || w.status === 'rejected').length,
       totalAmount: withdrawals.reduce((sum, w) => sum + parseFloat(w.withdrawal_amount), 0),
+      totalFees: withdrawals.reduce((sum, w) => sum + parseFloat(w.fee_amount), 0),
     };
   };
 
@@ -200,7 +201,7 @@ export default function EmergencyWithdrawals() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6 mb-6">
         <div className="bg-white rounded-2xl shadow-soft border border-gray-100 p-6">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm text-gray-600">Total Requests</span>
@@ -240,6 +241,16 @@ export default function EmergencyWithdrawals() {
           </div>
           <div className="text-2xl font-bold text-blue-600">
             {formatCurrency(stats.totalAmount)}
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl shadow-soft border border-gray-100 p-6">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm text-gray-600">Total Fees</span>
+            <CreditCard className="h-5 w-5 text-purple-500" />
+          </div>
+          <div className="text-2xl font-bold text-purple-600">
+            {formatCurrency(stats.totalFees)}
           </div>
         </div>
       </div>
