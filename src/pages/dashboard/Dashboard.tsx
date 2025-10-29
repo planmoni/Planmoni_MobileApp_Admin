@@ -63,6 +63,28 @@ export default function Dashboard() {
     return 'Good evening';
   };
 
+  const getDifference = (today: number, yesterday: number) => {
+    const diff = today - yesterday;
+    const isPositive = diff >= 0;
+    return { diff, isPositive };
+  };
+
+  const renderComparison = (today: number, yesterday: number, isCount: boolean = true) => {
+    const { diff, isPositive } = getDifference(today, yesterday);
+
+    if (diff === 0) {
+      return <p className="text-xs text-gray-400 mt-1">Same as yesterday</p>;
+    }
+
+    const displayValue = isCount ? Math.abs(diff) : formatCurrency(Math.abs(diff));
+
+    return (
+      <p className={`text-xs mt-1 font-medium ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
+        {isPositive ? '+' : '-'}{displayValue} vs yesterday
+      </p>
+    );
+  };
+
   const planDistributionData = {
     labels: ['Weekly', 'Biweekly', 'Monthly', 'Custom'],
     datasets: [
@@ -200,6 +222,14 @@ export default function Dashboard() {
     todayLockedBalance: 0,
     todayCancelledPlans: 0,
     todayWithdrawals: 0,
+    yesterdayUsers: 0,
+    yesterdayDeposits: 0,
+    yesterdayPayouts: 0,
+    yesterdayPlans: 0,
+    yesterdayKyc: 0,
+    yesterdayLockedBalance: 0,
+    yesterdayCancelledPlans: 0,
+    yesterdayWithdrawals: 0,
     totalUsers: 0,
     totalDeposits: 0,
     totalPayouts: 0,
@@ -238,10 +268,11 @@ export default function Dashboard() {
         <h2 className="text-lg md:text-xl font-semibold text-gray-900 mb-4">Today's Overview</h2>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-5">
           <div className="bg-white rounded-2xl p-4 md:p-6 shadow-soft border border-gray-100">
-            <div className="flex justify-between items-start mb-3 md:mb-4">
+            <div className="flex justify-between items-start mb-2">
               <div className="flex-1">
                 <p className="text-xs md:text-sm font-medium text-gray-500 mb-1">New Users</p>
                 <p className="text-xl md:text-3xl font-bold text-gray-900">{stats.todayUsers}</p>
+                {renderComparison(stats.todayUsers, stats.yesterdayUsers, true)}
               </div>
               <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-blue-50 flex items-center justify-center flex-shrink-0">
                 <Users className="h-4 w-4 md:h-5 md:w-5 text-blue-600" />
@@ -250,10 +281,11 @@ export default function Dashboard() {
           </div>
 
           <div className="bg-white rounded-2xl p-4 md:p-6 shadow-soft border border-gray-100">
-            <div className="flex justify-between items-start mb-3 md:mb-4">
+            <div className="flex justify-between items-start mb-2">
               <div className="flex-1 min-w-0">
                 <p className="text-xs md:text-sm font-medium text-gray-500 mb-1">Deposits</p>
                 <p className="text-lg md:text-2xl font-bold text-gray-900 break-words">{formatCurrency(stats.todayDeposits)}</p>
+                {renderComparison(stats.todayDeposits, stats.yesterdayDeposits, false)}
               </div>
               <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-green-50 flex items-center justify-center flex-shrink-0">
                 <ArrowUpRight className="h-4 w-4 md:h-5 md:w-5 text-green-600" />
@@ -262,10 +294,11 @@ export default function Dashboard() {
           </div>
 
           <div className="bg-white rounded-2xl p-4 md:p-6 shadow-soft border border-gray-100">
-            <div className="flex justify-between items-start mb-3 md:mb-4">
+            <div className="flex justify-between items-start mb-2">
               <div className="flex-1 min-w-0">
                 <p className="text-xs md:text-sm font-medium text-gray-500 mb-1">Payouts</p>
                 <p className="text-lg md:text-2xl font-bold text-gray-900 break-words">{formatCurrency(stats.todayPayouts)}</p>
+                {renderComparison(stats.todayPayouts, stats.yesterdayPayouts, false)}
               </div>
               <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-red-50 flex items-center justify-center flex-shrink-0">
                 <ArrowDownRight className="h-4 w-4 md:h-5 md:w-5 text-red-600" />
@@ -274,10 +307,11 @@ export default function Dashboard() {
           </div>
 
           <div className="bg-white rounded-2xl p-4 md:p-6 shadow-soft border border-gray-100">
-            <div className="flex justify-between items-start mb-3 md:mb-4">
+            <div className="flex justify-between items-start mb-2">
               <div className="flex-1">
                 <p className="text-xs md:text-sm font-medium text-gray-500 mb-1">New Plans</p>
                 <p className="text-xl md:text-3xl font-bold text-gray-900">{stats.todayPlans}</p>
+                {renderComparison(stats.todayPlans, stats.yesterdayPlans, true)}
               </div>
               <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-purple-50 flex items-center justify-center flex-shrink-0">
                 <Calendar className="h-4 w-4 md:h-5 md:w-5 text-purple-600" />
@@ -286,10 +320,11 @@ export default function Dashboard() {
           </div>
 
           <div className="bg-white rounded-2xl p-4 md:p-6 shadow-soft border border-gray-100">
-            <div className="flex justify-between items-start mb-3 md:mb-4">
+            <div className="flex justify-between items-start mb-2">
               <div className="flex-1">
                 <p className="text-xs md:text-sm font-medium text-gray-500 mb-1">KYC Completed</p>
                 <p className="text-xl md:text-3xl font-bold text-gray-900">{stats.todayKyc}</p>
+                {renderComparison(stats.todayKyc, stats.yesterdayKyc, true)}
               </div>
               <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-green-50 flex items-center justify-center flex-shrink-0">
                 <CheckCircle2 className="h-4 w-4 md:h-5 md:w-5 text-green-600" />
@@ -298,10 +333,11 @@ export default function Dashboard() {
           </div>
 
           <div className="bg-white rounded-2xl p-4 md:p-6 shadow-soft border border-gray-100">
-            <div className="flex justify-between items-start mb-3 md:mb-4">
+            <div className="flex justify-between items-start mb-2">
               <div className="flex-1 min-w-0">
                 <p className="text-xs md:text-sm font-medium text-gray-500 mb-1">Locked Balance</p>
                 <p className="text-lg md:text-2xl font-bold text-gray-900 break-words">{formatCurrency(stats.todayLockedBalance)}</p>
+                {renderComparison(stats.todayLockedBalance, stats.yesterdayLockedBalance, false)}
               </div>
               <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-yellow-50 flex items-center justify-center flex-shrink-0">
                 <Lock className="h-4 w-4 md:h-5 md:w-5 text-yellow-600" />
@@ -310,10 +346,11 @@ export default function Dashboard() {
           </div>
 
           <div className="bg-white rounded-2xl p-4 md:p-6 shadow-soft border border-gray-100">
-            <div className="flex justify-between items-start mb-3 md:mb-4">
+            <div className="flex justify-between items-start mb-2">
               <div className="flex-1">
                 <p className="text-xs md:text-sm font-medium text-gray-500 mb-1">Cancelled Plans</p>
                 <p className="text-xl md:text-3xl font-bold text-gray-900">{stats.todayCancelledPlans}</p>
+                {renderComparison(stats.todayCancelledPlans, stats.yesterdayCancelledPlans, true)}
               </div>
               <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-red-50 flex items-center justify-center flex-shrink-0">
                 <XCircle className="h-4 w-4 md:h-5 md:w-5 text-red-600" />
@@ -322,10 +359,11 @@ export default function Dashboard() {
           </div>
 
           <div className="bg-white rounded-2xl p-4 md:p-6 shadow-soft border border-gray-100">
-            <div className="flex justify-between items-start mb-3 md:mb-4">
+            <div className="flex justify-between items-start mb-2">
               <div className="flex-1 min-w-0">
                 <p className="text-xs md:text-sm font-medium text-gray-500 mb-1">Withdrawals</p>
                 <p className="text-lg md:text-2xl font-bold text-gray-900 break-words">{formatCurrency(stats.todayWithdrawals)}</p>
+                {renderComparison(stats.todayWithdrawals, stats.yesterdayWithdrawals, false)}
               </div>
               <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-gray-50 flex items-center justify-center flex-shrink-0">
                 <Wallet className="h-4 w-4 md:h-5 md:w-5 text-gray-600" />

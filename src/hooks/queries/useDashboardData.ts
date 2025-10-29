@@ -13,6 +13,16 @@ type DashboardStats = {
   todayCancelledPlans: number;
   todayWithdrawals: number;
 
+  // Yesterday's stats (for comparison)
+  yesterdayUsers: number;
+  yesterdayDeposits: number;
+  yesterdayPayouts: number;
+  yesterdayPlans: number;
+  yesterdayKyc: number;
+  yesterdayLockedBalance: number;
+  yesterdayCancelledPlans: number;
+  yesterdayWithdrawals: number;
+
   // Totals
   totalUsers: number;
   totalDeposits: number;
@@ -58,6 +68,18 @@ const getTodayRange = () => {
   endOfToday.setHours(23, 59, 59, 999);
 
   return { startOfToday, endOfToday };
+};
+
+// Helper to get yesterday's date range
+const getYesterdayRange = () => {
+  const yesterday = subDays(new Date(), 1);
+  const startOfYesterday = new Date(yesterday);
+  startOfYesterday.setHours(0, 0, 0, 0);
+
+  const endOfYesterday = new Date(yesterday);
+  endOfYesterday.setHours(23, 59, 59, 999);
+
+  return { startOfYesterday, endOfYesterday };
 };
 
 // Fetch today's stats
@@ -136,6 +158,82 @@ const fetchTodayStats = async () => {
   };
 };
 
+// Fetch yesterday's stats
+const fetchYesterdayStats = async () => {
+  const { startOfYesterday, endOfYesterday } = getYesterdayRange();
+
+  // Yesterday's users
+  const { count: yesterdayUsersCount } = await supabase
+    .from('profiles')
+    .select('id', { count: 'exact', head: true })
+    .gte('created_at', startOfYesterday.toISOString())
+    .lte('created_at', endOfYesterday.toISOString());
+
+  // Yesterday's deposits
+  const { data: yesterdayDepositsData } = await supabase
+    .from('transactions')
+    .select('amount')
+    .eq('type', 'deposit')
+    .gte('created_at', startOfYesterday.toISOString())
+    .lte('created_at', endOfYesterday.toISOString());
+
+  // Yesterday's payouts
+  const { data: yesterdayPayoutsData } = await supabase
+    .from('transactions')
+    .select('amount')
+    .eq('type', 'payout')
+    .gte('created_at', startOfYesterday.toISOString())
+    .lte('created_at', endOfYesterday.toISOString());
+
+  // Yesterday's withdrawals
+  const { data: yesterdayWithdrawalsData } = await supabase
+    .from('transactions')
+    .select('amount')
+    .eq('type', 'withdrawal')
+    .gte('created_at', startOfYesterday.toISOString())
+    .lte('created_at', endOfYesterday.toISOString());
+
+  // Yesterday's plans
+  const { count: yesterdayPlansCount } = await supabase
+    .from('payout_plans')
+    .select('id', { count: 'exact', head: true })
+    .gte('created_at', startOfYesterday.toISOString())
+    .lte('created_at', endOfYesterday.toISOString());
+
+  // Yesterday's cancelled plans
+  const { count: yesterdayCancelledPlansCount } = await supabase
+    .from('payout_plans')
+    .select('id', { count: 'exact', head: true })
+    .eq('status', 'cancelled')
+    .gte('updated_at', startOfYesterday.toISOString())
+    .lte('updated_at', endOfYesterday.toISOString());
+
+  // Yesterday's KYC submissions
+  const { count: yesterdayKycCount } = await supabase
+    .from('kyc_data')
+    .select('id', { count: 'exact', head: true })
+    .gte('created_at', startOfYesterday.toISOString())
+    .lte('created_at', endOfYesterday.toISOString());
+
+  // Yesterday's locked balance (sum of total_amount from plans created yesterday)
+  const { data: yesterdayLockedBalanceData } = await supabase
+    .from('payout_plans')
+    .select('total_amount')
+    .gte('created_at', startOfYesterday.toISOString())
+    .lte('created_at', endOfYesterday.toISOString());
+
+  return {
+    yesterdayUsers: yesterdayUsersCount || 0,
+    yesterdayDeposits: yesterdayDepositsData?.reduce((sum, t) => sum + t.amount, 0) || 0,
+    yesterdayPayouts: yesterdayPayoutsData?.reduce((sum, t) => sum + t.amount, 0) || 0,
+    yesterdayWithdrawals: yesterdayWithdrawalsData?.reduce((sum, t) => sum + t.amount, 0) || 0,
+    yesterdayPlans: yesterdayPlansCount || 0,
+    yesterdayCancelledPlans: yesterdayCancelledPlansCount || 0,
+    yesterdayKyc: yesterdayKycCount || 0,
+    yesterdayLockedBalance: yesterdayLockedBalanceData?.reduce((sum, p) => sum + Number(p.total_amount), 0) || 0,
+  };
+};
+
 // Fetch today's plan distribution
 const fetchTodayPlanDistribution = async () => {
   const { startOfToday, endOfToday } = getTodayRange();
@@ -186,8 +284,9 @@ const fetchDashboardData = async (): Promise<DashboardStats> => {
   try {
     const { startOfToday, endOfToday } = getTodayRange();
 
-    // Fetch today's stats
+    // Fetch today's and yesterday's stats
     const todayStats = await fetchTodayStats();
+    const yesterdayStats = await fetchYesterdayStats();
     const planDistribution = await fetchTodayPlanDistribution();
     const transactionVolumeTrends = await fetchTransactionVolumeTrends();
 
@@ -336,6 +435,7 @@ const fetchDashboardData = async (): Promise<DashboardStats> => {
 
     return {
       ...todayStats,
+      ...yesterdayStats,
       totalUsers: mainStats.total_users || 0,
       totalDeposits: mainStats.total_deposits || 0,
       totalPayouts: mainStats.total_payouts || 0,
@@ -654,9 +754,10 @@ const fetchDashboardDataFallback = async (): Promise<DashboardStats> => {
   
   // Fetch accurate transaction trends for the last 7 days
   const transactionTrends = await fetchTransactionTrends();
-  
-  // Fetch today's stats for fallback
+
+  // Fetch today's and yesterday's stats for fallback
   const todayStats = await fetchTodayStats();
+  const yesterdayStats = await fetchYesterdayStats();
   const planDistribution = await fetchTodayPlanDistribution();
   const transactionVolumeTrends = await fetchTransactionVolumeTrends();
 
@@ -753,6 +854,7 @@ const fetchDashboardDataFallback = async (): Promise<DashboardStats> => {
 
   const finalAnalyticsData = {
     ...todayStats,
+    ...yesterdayStats,
     totalUsers: await getTotalUsers(),
     totalDeposits: await getTotalDeposits(),
     totalPayouts: await getTotalPayouts(),
