@@ -25,6 +25,13 @@ import { CreateRoleModal } from '@/components/CreateRoleModal';
 import { AssignRoleModal } from '@/components/AssignRoleModal';
 import { EditRoleModal } from '@/components/EditRoleModal';
 
+const formatPermissionName = (name: string): string => {
+  return name
+    .split('.')
+    .map(part => part.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' '))
+    .join(' - ');
+};
+
 export default function SuperAdmin() {
   const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'roles'>('overview');
   const [searchQuery, setSearchQuery] = useState('');
@@ -478,7 +485,7 @@ export default function SuperAdmin() {
                           key={permission.id}
                           className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded font-medium"
                         >
-                          {permission.name}
+                          {formatPermissionName(permission.name)}
                         </span>
                       ))}
                       {!isExpanded && role.permissions.length > 3 && (
