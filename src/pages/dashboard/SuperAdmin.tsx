@@ -9,7 +9,6 @@ import {
   Search,
   RefreshCw,
   AlertTriangle,
-  CheckCircle,
   Clock,
   BarChart3,
   Award,
