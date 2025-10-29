@@ -114,17 +114,17 @@ export default function Sidebar({ isMobileMenuOpen, closeMobileMenu }: { isMobil
   };
 
   const allNavigationItems = [
-    { name: 'Dashboard', path: '/', icon: Home, resource: 'dashboard', action: 'read', alwaysShow: true },
-    { name: 'Users', path: '/users', icon: Users, resource: 'users', action: 'read' },
-    { name: 'Calendar', path: '/calendar', icon: CalendarDays, resource: 'payouts', action: 'read' },
-    { name: 'Transactions', path: '/transactions', icon: CreditCard, resource: 'transactions', action: 'read' },
-    { name: 'Analytics', path: '/analytics', icon: BarChart3, resource: 'analytics', action: 'read' },
-    { name: 'Activity', path: '/activity', icon: Activity, resource: 'audit', action: 'read' },
-    { name: 'KYC Data', path: '/kyc-data', icon: FileText, resource: 'users', action: 'read' },
-    { name: 'Payout Events', path: '/payout-events', icon: DollarSign, resource: 'payouts', action: 'manage' },
-    { name: 'Payout Plans', path: '/payout-plans', icon: Repeat, resource: 'payouts', action: 'read' },
-    { name: 'Banners', path: '/banners', icon: Image, resource: 'system', action: 'settings' },
-    ...(isSuperAdmin ? [{ name: 'Super Admin', path: '/super-admin', icon: Shield, resource: 'roles', action: 'manage' }] : []),
+    { name: 'Dashboard', path: '/', icon: Home, resource: 'dashboard', action: 'view', alwaysShow: true },
+    { name: 'Users', path: '/users', icon: Users, resource: 'users', action: 'list' },
+    { name: 'Calendar', path: '/calendar', icon: CalendarDays, resource: 'calendar', action: 'view' },
+    { name: 'Transactions', path: '/transactions', icon: CreditCard, resource: 'transactions', action: 'list' },
+    { name: 'Analytics', path: '/analytics', icon: BarChart3, resource: 'analytics', action: 'overview' },
+    { name: 'Activity', path: '/activity', icon: Activity, resource: 'activity', action: 'view' },
+    { name: 'KYC Data', path: '/kyc-data', icon: FileText, resource: 'kyc', action: 'list' },
+    { name: 'Payout Events', path: '/payout-events', icon: DollarSign, resource: 'payout_events', action: 'list' },
+    { name: 'Payout Plans', path: '/payout-plans', icon: Repeat, resource: 'payout_plans', action: 'list' },
+    { name: 'Banners', path: '/banners', icon: Image, resource: 'banners', action: 'view' },
+    ...(isSuperAdmin ? [{ name: 'Super Admin', path: '/super-admin', icon: Shield, resource: 'super_admin', action: 'roles' }] : []),
   ];
 
   const navigation = isSuperAdmin
