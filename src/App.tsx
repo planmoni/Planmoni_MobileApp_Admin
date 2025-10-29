@@ -24,6 +24,7 @@ const UserDetailsPage = lazy(() => import('./pages/dashboard/UserDetails'));
 const SuperAdminPage = lazy(() => import('./pages/dashboard/SuperAdmin'));
 const BannersPage = lazy(() => import('./pages/dashboard/Banners'));
 const AuditLogsPage = lazy(() => import('./pages/dashboard/AuditLogs'));
+const EmergencyWithdrawalsPage = lazy(() => import('./pages/dashboard/EmergencyWithdrawals'));
 const NotFoundPage = lazy(() => import('./pages/NotFound'));
 
 function App() {
@@ -65,6 +66,7 @@ function App() {
                 <Route path="super-admin" element={<SuperAdminPage />} />
                 <Route path="banners" element={<BannersPage />} />
                 <Route path="audit-logs" element={<AuditLogsPage />} />
+                <Route path="emergency-withdrawals" element={<EmergencyWithdrawalsPage />} />
                 <Route path="settings" element={<SettingsPage />} />
                 <Route path="*" element={<NotFoundPage />} />
               </Route>
