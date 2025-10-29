@@ -150,13 +150,15 @@ const fetchTodayStats = async () => {
     .gte('created_at', startOfToday.toISOString())
     .lte('created_at', endOfToday.toISOString());
 
-  // Payouts due today (from payout_events scheduled for today)
+  // Payouts due today (from automated_payouts scheduled for today)
+  const today = new Date();
+  const todayDateStr = today.toISOString().split('T')[0];
+
   const { data: todayPayoutsDueData, count: todayPayoutsDueCount } = await supabase
-    .from('payout_events')
+    .from('automated_payouts')
     .select('amount', { count: 'exact' })
-    .gte('scheduled_date', startOfToday.toISOString())
-    .lte('scheduled_date', endOfToday.toISOString())
-    .in('status', ['pending', 'processing']);
+    .eq('scheduled_date', todayDateStr)
+    .in('status', ['pending', 'processing', 'scheduled']);
 
   return {
     todayUsers: todayUsersCount || 0,
@@ -236,13 +238,15 @@ const fetchYesterdayStats = async () => {
     .gte('created_at', startOfYesterday.toISOString())
     .lte('created_at', endOfYesterday.toISOString());
 
-  // Payouts due yesterday (from payout_events scheduled for yesterday)
+  // Payouts due yesterday (from automated_payouts scheduled for yesterday)
+  const yesterday = subDays(new Date(), 1);
+  const yesterdayDateStr = yesterday.toISOString().split('T')[0];
+
   const { data: yesterdayPayoutsDueData, count: yesterdayPayoutsDueCount } = await supabase
-    .from('payout_events')
+    .from('automated_payouts')
     .select('amount', { count: 'exact' })
-    .gte('scheduled_date', startOfYesterday.toISOString())
-    .lte('scheduled_date', endOfYesterday.toISOString())
-    .in('status', ['pending', 'processing', 'completed']);
+    .eq('scheduled_date', yesterdayDateStr)
+    .in('status', ['pending', 'processing', 'scheduled', 'completed']);
 
   return {
     yesterdayUsers: yesterdayUsersCount || 0,
