@@ -16,9 +16,15 @@ type AnalyticsData = {
     monthly_data: any[];
   };
   payoutDistribution: {
+    daily: number;
     weekly: number;
     biweekly: number;
+    specificDays: number;
+    monthEnd: number;
     monthly: number;
+    quarterly: number;
+    biAnnually: number;
+    annually: number;
     custom: number;
   };
   retentionRate: {
@@ -59,9 +65,15 @@ const fetchAnalyticsData = async (): Promise<AnalyticsData> => {
           monthly_data: [],
         },
         payoutDistribution: data.payout_distribution || {
+          daily: 0,
           weekly: 0,
           biweekly: 0,
+          specificDays: 0,
+          monthEnd: 0,
           monthly: 0,
+          quarterly: 0,
+          biAnnually: 0,
+          annually: 0,
           custom: 0,
         },
         retentionRate: data.retention_rate || {
@@ -193,12 +205,18 @@ const fetchAnalyticsDataFallback = async (): Promise<AnalyticsData> => {
   const { data: payoutPlans, error: payoutPlansError } = await supabase
     .from('payout_plans')
     .select('frequency');
-  
+
   if (payoutPlansError) throw payoutPlansError;
-  
+
+  const dailyPlans = payoutPlans?.filter(p => p.frequency === 'daily').length || 0;
   const weeklyPlans = payoutPlans?.filter(p => p.frequency === 'weekly').length || 0;
   const biweeklyPlans = payoutPlans?.filter(p => p.frequency === 'biweekly').length || 0;
+  const specificDaysPlans = payoutPlans?.filter(p => p.frequency === 'specific_days').length || 0;
+  const monthEndPlans = payoutPlans?.filter(p => p.frequency === 'month_end').length || 0;
   const monthlyPlans = payoutPlans?.filter(p => p.frequency === 'monthly').length || 0;
+  const quarterlyPlans = payoutPlans?.filter(p => p.frequency === 'quarterly').length || 0;
+  const biAnnuallyPlans = payoutPlans?.filter(p => p.frequency === 'bi_annually').length || 0;
+  const annuallyPlans = payoutPlans?.filter(p => p.frequency === 'annually').length || 0;
   const customPlans = payoutPlans?.filter(p => p.frequency === 'custom').length || 0;
   
   // Calculate retention rate (users who have made at least 2 transactions)
@@ -252,9 +270,15 @@ const fetchAnalyticsDataFallback = async (): Promise<AnalyticsData> => {
       monthly_data: monthlyVolumeData,
     },
     payoutDistribution: {
+      daily: dailyPlans,
       weekly: weeklyPlans,
       biweekly: biweeklyPlans,
+      specificDays: specificDaysPlans,
+      monthEnd: monthEndPlans,
       monthly: monthlyPlans,
+      quarterly: quarterlyPlans,
+      biAnnually: biAnnuallyPlans,
+      annually: annuallyPlans,
       custom: customPlans,
     },
     retentionRate: {
