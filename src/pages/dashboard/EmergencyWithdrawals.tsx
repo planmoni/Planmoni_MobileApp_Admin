@@ -130,13 +130,15 @@ export default function EmergencyWithdrawals() {
   const calculateStats = () => {
     if (!withdrawals) return { total: 0, pending: 0, completed: 0, failed: 0, totalAmount: 0, totalFees: 0 };
 
+    const completedWithdrawals = withdrawals.filter(w => w.status === 'completed' || w.status === 'success' || w.status === 'transferred');
+
     return {
       total: withdrawals.length,
       pending: withdrawals.filter(w => w.status === 'pending' || w.status === 'processing').length,
-      completed: withdrawals.filter(w => w.status === 'completed' || w.status === 'success' || w.status === 'transferred').length,
+      completed: completedWithdrawals.length,
       failed: withdrawals.filter(w => w.status === 'failed' || w.status === 'cancelled' || w.status === 'rejected').length,
-      totalAmount: withdrawals.reduce((sum, w) => sum + parseFloat(w.withdrawal_amount), 0),
-      totalFees: withdrawals.reduce((sum, w) => sum + parseFloat(w.fee_amount), 0),
+      totalAmount: completedWithdrawals.reduce((sum, w) => sum + parseFloat(w.withdrawal_amount), 0),
+      totalFees: completedWithdrawals.reduce((sum, w) => sum + parseFloat(w.fee_amount), 0),
     };
   };
 
