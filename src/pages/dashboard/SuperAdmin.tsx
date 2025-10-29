@@ -192,9 +192,7 @@ export default function SuperAdmin() {
 
       {activeTab === 'overview' && stats && (
         <div className="space-y-6">
-          <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl p-8 shadow-xl">
-            
-          </div>
+          
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <div className="bg-white rounded-2xl p-6 shadow-soft border border-gray-100">
