@@ -426,6 +426,25 @@ const fetchDashboardData = async (): Promise<DashboardStats> => {
       .lte('created_at', endOfToday.toISOString())
       .order('created_at', { ascending: false });
 
+    // Fetch today's payout plans created
+    const { data: todayPayoutPlansCreated } = await supabase
+      .from('payout_plans')
+      .select(`
+        id,
+        user_id,
+        frequency,
+        total_amount,
+        created_at,
+        profiles (
+          first_name,
+          last_name,
+          email
+        )
+      `)
+      .gte('created_at', startOfToday.toISOString())
+      .lte('created_at', endOfToday.toISOString())
+      .order('created_at', { ascending: false });
+
     // Create activities from today's data
     const todayActivities = [
       ...(todayUsersJoined || []).map((user: any) => ({
@@ -442,6 +461,16 @@ const fetchDashboardData = async (): Promise<DashboardStats> => {
         type: 'kyc_submission',
         description: `${kyc.profiles?.first_name} ${kyc.profiles?.last_name} submitted KYC`,
         timestamp: kyc.created_at
+      })),
+      ...(todayPayoutPlansCreated || []).map((plan: any) => ({
+        type: 'payout_plan_created',
+        description: `${plan.profiles?.first_name} ${plan.profiles?.last_name} created a ${plan.frequency} payout plan (₦${Number(plan.total_amount).toLocaleString()})`,
+        timestamp: plan.created_at
+      })),
+      ...(todayPayoutEvents || []).map((payout: any) => ({
+        type: 'automated_payout',
+        description: `Automated payout of ₦${Number(payout.amount).toLocaleString()} - ${payout.status}`,
+        timestamp: payout.created_at
       }))
     ].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).slice(0, 10);
 
@@ -886,6 +915,25 @@ const fetchDashboardDataFallback = async (): Promise<DashboardStats> => {
     .lte('created_at', endOfToday.toISOString())
     .order('created_at', { ascending: false });
 
+  // Fetch today's payout plans created
+  const { data: todayPayoutPlansCreated } = await supabase
+    .from('payout_plans')
+    .select(`
+      id,
+      user_id,
+      frequency,
+      total_amount,
+      created_at,
+      profiles (
+        first_name,
+        last_name,
+        email
+      )
+    `)
+    .gte('created_at', startOfToday.toISOString())
+    .lte('created_at', endOfToday.toISOString())
+    .order('created_at', { ascending: false });
+
   // Create activities from today's data
   const todayActivities = [
     ...(todayUsersJoined || []).map((user: any) => ({
@@ -902,6 +950,16 @@ const fetchDashboardDataFallback = async (): Promise<DashboardStats> => {
       type: 'kyc_submission',
       description: `${kyc.profiles?.first_name} ${kyc.profiles?.last_name} submitted KYC`,
       timestamp: kyc.created_at
+    })),
+    ...(todayPayoutPlansCreated || []).map((plan: any) => ({
+      type: 'payout_plan_created',
+      description: `${plan.profiles?.first_name} ${plan.profiles?.last_name} created a ${plan.frequency} payout plan (₦${Number(plan.total_amount).toLocaleString()})`,
+      timestamp: plan.created_at
+    })),
+    ...(todayPayoutEvents || []).map((payout: any) => ({
+      type: 'automated_payout',
+      description: `Automated payout of ₦${Number(payout.amount).toLocaleString()} - ${payout.status}`,
+      timestamp: payout.created_at
     }))
   ].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).slice(0, 10);
 
