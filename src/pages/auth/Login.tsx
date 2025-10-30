@@ -53,7 +53,6 @@ export default function Login() {
       if (globalTwoFactorSettings) {
         setRequires2FA(true);
         setIsLoading(false);
-        await supabase.auth.signOut();
         return;
       }
 
@@ -81,17 +80,14 @@ export default function Login() {
     setError(null);
 
     try {
-      const result = await signIn(email, password);
-      if (!result.success) {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
         setError('Session expired. Please login again.');
         setRequires2FA(false);
         setTwoFactorCode('');
         setIsLoading(false);
         return;
       }
-
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('No user found');
 
       const { data: twoFactorSettings } = await supabase
         .from('admin_2fa_settings')
