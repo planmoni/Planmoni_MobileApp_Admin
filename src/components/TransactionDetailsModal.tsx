@@ -1,16 +1,23 @@
-import { X, ArrowUpRight, ArrowDownRight, User, Calendar, Hash, CreditCard } from 'lucide-react';
+import { X, ArrowUpRight, ArrowDownRight, User, Calendar, Hash, CreditCard, ArrowLeftRight, FileText } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface Transaction {
   id: string;
-  user_id: string;
+  user_id?: string;
   type: string;
   amount: number;
   status: string;
+  source: string;
+  destination: string;
+  reference?: string | null;
   description: string | null;
   created_at: string;
-  updated_at: string;
-  profiles?: {
+  updated_at?: string;
+  profiles?: Array<{
+    first_name: string | null;
+    last_name: string | null;
+    email: string;
+  }> | {
     first_name: string | null;
     last_name: string | null;
     email: string;
@@ -29,13 +36,19 @@ export default function TransactionDetailsModal({ transaction, isOpen, onClose }
   const isPositive = transaction.type === 'deposit';
 
   const getUserName = () => {
-    if (transaction.profiles?.first_name && transaction.profiles?.last_name) {
-      return `${transaction.profiles.first_name} ${transaction.profiles.last_name}`;
+    const profile = Array.isArray(transaction.profiles) ? transaction.profiles[0] : transaction.profiles;
+    if (profile?.first_name && profile?.last_name) {
+      return `${profile.first_name} ${profile.last_name}`;
     }
-    if (transaction.profiles?.first_name) {
-      return transaction.profiles.first_name;
+    if (profile?.first_name) {
+      return profile.first_name;
     }
-    return transaction.profiles?.email || 'Unknown User';
+    return profile?.email || 'Unknown User';
+  };
+
+  const getUserEmail = () => {
+    const profile = Array.isArray(transaction.profiles) ? transaction.profiles[0] : transaction.profiles;
+    return profile?.email || '';
   };
 
   const getStatusColor = (status: string) => {
@@ -126,9 +139,49 @@ export default function TransactionDetailsModal({ transaction, isOpen, onClose }
                   <div className="ml-4 flex-1">
                     <p className="text-sm font-medium text-gray-500">User</p>
                     <p className="text-sm text-gray-900">{getUserName()}</p>
-                    <p className="text-xs text-gray-500">{transaction.profiles?.email}</p>
+                    <p className="text-xs text-gray-500">{getUserEmail()}</p>
                   </div>
                 </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex items-start">
+                    <div className="flex-shrink-0">
+                      <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
+                        <ArrowLeftRight className="h-5 w-5 text-blue-600" />
+                      </div>
+                    </div>
+                    <div className="ml-3 flex-1">
+                      <p className="text-sm font-medium text-gray-500">Source</p>
+                      <p className="text-sm text-gray-900 break-words">{transaction.source}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start">
+                    <div className="flex-shrink-0">
+                      <div className="w-10 h-10 rounded-lg bg-purple-50 flex items-center justify-center">
+                        <ArrowLeftRight className="h-5 w-5 text-purple-600 rotate-180" />
+                      </div>
+                    </div>
+                    <div className="ml-3 flex-1">
+                      <p className="text-sm font-medium text-gray-500">Destination</p>
+                      <p className="text-sm text-gray-900 break-words">{transaction.destination}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {transaction.reference && (
+                  <div className="flex items-start">
+                    <div className="flex-shrink-0">
+                      <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
+                        <FileText className="h-5 w-5 text-gray-600" />
+                      </div>
+                    </div>
+                    <div className="ml-4 flex-1">
+                      <p className="text-sm font-medium text-gray-500">Reference</p>
+                      <p className="text-sm text-gray-900 break-all">{transaction.reference}</p>
+                    </div>
+                  </div>
+                )}
 
                 <div className="flex items-start">
                   <div className="flex-shrink-0">

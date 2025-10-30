@@ -66,6 +66,10 @@ const fetchTransactionsData = async (params: TransactionsQueryParams = {}) => {
       status: t.status,
       source: t.source,
       destination: t.destination,
+      reference: t.reference,
+      description: t.description,
+      payout_plan_id: t.payout_plan_id,
+      bank_account_id: t.bank_account_id,
       created_at: t.created_at,
       profiles: [{
         id: '',
