@@ -169,7 +169,7 @@ export default function Transactions() {
         <div className="grid grid-cols-3 gap-4 p-6">
           <div className="text-center">
             <p className="text-sm text-gray-500 mb-2">Total Inflows</p>
-            <p className="text-xl font-bold text-green-600">₦{stats.inflows.toLocaleString()}</p>
+            <p className="text-l font-bold text-green-600">₦{stats.inflows.toLocaleString()}</p>
           </div>
           <div className="text-center border-x border-gray-100">
             <p className="text-sm text-gray-500 mb-2">Total Outflows</p>
