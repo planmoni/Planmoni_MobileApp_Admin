@@ -30,7 +30,7 @@ export default function DashboardLayout() {
           <img
             src="/assets/images/planmoni_logo_main.png"
             alt="Planmoni Office"
-            className="h-6 w-auto"
+            className="h-12 w-auto"
             onError={(e) => {
               e.currentTarget.style.display = 'none';
               const nextElement = e.currentTarget.nextElementSibling as HTMLElement;
@@ -51,10 +51,10 @@ export default function DashboardLayout() {
         </div>
       </div>
 
-      <div className="flex flex-col flex-1 md:pl-64">
-        <main className="flex-1 overflow-y-auto pt-16 md:pt-0">
-          <div className="py-8">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
+      <div className="flex flex-col flex-1 md:pl-64 min-w-0">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden pt-16 md:pt-0">
+          <div className="py-6 md:py-8">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 w-full min-w-0">
               <Outlet />
             </div>
           </div>

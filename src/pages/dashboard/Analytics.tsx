@@ -55,9 +55,15 @@ export default function Analytics() {
       monthly_data: [],
     },
     payoutDistribution: {
+      daily: 0,
       weekly: 0,
       biweekly: 0,
+      specificDays: 0,
+      monthEnd: 0,
       monthly: 0,
+      quarterly: 0,
+      biAnnually: 0,
+      annually: 0,
       custom: 0,
     },
     retentionRate: {
@@ -147,19 +153,31 @@ export default function Analytics() {
   };
 
   const payoutDistributionData = {
-    labels: ['Weekly', 'Biweekly', 'Monthly', 'Custom'],
+    labels: ['Daily', 'Weekly', 'Biweekly', 'Specific Days', 'Month-End', 'Monthly', 'Quarterly', 'Bi-Annually', 'Annually', 'Custom'],
     datasets: [
       {
         data: [
+          data.payoutDistribution.daily,
           data.payoutDistribution.weekly,
           data.payoutDistribution.biweekly,
+          data.payoutDistribution.specificDays,
+          data.payoutDistribution.monthEnd,
           data.payoutDistribution.monthly,
+          data.payoutDistribution.quarterly,
+          data.payoutDistribution.biAnnually,
+          data.payoutDistribution.annually,
           data.payoutDistribution.custom,
         ],
         backgroundColor: [
+          '#EF4444',
           '#86EFAC',
           '#60A5FA',
           '#FBBF24',
+          '#A78BFA',
+          '#F472B6',
+          '#34D399',
+          '#2DD4BF',
+          '#84CC16',
           '#F87171',
         ],
         borderWidth: 0,
@@ -335,8 +353,10 @@ export default function Analytics() {
             <div className="flex-1">
               <p className="text-sm font-medium text-gray-500 mb-1">Active Plans</p>
               <p className="text-3xl font-bold text-gray-900">
-                {data.payoutDistribution.weekly + data.payoutDistribution.biweekly +
-                 data.payoutDistribution.monthly + data.payoutDistribution.custom}
+                {(data.payoutDistribution.daily || 0) + (data.payoutDistribution.weekly || 0) + (data.payoutDistribution.biweekly || 0) +
+                 (data.payoutDistribution.specificDays || 0) + (data.payoutDistribution.monthEnd || 0) + (data.payoutDistribution.monthly || 0) +
+                 (data.payoutDistribution.quarterly || 0) + (data.payoutDistribution.biAnnually || 0) + (data.payoutDistribution.annually || 0) +
+                 (data.payoutDistribution.custom || 0)}
               </p>
             </div>
             <div className="w-12 h-12 rounded-xl bg-gray-50 flex items-center justify-center">
@@ -423,7 +443,14 @@ export default function Analytics() {
               }}
             />
           </div>
-          <div className="space-y-3">
+          <div className="space-y-3 max-h-80 overflow-y-auto">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <div className="w-3 h-3 rounded-full bg-red-500 mr-2"></div>
+                <span className="text-sm text-gray-600">Daily</span>
+              </div>
+              <span className="text-sm font-semibold text-gray-900">{data.payoutDistribution.daily}</span>
+            </div>
             <div className="flex items-center justify-between">
               <div className="flex items-center">
                 <div className="w-3 h-3 rounded-full bg-green-400 mr-2"></div>
@@ -441,9 +468,44 @@ export default function Analytics() {
             <div className="flex items-center justify-between">
               <div className="flex items-center">
                 <div className="w-3 h-3 rounded-full bg-yellow-400 mr-2"></div>
+                <span className="text-sm text-gray-600">Specific Days</span>
+              </div>
+              <span className="text-sm font-semibold text-gray-900">{data.payoutDistribution.specificDays}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <div className="w-3 h-3 rounded-full bg-purple-400 mr-2"></div>
+                <span className="text-sm text-gray-600">Month-End</span>
+              </div>
+              <span className="text-sm font-semibold text-gray-900">{data.payoutDistribution.monthEnd}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <div className="w-3 h-3 rounded-full bg-pink-400 mr-2"></div>
                 <span className="text-sm text-gray-600">Monthly</span>
               </div>
               <span className="text-sm font-semibold text-gray-900">{data.payoutDistribution.monthly}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <div className="w-3 h-3 rounded-full bg-emerald-400 mr-2"></div>
+                <span className="text-sm text-gray-600">Quarterly</span>
+              </div>
+              <span className="text-sm font-semibold text-gray-900">{data.payoutDistribution.quarterly}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <div className="w-3 h-3 rounded-full bg-teal-400 mr-2"></div>
+                <span className="text-sm text-gray-600">Bi-Annually</span>
+              </div>
+              <span className="text-sm font-semibold text-gray-900">{data.payoutDistribution.biAnnually}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <div className="w-3 h-3 rounded-full bg-lime-400 mr-2"></div>
+                <span className="text-sm text-gray-600">Annually</span>
+              </div>
+              <span className="text-sm font-semibold text-gray-900">{data.payoutDistribution.annually}</span>
             </div>
             <div className="flex items-center justify-between">
               <div className="flex items-center">

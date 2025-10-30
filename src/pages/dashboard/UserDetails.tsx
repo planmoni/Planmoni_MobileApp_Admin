@@ -80,7 +80,7 @@ export default function UserDetails() {
 
       <div className="bg-white rounded-2xl p-6 shadow-soft border border-gray-100 mb-6">
         <div className="flex items-start gap-4">
-          <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white text-2xl font-bold shadow-lg">
+          <div className="w-20 h-20 rounded-2xl bg-[#000] flex items-center justify-center text-white text-2xl font-bold shadow-lg">
             {user.first_name?.[0]}{user.last_name?.[0]}
           </div>
           <div className="flex-1">
@@ -215,13 +215,7 @@ export default function UserDetails() {
                               Default
                             </span>
                           )}
-                          <span className={`ml-auto px-2.5 py-1 rounded-lg text-xs font-semibold shrink-0 ${
-                            account.transfer_enabled
-                              ? 'bg-green-50 text-green-600 border border-green-100'
-                              : 'bg-yellow-50 text-yellow-600 border border-yellow-100'
-                          }`}>
-                            {account.transfer_enabled ? 'Enabled' : 'Disabled'}
-                          </span>
+                   
                         </div>
                         <p className="text-gray-900 text-sm font-mono mb-1">{account.account_number}</p>
                         <p className="text-gray-600 text-sm mb-2">{account.account_name}</p>

@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { usePermissions } from '../contexts/PermissionsContext';
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import {
@@ -7,7 +8,6 @@ import {
   Users,
   CreditCard,
   BarChart3,
-  Settings,
   LogOut,
   Shield,
   Image,
@@ -15,11 +15,14 @@ import {
   FileText,
   DollarSign,
   CalendarDays,
-  Repeat
+  Repeat,
+  ScrollText,
+  AlertTriangle
 } from 'lucide-react';
 
 export default function Sidebar({ isMobileMenuOpen, closeMobileMenu }: { isMobileMenuOpen: boolean, closeMobileMenu: () => void }) {
   const { signOut, session } = useAuth();
+  const { hasPermission } = usePermissions();
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [userProfile, setUserProfile] = useState<{
     first_name: string | null;
@@ -112,20 +115,45 @@ export default function Sidebar({ isMobileMenuOpen, closeMobileMenu }: { isMobil
     await signOut();
   };
 
-  const navigation = [
-    { name: 'Dashboard', path: '/', icon: Home },
-    { name: 'Users', path: '/users', icon: Users },
-    { name: 'Transactions', path: '/transactions', icon: CreditCard },
-    { name: 'Calendar', path: '/calendar', icon: CalendarDays },
-    { name: 'Analytics', path: '/analytics', icon: BarChart3 },
-    { name: 'Activity', path: '/activity', icon: Activity },
-    { name: 'KYC Data', path: '/kyc-data', icon: FileText },
-    { name: 'Payout Events', path: '/payout-events', icon: DollarSign },
-    { name: 'Payout Plans', path: '/payout-plans', icon: Repeat },
-    ...(isSuperAdmin ? [{ name: 'Super Admin', path: '/super-admin', icon: Shield }] : []),
-    { name: 'Banners', path: '/banners', icon: Image },
-    { name: 'Settings', path: '/settings', icon: Settings },
+  const hasDashboardPermissions = () => {
+    if (isSuperAdmin) return true;
+
+    const dashboardPermissions = [
+      'stats.new_users', 'stats.deposits', 'stats.payouts', 'stats.new_plans',
+      'stats.kyc_completed', 'stats.locked_balance', 'stats.cancelled_plans',
+      'stats.withdrawals', 'stats.payout_due_today', 'charts.transaction_volume',
+      'charts.plan_distribution', 'lists.todays_transactions', 'lists.users_joined_today',
+      'lists.todays_payout_events', 'lists.todays_activities'
+    ];
+
+    return dashboardPermissions.some(action => hasPermission('dashboard', action));
+  };
+
+  const allNavigationItems = [
+    { name: 'Dashboard', path: '/', icon: Home, resource: 'dashboard', action: 'view', customCheck: hasDashboardPermissions },
+    { name: 'Users', path: '/users', icon: Users, resource: 'users', action: 'list' },
+    { name: 'Calendar', path: '/calendar', icon: CalendarDays, resource: 'calendar', action: 'view' },
+    { name: 'Transactions', path: '/transactions', icon: CreditCard, resource: 'transactions', action: 'list' },
+    { name: 'Analytics', path: '/analytics', icon: BarChart3, resource: 'analytics', action: 'overview' },
+    { name: 'Activity', path: '/activity', icon: Activity, resource: 'activity', action: 'view' },
+    { name: 'KYC Data', path: '/kyc-data', icon: FileText, resource: 'kyc', action: 'list' },
+    { name: 'Payout Events', path: '/payout-events', icon: DollarSign, resource: 'payout_events', action: 'list' },
+    { name: 'Payout Plans', path: '/payout-plans', icon: Repeat, resource: 'payout_plans', action: 'list' },
+    { name: 'Emergency Withdrawals', path: '/emergency-withdrawals', icon: AlertTriangle, resource: 'emergency_withdrawals', action: 'list' },
+    { name: 'Banners', path: '/banners', icon: Image, resource: 'banners', action: 'view' },
+    { name: 'Audit Logs', path: '/audit-logs', icon: ScrollText, resource: 'audit_logs', action: 'view' },
+ 
+    ...(isSuperAdmin ? [{ name: 'Super Admin', path: '/super-admin', icon: Shield, resource: 'super_admin', action: 'roles' }] : []),
   ];
+
+  const navigation = isSuperAdmin
+    ? allNavigationItems
+    : allNavigationItems.filter(item => {
+        if (item.customCheck) {
+          return item.customCheck();
+        }
+        return hasPermission(item.resource, item.action);
+      });
 
   console.log('🔧 Current state:');
   console.log('  - isSuperAdmin:', isSuperAdmin);

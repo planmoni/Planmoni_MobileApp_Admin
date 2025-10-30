@@ -255,7 +255,7 @@ export default function Calendar() {
                         }`}>
                           {format(day, 'd')}
                         </div>
-                        <div className="space-y-1">
+                        <div className="flex items-center gap-1 flex-wrap">
                           {dayEvents.slice(0, 3).map((event) => (
                             <div
                               key={event.id}

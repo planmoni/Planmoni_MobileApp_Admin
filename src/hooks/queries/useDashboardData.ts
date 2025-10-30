@@ -3,41 +3,450 @@ import { supabase } from '@/lib/supabase';
 import { subDays, startOfMonth, endOfMonth, subMonths, format } from 'date-fns';
 
 type DashboardStats = {
+  // Today's stats
+  todayUsers: number;
+  todayDeposits: number;
+  todayPayouts: number;
+  todayPlans: number;
+  todayKyc: number;
+  todayLockedBalance: number;
+  todayCancelledPlans: number;
+  todayWithdrawals: number;
+  todayPayoutsDueCount: number;
+  todayPayoutsDueAmount: number;
+  nextPayoutDate: string | null;
+  nextPayoutAmount: number;
+
+  // Yesterday's stats (for comparison)
+  yesterdayUsers: number;
+  yesterdayDeposits: number;
+  yesterdayPayouts: number;
+  yesterdayPlans: number;
+  yesterdayKyc: number;
+  yesterdayLockedBalance: number;
+  yesterdayCancelledPlans: number;
+  yesterdayWithdrawals: number;
+  yesterdayPayoutsDueCount: number;
+  yesterdayPayoutsDueAmount: number;
+
+  // Totals
   totalUsers: number;
   totalDeposits: number;
   totalPayouts: number;
   totalPlans: number;
   activeUsers: number;
+
+  // Today's data
+  todayTransactions: any[];
+  todayUsersJoined: any[];
+  todayPayoutEvents: any[];
+  todayKycSubmissions: any[];
+  todayActivities: any[];
+
+  // Plan distribution (today)
+  planDistribution: {
+    daily: number;
+    weekly: number;
+    biweekly: number;
+    specificDays: number;
+    monthEnd: number;
+    monthly: number;
+    quarterly: number;
+    biAnnually: number;
+    annually: number;
+    custom: number;
+  };
+
+  // Transaction volume (last 7 days)
+  transactionVolumeTrends: any[];
+
+  // Old properties for backward compatibility
   recentTransactions: any[];
   recentUsers: any[];
   transactionTrends: any[];
-  // New trend properties - now absolute differences
   userGrowthTrend: number;
   depositsTrend: number;
   payoutsTrend: number;
   plansTrend: number;
 };
 
+// Helper to get today's date range
+const getTodayRange = () => {
+  const today = new Date();
+  const startOfToday = new Date(today);
+  startOfToday.setHours(0, 0, 0, 0);
+
+  const endOfToday = new Date(today);
+  endOfToday.setHours(23, 59, 59, 999);
+
+  return { startOfToday, endOfToday };
+};
+
+// Helper to get yesterday's date range
+const getYesterdayRange = () => {
+  const yesterday = subDays(new Date(), 1);
+  const startOfYesterday = new Date(yesterday);
+  startOfYesterday.setHours(0, 0, 0, 0);
+
+  const endOfYesterday = new Date(yesterday);
+  endOfYesterday.setHours(23, 59, 59, 999);
+
+  return { startOfYesterday, endOfYesterday };
+};
+
+// Fetch today's stats
+const fetchTodayStats = async () => {
+  const { startOfToday, endOfToday } = getTodayRange();
+
+  // Today's users
+  const { count: todayUsersCount } = await supabase
+    .from('profiles')
+    .select('id', { count: 'exact', head: true })
+    .gte('created_at', startOfToday.toISOString())
+    .lte('created_at', endOfToday.toISOString());
+
+  // Today's deposits
+  const { data: todayDepositsData } = await supabase
+    .from('transactions')
+    .select('amount')
+    .eq('type', 'deposit')
+    .gte('created_at', startOfToday.toISOString())
+    .lte('created_at', endOfToday.toISOString());
+
+  // Today's payouts
+  const { data: todayPayoutsData } = await supabase
+    .from('transactions')
+    .select('amount')
+    .eq('type', 'payout')
+    .gte('created_at', startOfToday.toISOString())
+    .lte('created_at', endOfToday.toISOString());
+
+  // Today's withdrawals
+  const { data: todayWithdrawalsData } = await supabase
+    .from('transactions')
+    .select('amount')
+    .eq('type', 'withdrawal')
+    .gte('created_at', startOfToday.toISOString())
+    .lte('created_at', endOfToday.toISOString());
+
+  // Today's plans
+  const { count: todayPlansCount } = await supabase
+    .from('payout_plans')
+    .select('id', { count: 'exact', head: true })
+    .gte('created_at', startOfToday.toISOString())
+    .lte('created_at', endOfToday.toISOString());
+
+  // Today's cancelled plans
+  const { count: todayCancelledPlansCount } = await supabase
+    .from('payout_plans')
+    .select('id', { count: 'exact', head: true })
+    .eq('status', 'cancelled')
+    .gte('updated_at', startOfToday.toISOString())
+    .lte('updated_at', endOfToday.toISOString());
+
+  // Today's KYC submissions
+  const { count: todayKycCount } = await supabase
+    .from('kyc_data')
+    .select('id', { count: 'exact', head: true })
+    .gte('created_at', startOfToday.toISOString())
+    .lte('created_at', endOfToday.toISOString());
+
+  // Today's locked balance (sum of total_amount from plans created today)
+  const { data: todayLockedBalanceData } = await supabase
+    .from('payout_plans')
+    .select('total_amount')
+    .gte('created_at', startOfToday.toISOString())
+    .lte('created_at', endOfToday.toISOString());
+
+  // Payouts due today (from payout_plans with next_payout_date today and time not yet passed)
+  const now = new Date();
+
+  const { data: todayPayoutsDueData, count: todayPayoutsDueCount } = await supabase
+    .from('payout_plans')
+    .select('payout_amount', { count: 'exact' })
+    .gte('next_payout_date', startOfToday.toISOString())
+    .lte('next_payout_date', endOfToday.toISOString())
+    .gte('next_payout_date', now.toISOString())
+    .eq('status', 'active');
+
+  // Get the next upcoming payout (earliest next_payout_date in the future)
+  const { data: nextPayoutData } = await supabase
+    .from('payout_plans')
+    .select('next_payout_date, payout_amount')
+    .gte('next_payout_date', now.toISOString())
+    .eq('status', 'active')
+    .order('next_payout_date', { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  return {
+    todayUsers: todayUsersCount || 0,
+    todayDeposits: todayDepositsData?.reduce((sum, t) => sum + t.amount, 0) || 0,
+    todayPayouts: todayPayoutsData?.reduce((sum, t) => sum + t.amount, 0) || 0,
+    todayWithdrawals: todayWithdrawalsData?.reduce((sum, t) => sum + t.amount, 0) || 0,
+    todayPlans: todayPlansCount || 0,
+    todayCancelledPlans: todayCancelledPlansCount || 0,
+    todayKyc: todayKycCount || 0,
+    todayLockedBalance: todayLockedBalanceData?.reduce((sum, p) => sum + Number(p.total_amount), 0) || 0,
+    todayPayoutsDueCount: todayPayoutsDueCount || 0,
+    todayPayoutsDueAmount: todayPayoutsDueData?.reduce((sum, p) => sum + Number(p.payout_amount), 0) || 0,
+    nextPayoutDate: nextPayoutData?.next_payout_date || null,
+    nextPayoutAmount: nextPayoutData ? Number(nextPayoutData.payout_amount) : 0,
+  };
+};
+
+// Fetch yesterday's stats
+const fetchYesterdayStats = async () => {
+  const { startOfYesterday, endOfYesterday } = getYesterdayRange();
+
+  // Yesterday's users
+  const { count: yesterdayUsersCount } = await supabase
+    .from('profiles')
+    .select('id', { count: 'exact', head: true })
+    .gte('created_at', startOfYesterday.toISOString())
+    .lte('created_at', endOfYesterday.toISOString());
+
+  // Yesterday's deposits
+  const { data: yesterdayDepositsData } = await supabase
+    .from('transactions')
+    .select('amount')
+    .eq('type', 'deposit')
+    .gte('created_at', startOfYesterday.toISOString())
+    .lte('created_at', endOfYesterday.toISOString());
+
+  // Yesterday's payouts
+  const { data: yesterdayPayoutsData } = await supabase
+    .from('transactions')
+    .select('amount')
+    .eq('type', 'payout')
+    .gte('created_at', startOfYesterday.toISOString())
+    .lte('created_at', endOfYesterday.toISOString());
+
+  // Yesterday's withdrawals
+  const { data: yesterdayWithdrawalsData } = await supabase
+    .from('transactions')
+    .select('amount')
+    .eq('type', 'withdrawal')
+    .gte('created_at', startOfYesterday.toISOString())
+    .lte('created_at', endOfYesterday.toISOString());
+
+  // Yesterday's plans
+  const { count: yesterdayPlansCount } = await supabase
+    .from('payout_plans')
+    .select('id', { count: 'exact', head: true })
+    .gte('created_at', startOfYesterday.toISOString())
+    .lte('created_at', endOfYesterday.toISOString());
+
+  // Yesterday's cancelled plans
+  const { count: yesterdayCancelledPlansCount } = await supabase
+    .from('payout_plans')
+    .select('id', { count: 'exact', head: true })
+    .eq('status', 'cancelled')
+    .gte('updated_at', startOfYesterday.toISOString())
+    .lte('updated_at', endOfYesterday.toISOString());
+
+  // Yesterday's KYC submissions
+  const { count: yesterdayKycCount } = await supabase
+    .from('kyc_data')
+    .select('id', { count: 'exact', head: true })
+    .gte('created_at', startOfYesterday.toISOString())
+    .lte('created_at', endOfYesterday.toISOString());
+
+  // Yesterday's locked balance (sum of total_amount from plans created yesterday)
+  const { data: yesterdayLockedBalanceData } = await supabase
+    .from('payout_plans')
+    .select('total_amount')
+    .gte('created_at', startOfYesterday.toISOString())
+    .lte('created_at', endOfYesterday.toISOString());
+
+  // Payouts due yesterday (from payout_plans with next_payout_date yesterday)
+  const { data: yesterdayPayoutsDueData, count: yesterdayPayoutsDueCount } = await supabase
+    .from('payout_plans')
+    .select('payout_amount', { count: 'exact' })
+    .gte('next_payout_date', startOfYesterday.toISOString())
+    .lte('next_payout_date', endOfYesterday.toISOString())
+    .eq('status', 'active');
+
+  return {
+    yesterdayUsers: yesterdayUsersCount || 0,
+    yesterdayDeposits: yesterdayDepositsData?.reduce((sum, t) => sum + t.amount, 0) || 0,
+    yesterdayPayouts: yesterdayPayoutsData?.reduce((sum, t) => sum + t.amount, 0) || 0,
+    yesterdayWithdrawals: yesterdayWithdrawalsData?.reduce((sum, t) => sum + t.amount, 0) || 0,
+    yesterdayPlans: yesterdayPlansCount || 0,
+    yesterdayCancelledPlans: yesterdayCancelledPlansCount || 0,
+    yesterdayKyc: yesterdayKycCount || 0,
+    yesterdayLockedBalance: yesterdayLockedBalanceData?.reduce((sum, p) => sum + Number(p.total_amount), 0) || 0,
+    yesterdayPayoutsDueCount: yesterdayPayoutsDueCount || 0,
+    yesterdayPayoutsDueAmount: yesterdayPayoutsDueData?.reduce((sum, p) => sum + Number(p.payout_amount), 0) || 0,
+  };
+};
+
+// Fetch today's plan distribution
+const fetchTodayPlanDistribution = async () => {
+  const { startOfToday, endOfToday } = getTodayRange();
+
+  const { data: todayPlans } = await supabase
+    .from('payout_plans')
+    .select('frequency')
+    .gte('created_at', startOfToday.toISOString())
+    .lte('created_at', endOfToday.toISOString());
+
+  const daily = todayPlans?.filter(p => p.frequency === 'daily').length || 0;
+  const weekly = todayPlans?.filter(p => p.frequency === 'weekly').length || 0;
+  const biweekly = todayPlans?.filter(p => p.frequency === 'biweekly').length || 0;
+  const specificDays = todayPlans?.filter(p => p.frequency === 'specific_days').length || 0;
+  const monthEnd = todayPlans?.filter(p => p.frequency === 'month_end').length || 0;
+  const monthly = todayPlans?.filter(p => p.frequency === 'monthly').length || 0;
+  const quarterly = todayPlans?.filter(p => p.frequency === 'quarterly').length || 0;
+  const biAnnually = todayPlans?.filter(p => p.frequency === 'bi_annually').length || 0;
+  const annually = todayPlans?.filter(p => p.frequency === 'annually').length || 0;
+  const custom = todayPlans?.filter(p => p.frequency === 'custom').length || 0;
+
+  return { daily, weekly, biweekly, specificDays, monthEnd, monthly, quarterly, biAnnually, annually, custom };
+};
+
+// Fetch transaction volume for last 7 days
+const fetchTransactionVolumeTrends = async () => {
+  const trends = [];
+
+  for (let i = 6; i >= 0; i--) {
+    const date = subDays(new Date(), i);
+    const startOfDay = new Date(date);
+    startOfDay.setHours(0, 0, 0, 0);
+
+    const endOfDay = new Date(date);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    const { data } = await supabase
+      .from('transactions')
+      .select('amount')
+      .gte('created_at', startOfDay.toISOString())
+      .lte('created_at', endOfDay.toISOString());
+
+    trends.push({
+      day: format(date, 'yyyy-MM-dd'),
+      volume: data?.reduce((sum, t) => sum + t.amount, 0) || 0,
+      count: data?.length || 0
+    });
+  }
+
+  return trends;
+};
+
 const fetchDashboardData = async (): Promise<DashboardStats> => {
   try {
+    const { startOfToday, endOfToday } = getTodayRange();
+
+    // Fetch today's and yesterday's stats
+    const todayStats = await fetchTodayStats();
+    const yesterdayStats = await fetchYesterdayStats();
+    const planDistribution = await fetchTodayPlanDistribution();
+    const transactionVolumeTrends = await fetchTransactionVolumeTrends();
+
     // Use the optimized SQL query for main dashboard stats
     const { data: dashboardData, error: dashboardError } = await supabase.rpc('get_dashboard_stats');
-    
-    console.log('🔍 Dashboard RPC Response:', dashboardData);
-    
+
     if (dashboardError) {
       console.error('Dashboard RPC error:', dashboardError);
-      // Fallback to individual queries if RPC doesn't exist
       return await fetchDashboardDataFallback();
     }
-    
+
     const mainStats = dashboardData?.[0] || {};
-    
+
     // Calculate trends for current vs previous month
     const trends = await calculateTrends();
-    
-    // Fetch recent transactions separately
-    const { data: recentTransactions, error: recentTransactionsError } = await supabase
+
+    // Fetch today's transactions
+    const { data: todayTransactions } = await supabase
+      .from('transactions')
+      .select(`
+        id,
+        type,
+        amount,
+        status,
+        created_at,
+        profiles (
+          id,
+          first_name,
+          last_name,
+          email
+        )
+      `)
+      .gte('created_at', startOfToday.toISOString())
+      .lte('created_at', endOfToday.toISOString())
+      .order('created_at', { ascending: false });
+
+    // Fetch today's users joined
+    const { data: todayUsersJoined } = await supabase
+      .from('profiles')
+      .select('id, first_name, last_name, email, created_at')
+      .gte('created_at', startOfToday.toISOString())
+      .lte('created_at', endOfToday.toISOString())
+      .order('created_at', { ascending: false });
+
+    // Fetch today's payout events
+    const { data: todayPayoutEvents } = await supabase
+      .from('payout_events')
+      .select(`
+        id,
+        payout_plan_id,
+        scheduled_date,
+        status,
+        amount,
+        created_at,
+        payout_plans (
+          id,
+          user_id,
+          profiles (
+            first_name,
+            last_name
+          )
+        )
+      `)
+      .gte('scheduled_date', startOfToday.toISOString())
+      .lte('scheduled_date', endOfToday.toISOString())
+      .order('scheduled_date', { ascending: false })
+      .limit(10);
+
+    // Fetch today's KYC submissions
+    const { data: todayKycSubmissions } = await supabase
+      .from('kyc_data')
+      .select(`
+        id,
+        user_id,
+        status,
+        created_at,
+        profiles (
+          first_name,
+          last_name,
+          email
+        )
+      `)
+      .gte('created_at', startOfToday.toISOString())
+      .lte('created_at', endOfToday.toISOString())
+      .order('created_at', { ascending: false });
+
+    // Create activities from today's data
+    const todayActivities = [
+      ...(todayUsersJoined || []).map((user: any) => ({
+        type: 'user_joined',
+        description: `${user.first_name} ${user.last_name} joined`,
+        timestamp: user.created_at
+      })),
+      ...(todayTransactions || []).map((tx: any) => ({
+        type: tx.type,
+        description: `${tx.profiles?.first_name} ${tx.profiles?.last_name} - ${tx.type} of ₦${tx.amount.toLocaleString()}`,
+        timestamp: tx.created_at
+      })),
+      ...(todayKycSubmissions || []).map((kyc: any) => ({
+        type: 'kyc_submission',
+        description: `${kyc.profiles?.first_name} ${kyc.profiles?.last_name} submitted KYC`,
+        timestamp: kyc.created_at
+      }))
+    ].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).slice(0, 10);
+
+    // Fetch recent transactions for backward compatibility
+    const { data: recentTransactions } = await supabase
       .from('transactions')
       .select(`
         id,
@@ -54,42 +463,44 @@ const fetchDashboardData = async (): Promise<DashboardStats> => {
       `)
       .order('created_at', { ascending: false })
       .limit(5);
-    
-    if (recentTransactionsError) throw recentTransactionsError;
-    
-    // Fetch recent users separately
-    const { data: recentUsers, error: recentUsersError } = await supabase
+
+    // Fetch recent users for backward compatibility
+    const { data: recentUsers } = await supabase
       .from('profiles')
       .select('id, first_name, last_name, email, created_at')
       .order('created_at', { ascending: false })
       .limit(5);
-    
-    if (recentUsersError) throw recentUsersError;
-    
+
     // Calculate active users (users with transactions in last 30 days)
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    
-    const { data: activeUserData, error: activeUserError } = await supabase
+
+    const { data: activeUserData } = await supabase
       .from('transactions')
       .select('user_id')
       .gte('created_at', thirtyDaysAgo.toISOString())
       .not('user_id', 'is', null);
-    
-    if (activeUserError) throw activeUserError;
-    
-    // Count unique active users
+
     const uniqueActiveUsers = new Set(activeUserData?.map(t => t.user_id) || []).size;
-    
+
     // Fetch transaction trends for the last 7 days
     const transactionTrends = await fetchTransactionTrends();
-    
+
     return {
+      ...todayStats,
+      ...yesterdayStats,
       totalUsers: mainStats.total_users || 0,
       totalDeposits: mainStats.total_deposits || 0,
       totalPayouts: mainStats.total_payouts || 0,
       totalPlans: mainStats.total_plans || 0,
       activeUsers: uniqueActiveUsers,
+      todayTransactions: todayTransactions || [],
+      todayUsersJoined: todayUsersJoined || [],
+      todayPayoutEvents: todayPayoutEvents || [],
+      todayKycSubmissions: todayKycSubmissions || [],
+      todayActivities: todayActivities,
+      planDistribution,
+      transactionVolumeTrends,
       recentTransactions: recentTransactions || [],
       recentUsers: recentUsers || [],
       transactionTrends: transactionTrends,
@@ -380,73 +791,135 @@ const fetchDashboardDataFallback = async (): Promise<DashboardStats> => {
     monthlyVolumeData.push(monthTransactions?.reduce((sum, t) => sum + t.amount, 0) || 0);
   }
   
-  // Fetch payout plan distribution
-  const { data: payoutPlans, error: payoutPlansError } = await supabase
-    .from('payout_plans')
-    .select('frequency');
+  // Payout plan distribution already fetched via fetchTodayPlanDistribution
   
-  if (payoutPlansError) throw payoutPlansError;
-  
-  const weeklyPlans = payoutPlans?.filter(p => p.frequency === 'weekly').length || 0;
-  const biweeklyPlans = payoutPlans?.filter(p => p.frequency === 'biweekly').length || 0;
-  const monthlyPlans = payoutPlans?.filter(p => p.frequency === 'monthly').length || 0;
-  const customPlans = payoutPlans?.filter(p => p.frequency === 'custom').length || 0;
-  
-  // Calculate retention rate (users who have made at least 2 transactions)
+  // Calculate active users (users with transactions in last 30 days)
   const { data: activeUsers, error: activeUsersError } = await supabase
     .from('transactions')
     .select('user_id')
     .eq('status', 'completed')
     .gte('created_at', subMonths(today, 1).toISOString());
-  
+
   if (activeUsersError) throw activeUsersError;
-  
-  // Count transactions per user
-  const userTransactionCounts = activeUsers?.reduce((acc: Record<string, number>, transaction) => {
-    acc[transaction.user_id] = (acc[transaction.user_id] || 0) + 1;
-    return acc;
-  }, {}) || {};
-  
-  const usersWithMultipleTransactions = Object.values(userTransactionCounts).filter((count: number) => count >= 2).length;
-  const totalUsersWithTransactions = Object.keys(userTransactionCounts).length;
-  
-  const retentionRate = totalUsersWithTransactions === 0 
-    ? 0 
-    : (usersWithMultipleTransactions / totalUsersWithTransactions) * 100;
+
+  // Count unique active users
+  const totalUsersWithTransactions = new Set(activeUsers?.map(t => t.user_id) || []).size;
   
   // Fetch accurate transaction trends for the last 7 days
   const transactionTrends = await fetchTransactionTrends();
-  
+
+  // Fetch today's and yesterday's stats for fallback
+  const todayStats = await fetchTodayStats();
+  const yesterdayStats = await fetchYesterdayStats();
+  const planDistribution = await fetchTodayPlanDistribution();
+  const transactionVolumeTrends = await fetchTransactionVolumeTrends();
+
+  const { startOfToday, endOfToday } = getTodayRange();
+
+  // Fetch today's transactions
+  const { data: todayTransactions } = await supabase
+    .from('transactions')
+    .select(`
+      id,
+      type,
+      amount,
+      status,
+      created_at,
+      profiles (
+        id,
+        first_name,
+        last_name,
+        email
+      )
+    `)
+    .gte('created_at', startOfToday.toISOString())
+    .lte('created_at', endOfToday.toISOString())
+    .order('created_at', { ascending: false });
+
+  // Fetch today's users joined
+  const { data: todayUsersJoined } = await supabase
+    .from('profiles')
+    .select('id, first_name, last_name, email, created_at')
+    .gte('created_at', startOfToday.toISOString())
+    .lte('created_at', endOfToday.toISOString())
+    .order('created_at', { ascending: false});
+
+  // Fetch today's payout events
+  const { data: todayPayoutEvents } = await supabase
+    .from('payout_events')
+    .select(`
+      id,
+      payout_plan_id,
+      scheduled_date,
+      status,
+      amount,
+      created_at,
+      payout_plans (
+        id,
+        user_id,
+        profiles (
+          first_name,
+          last_name
+        )
+      )
+    `)
+    .gte('scheduled_date', startOfToday.toISOString())
+    .lte('scheduled_date', endOfToday.toISOString())
+    .order('scheduled_date', { ascending: false })
+    .limit(10);
+
+  // Fetch today's KYC submissions
+  const { data: todayKycSubmissions } = await supabase
+    .from('kyc_data')
+    .select(`
+      id,
+      user_id,
+      status,
+      created_at,
+      profiles (
+        first_name,
+        last_name,
+        email
+      )
+    `)
+    .gte('created_at', startOfToday.toISOString())
+    .lte('created_at', endOfToday.toISOString())
+    .order('created_at', { ascending: false });
+
+  // Create activities from today's data
+  const todayActivities = [
+    ...(todayUsersJoined || []).map((user: any) => ({
+      type: 'user_joined',
+      description: `${user.first_name} ${user.last_name} joined`,
+      timestamp: user.created_at
+    })),
+    ...(todayTransactions || []).map((tx: any) => ({
+      type: tx.type,
+      description: `${tx.profiles?.first_name} ${tx.profiles?.last_name} - ${tx.type} of ₦${tx.amount.toLocaleString()}`,
+      timestamp: tx.created_at
+    })),
+    ...(todayKycSubmissions || []).map((kyc: any) => ({
+      type: 'kyc_submission',
+      description: `${kyc.profiles?.first_name} ${kyc.profiles?.last_name} submitted KYC`,
+      timestamp: kyc.created_at
+    }))
+  ].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).slice(0, 10);
+
   const finalAnalyticsData = {
-    userGrowth: {
-      this_month: thisMonthUserCount,
-      last_month: lastMonthUserCount,
-      percent_change: userPercentChange,
-      monthly_data: monthlyUserData,
-    },
-    transactionVolume: {
-      this_month: thisMonthVolume,
-      last_month: lastMonthVolume,
-      percent_change: volumePercentChange,
-      monthly_data: monthlyVolumeData,
-    },
-    payoutDistribution: {
-      weekly: weeklyPlans,
-      biweekly: biweeklyPlans,
-      monthly: monthlyPlans,
-      custom: customPlans,
-    },
-    retentionRate: {
-      value: retentionRate,
-      trend: retentionRate >= 0 ? 'up' : 'down',
-      percent_change: 0, // Would need historical data to calculate
-    },
-    dailyTransactions: [],
+    ...todayStats,
+    ...yesterdayStats,
     totalUsers: await getTotalUsers(),
     totalDeposits: await getTotalDeposits(),
     totalPayouts: await getTotalPayouts(),
     totalPlans: await getTotalPlans(),
     activeUsers: totalUsersWithTransactions,
+    todayTransactions: todayTransactions || [],
+    todayUsersJoined: todayUsersJoined || [],
+    todayPayoutEvents: todayPayoutEvents || [],
+    todayKycSubmissions: todayKycSubmissions || [],
+    todayActivities: todayActivities,
+    planDistribution,
+    transactionVolumeTrends,
     recentTransactions: await getRecentTransactions(),
     recentUsers: await getRecentUsers(),
     transactionTrends: transactionTrends,
@@ -457,7 +930,7 @@ const fetchDashboardDataFallback = async (): Promise<DashboardStats> => {
   };
 
   console.log('🎯 Final analytics data:', finalAnalyticsData);
-  
+
   return finalAnalyticsData;
 };
 

@@ -49,12 +49,11 @@ export default function BannerCarousel({
 
   const renderBannerContent = (banner: any) => {
     const bannerElement = (
-      <div className="relative w-full h-full group">
-        <div className={`w-full h-auto overflow-hidden rounded-2xl flex items-center justify-center`}>
+      <div className="relative xl:w-full w-[350px] h-full group">
+        <div className="w-full overflow-hidden rounded-xl sm:rounded-2xl flex items-center justify-center bg-gray-100">
           <img
             src={banner.image_url}
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-            style={{ maxHeight: '100%', maxWidth: '100%' }}
+            className="w-full w-[350px] h-full object-cover transition-transform duration-500 group-hover:scale-105"
             onError={(e) => {
               const target = e.target as HTMLImageElement;
               target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzkzIiBoZWlnaHQ9IjExNiIgdmlld0JveD0iMCAwIDM5MyAxMTYiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIzOTMiIGhlaWdodD0iMTE2IiBmaWxsPSIjRjNGNEY2Ii8+Cjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjOTQ5NEE0IiBmb250LXNpemU9IjE0Ij5JbWFnZSBub3QgZm91bmQ8L3RleHQ+Cjwvc3ZnPg==';
@@ -63,20 +62,20 @@ export default function BannerCarousel({
         </div>
 
         {(banner.title || banner.description) && (
-          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-gray-900 via-gray-900/70 to-transparent p-6 rounded-b-2xl">
+          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-gray-900 via-gray-900/70 to-transparent p-3 sm:p-4 md:p-6 rounded-b-xl sm:rounded-b-2xl">
             {banner.title && (
-              <h3 className="text-white text-base sm:text-lg font-bold mb-1.5 line-clamp-1 drop-shadow-lg">
+              <h3 className="text-white text-xs sm:text-sm md:text-base lg:text-lg font-bold mb-0.5 sm:mb-1 md:mb-1.5 line-clamp-1 drop-shadow-lg">
                 {banner.title}
               </h3>
             )}
             {banner.description && (
-              <p className="text-white/90 text-sm sm:text-base line-clamp-2 drop-shadow-md">
+              <p className="text-white/90 text-[10px] sm:text-xs md:text-sm lg:text-base line-clamp-1 sm:line-clamp-2 drop-shadow-md">
                 {banner.description}
               </p>
             )}
             {banner.cta_text && (
-              <div className="mt-3">
-                <span className="inline-flex items-center bg-white/95 text-gray-900 text-xs sm:text-sm px-4 py-2 rounded-xl font-semibold shadow-lg hover:bg-white transition-colors">
+              <div className="mt-1.5 sm:mt-2 md:mt-3">
+                <span className="inline-flex items-center bg-white/95 text-gray-900 text-[10px] sm:text-xs md:text-sm px-2.5 sm:px-3 md:px-4 py-1 sm:py-1.5 md:py-2 rounded-md sm:rounded-lg md:rounded-xl font-semibold shadow-lg hover:bg-white transition-colors">
                   {banner.cta_text}
                 </span>
               </div>

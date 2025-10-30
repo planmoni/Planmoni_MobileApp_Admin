@@ -8,6 +8,7 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { ThemeProvider } from './contexts/ThemeContext.tsx'
 import { AuthProvider } from './contexts/AuthContext.tsx'
 import { ToastProvider } from './contexts/ToastContext.tsx'
+import { PermissionsProvider } from './contexts/PermissionsContext.tsx'
 import { queryClient } from './lib/queryClient.ts'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
@@ -17,7 +18,9 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         <ThemeProvider>
           <ToastProvider>
             <AuthProvider>
-              <App />
+              <PermissionsProvider>
+                <App />
+              </PermissionsProvider>
             </AuthProvider>
           </ToastProvider>
         </ThemeProvider>

@@ -2,8 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
-import { Eye, EyeOff, Mail, Lock, ArrowRight } from 'lucide-react';
-import Button from '../../components/Button';
+import { Eye, EyeOff, Mail, Lock, ArrowRight, AlertCircle } from 'lucide-react';
 
 export default function Login() {
   const { signIn } = useAuth();
@@ -17,7 +16,7 @@ export default function Login() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!email || !password) {
       setError('Please enter both email and password');
       return;
@@ -45,92 +44,79 @@ export default function Login() {
   };
 
   return (
-    <div className="flex min-h-full flex-col justify-center">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <img
-          src="/assets/images/planmoni_logo_main.png"
-          alt="Planmoni Office"
-          className="mx-auto h-20 w-auto"
-          onError={(e) => {
-            // Fallback to text if image fails to load
-            e.currentTarget.style.display = 'none';
-            const nextElement = e.currentTarget.nextElementSibling as HTMLElement;
-            if (nextElement) {
-              nextElement.style.display = 'block';
-            }
-          }}
-        />
-        <h1 className="text-xl font-bold text-primary text-center mt-2" style={{ display: 'none' }}>
-          Planmoni Admin
-        </h1>
-      </div>
+    <div className="min-h-screen flex">
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-6 shadow-lg sm:rounded-lg sm:px-10 border border-border">
-          {error && (
-            <div className="mb-6 rounded-md bg-error-light p-4">
-              <div className="flex">
-                <div className="flex-shrink-0">
-                  <svg className="h-5 w-5 text-error" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clipRule="evenodd" />
-                  </svg>
-                </div>
-                <div className="ml-3">
-                  <p className="text-sm text-error">{error}</p>
-                </div>
-              </div>
-            </div>
-          )}
+      <div className="flex-1 flex items-center justify-center p-8 bg-gray-50">
+        <div className="w-full max-w-md">
+          <div className="mb-8 text-center">
+            <img
+              src="/assets/images/planmoni_logo_main.png"
+              alt="Planmoni"
+              className="h-12 w-auto mx-auto mb-4"
+            />
+          </div>
 
-          <form className="space-y-6" onSubmit={handleLogin}>
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium leading-6 text-text">
-                Email address
-              </label>
-              <div className="relative mt-2">
-                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                  <Mail className="h-5 w-5 text-text-secondary" aria-hidden="true" />
-                </div>
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="block w-full rounded-md border-0 py-3 pl-10 text-gray-900 shadow-sm ring-1 ring-inset ring-border bg-white focus:ring-2 focus:ring-inset focus:ring-primary"
-                  placeholder="Enter your email"
-                />
-              </div>
+          <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
+            <div className="mb-8">
+              <h2 className="text-3xl font-bold text-gray-900 mb-2">Sign in</h2>
+              <p className="text-gray-500">Enter your credentials to access your account</p>
             </div>
 
-            <div>
-              <div className="flex items-center justify-between">
-                <label htmlFor="password" className="block text-sm font-medium leading-6 text-text">
+            {error && (
+              <div className="mb-6 rounded-xl bg-red-50 border border-red-100 p-4">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+                  <p className="text-sm text-red-800 leading-relaxed">{error}</p>
+                </div>
+              </div>
+            )}
+
+            <form className="space-y-5" onSubmit={handleLogin}>
+              <div>
+                <label htmlFor="email" className="block text-sm font-semibold text-gray-900 mb-2">
+                  Email address
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
+                    <Mail className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <input
+                    id="email"
+                    name="email"
+                    type="email"
+                    autoComplete="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="block w-full pl-11 pr-4 py-3.5 text-gray-900 bg-white border border-gray-200 rounded-xl placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    placeholder="you@example.com"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="password" className="block text-sm font-semibold text-gray-900 mb-2">
                   Password
                 </label>
-              </div>
-              <div className="relative mt-2">
-                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                  <Lock className="h-5 w-5 text-text-secondary" aria-hidden="true" />
-                </div>
-                <input
-                  id="password"
-                  name="password"
-                  type={showPassword ? "text" : "password"}
-                  autoComplete="current-password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="block w-full rounded-md border-0 py-3 pl-10 pr-10 text-gray-900 shadow-sm ring-1 ring-inset ring-border bg-white focus:ring-2 focus:ring-inset focus:ring-primary"
-                  placeholder="Enter your password"
-                />
-                <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
+                    <Lock className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <input
+                    id="password"
+                    name="password"
+                    type={showPassword ? "text" : "password"}
+                    autoComplete="current-password"
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="block w-full pl-11 pr-12 py-3.5 text-gray-900 bg-white border border-gray-200 rounded-xl placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    placeholder="Enter your password"
+                  />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="text-text-secondary hover:text-text focus:outline-none"
+                    className="absolute inset-y-0 right-0 flex items-center pr-4 text-gray-400 hover:text-gray-600 transition-colors"
                   >
                     {showPassword ? (
                       <EyeOff className="h-5 w-5" />
@@ -140,22 +126,30 @@ export default function Login() {
                   </button>
                 </div>
               </div>
-            </div>
 
-            <div>
-              <Button
+              <button
                 type="submit"
-                className="flex w-full justify-center items-center gap-2"
-                isLoading={isLoading}
                 disabled={isLoading}
-                icon={!isLoading && <ArrowRight className="h-5 w-5" />}
+                className="w-full flex items-center justify-center gap-2 bg-[#000] hover:from-blue-700 hover:to-blue-800 text-white font-semibold py-3.5 px-4 rounded-xl shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-lg"
               >
-                Sign in
-              </Button>
-            </div>
-          </form>
+                {isLoading ? (
+                  <>
+                    <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span>Signing in...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Sign in</span>
+                    <ArrowRight className="h-5 w-5" />
+                  </>
+                )}
+              </button>
+            </form>
+          </div>
         </div>
-        
       </div>
     </div>
   );

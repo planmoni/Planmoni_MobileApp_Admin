@@ -118,9 +118,9 @@ export default function KycData() {
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl p-6 shadow-soft border border-gray-100 mb-6">
-        <div className="flex flex-col lg:flex-row gap-4">
-          <div className="flex-1 relative">
+      <div className="bg-white rounded-2xl p-4 md:p-6 shadow-soft border border-gray-100 mb-6">
+        <div className="flex flex-col gap-3">
+          <div className="relative">
             <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
             <input
               type="text"
@@ -132,11 +132,11 @@ export default function KycData() {
           </div>
 
           <div className="relative">
-            <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as any)}
-              className="pl-10 pr-8 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all appearance-none bg-white cursor-pointer"
+              className="w-full pl-10 pr-3 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all appearance-none bg-white cursor-pointer text-sm"
             >
               <option value="all">All Status</option>
               <option value="approved">Approved</option>
@@ -175,91 +175,235 @@ export default function KycData() {
 
       <div className="bg-white rounded-2xl shadow-soft border border-gray-100 overflow-hidden">
         {kycData && kycData.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-100">
-                <tr>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                    User
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                    Contact
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                    Verification
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                    Documents
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                    Progress
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                    Date
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {kycData.map((kyc: any) => (
-                  <tr
-                    key={kyc.id}
-                    className="hover:bg-gray-50 transition-colors cursor-pointer"
-                    onClick={() => navigate(`/users/${kyc.user_id}`)}
-                  >
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center gap-3">
-                        <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-primary-light flex items-center justify-center text-white shadow-sm">
-                          <span className="text-sm font-semibold">
-                            {kyc.first_name?.[0]}{kyc.last_name?.[0]}
+          <>
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50 border-b border-gray-100">
+                  <tr>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      User
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      Contact
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      Verification
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      Documents
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      Progress
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      Date
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {kycData.map((kyc: any) => (
+                    <tr
+                      key={kyc.id}
+                      className="hover:bg-gray-50 transition-colors cursor-pointer"
+                      onClick={() => navigate(`/users/${kyc.user_id}`)}
+                    >
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center gap-3">
+                          <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-primary-light flex items-center justify-center text-white shadow-sm">
+                            <span className="text-sm font-semibold">
+                              {kyc.first_name?.[0]}{kyc.last_name?.[0]}
+                            </span>
+                          </div>
+                          <div>
+                            <div className="font-semibold text-gray-900">
+                              {kyc.first_name} {kyc.last_name}
+                            </div>
+                            <div className="text-sm text-gray-500">{kyc.user?.email}</div>
+                          </div>
+                        </div>
+                      </td>
+
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2 text-sm text-gray-600">
+                            <Phone className="h-3 w-3" />
+                            {kyc.phone_number}
+                          </div>
+                          <div className="flex items-center gap-2 text-sm text-gray-500">
+                            <MapPin className="h-3 w-3" />
+                            {kyc.state}
+                          </div>
+                        </div>
+                      </td>
+
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="space-y-1">
+                          {kyc.bvn && (
+                            <div className="text-xs text-gray-500">
+                              BVN: {kyc.bvn.substring(0, 4)}****
+                            </div>
+                          )}
+                          {kyc.nin && (
+                            <div className="text-xs text-gray-500">
+                              NIN: {kyc.nin.substring(0, 4)}****
+                            </div>
+                          )}
+                          {kyc.document_type && (
+                            <div className="text-xs font-medium text-gray-600">
+                              {kyc.document_type}
+                            </div>
+                          )}
+                        </div>
+                      </td>
+
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center gap-1">
+                          {kyc.document_front_url && (
+                            <span className="inline-flex items-center px-2 py-1 rounded-md bg-blue-50 text-blue-700 text-xs">
+                              <ImageIcon className="h-3 w-3 mr-1" />
+                              Front
+                            </span>
+                          )}
+                          {kyc.document_back_url && (
+                            <span className="inline-flex items-center px-2 py-1 rounded-md bg-blue-50 text-blue-700 text-xs">
+                              <ImageIcon className="h-3 w-3 mr-1" />
+                              Back
+                            </span>
+                          )}
+                          {kyc.selfie_url && (
+                            <span className="inline-flex items-center px-2 py-1 rounded-md bg-green-50 text-green-700 text-xs">
+                              <User className="h-3 w-3 mr-1" />
+                              Selfie
+                            </span>
+                          )}
+                        </div>
+                      </td>
+
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {kyc.approved ? (
+                          <span className="inline-flex items-center px-3 py-1 rounded-lg bg-green-50 text-green-700 text-sm font-medium">
+                            <CheckCircle className="h-4 w-4 mr-1" />
+                            Approved
                           </span>
-                        </div>
-                        <div>
-                          <div className="font-semibold text-gray-900">
-                            {kyc.first_name} {kyc.last_name}
-                          </div>
-                          <div className="text-sm text-gray-500">{kyc.user?.email}</div>
-                        </div>
-                      </div>
-                    </td>
+                        ) : (
+                          <span className="inline-flex items-center px-3 py-1 rounded-lg bg-yellow-50 text-yellow-700 text-sm font-medium">
+                            <Clock className="h-4 w-4 mr-1" />
+                            Pending
+                          </span>
+                        )}
+                      </td>
 
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                          <Phone className="h-3 w-3" />
-                          {kyc.phone_number}
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex flex-col gap-1">
+                          <div className="flex items-center gap-1 text-xs">
+                            {kyc.kyc_progress?.personal_info_completed && (
+                              <CheckCircle className="h-3 w-3 text-green-600" />
+                            )}
+                            {kyc.kyc_progress?.bvn_verified && (
+                              <CheckCircle className="h-3 w-3 text-green-600" />
+                            )}
+                            {kyc.kyc_progress?.documents_verified && (
+                              <CheckCircle className="h-3 w-3 text-green-600" />
+                            )}
+                            {kyc.kyc_progress?.address_completed && (
+                              <CheckCircle className="h-3 w-3 text-green-600" />
+                            )}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {kyc.kyc_progress?.current_step || 'Not started'}
+                          </div>
                         </div>
+                      </td>
+
+                      <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center gap-2 text-sm text-gray-500">
-                          <MapPin className="h-3 w-3" />
-                          {kyc.state}
+                          <Calendar className="h-3 w-3" />
+                          {format(new Date(kyc.created_at), 'MMM d, yyyy')}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="md:hidden divide-y divide-gray-100">
+              {kycData.map((kyc: any) => (
+                <div
+                  key={kyc.id}
+                  className="p-4 hover:bg-gray-50 transition-colors cursor-pointer"
+                  onClick={() => navigate(`/users/${kyc.user_id}`)}
+                >
+                  <div className="flex items-start gap-3 mb-3">
+                    <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-primary-light flex items-center justify-center text-white shadow-sm">
+                      <span className="text-sm font-semibold">
+                        {kyc.first_name?.[0]}{kyc.last_name?.[0]}
+                      </span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold text-gray-900 mb-0.5">
+                        {kyc.first_name} {kyc.last_name}
+                      </div>
+                      <div className="text-sm text-gray-500 truncate">{kyc.user?.email}</div>
+                    </div>
+                    {kyc.approved ? (
+                      <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-green-50 text-green-700 text-xs font-medium flex-shrink-0">
+                        <CheckCircle className="h-3 w-3 mr-1" />
+                        Approved
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-yellow-50 text-yellow-700 text-xs font-medium flex-shrink-0">
+                        <Clock className="h-3 w-3 mr-1" />
+                        Pending
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="space-y-2.5">
+                    <div className="grid grid-cols-2 gap-3 pt-2 border-t border-gray-100">
+                      <div>
+                        <div className="flex items-center gap-1.5 text-sm text-gray-600">
+                          <Phone className="h-3 w-3" />
+                          <span className="truncate">{kyc.phone_number}</span>
                         </div>
                       </div>
-                    </td>
-
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="space-y-1">
-                        {kyc.bvn && (
-                          <div className="text-xs text-gray-500">
-                            BVN: {kyc.bvn.substring(0, 4)}****
-                          </div>
-                        )}
-                        {kyc.nin && (
-                          <div className="text-xs text-gray-500">
-                            NIN: {kyc.nin.substring(0, 4)}****
-                          </div>
-                        )}
-                        {kyc.document_type && (
-                          <div className="text-xs font-medium text-gray-600">
-                            {kyc.document_type}
-                          </div>
-                        )}
+                      <div>
+                        <div className="flex items-center gap-1.5 text-sm text-gray-500">
+                          <MapPin className="h-3 w-3" />
+                          <span className="truncate">{kyc.state}</span>
+                        </div>
                       </div>
-                    </td>
+                    </div>
 
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center gap-1">
+                    {(kyc.bvn || kyc.nin || kyc.document_type) && (
+                      <div className="pt-2 border-t border-gray-100">
+                        <div className="text-xs text-gray-500 mb-1">Verification</div>
+                        <div className="space-y-1">
+                          {kyc.bvn && (
+                            <div className="text-xs text-gray-600">
+                              BVN: {kyc.bvn.substring(0, 4)}****
+                            </div>
+                          )}
+                          {kyc.nin && (
+                            <div className="text-xs text-gray-600">
+                              NIN: {kyc.nin.substring(0, 4)}****
+                            </div>
+                          )}
+                          {kyc.document_type && (
+                            <div className="text-xs font-medium text-gray-700">
+                              {kyc.document_type}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="pt-2 border-t border-gray-100">
+                      <div className="text-xs text-gray-500 mb-1.5">Documents</div>
+                      <div className="flex items-center gap-2 flex-wrap">
                         {kyc.document_front_url && (
                           <span className="inline-flex items-center px-2 py-1 rounded-md bg-blue-50 text-blue-700 text-xs">
                             <ImageIcon className="h-3 w-3 mr-1" />
@@ -279,25 +423,12 @@ export default function KycData() {
                           </span>
                         )}
                       </div>
-                    </td>
+                    </div>
 
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {kyc.approved ? (
-                        <span className="inline-flex items-center px-3 py-1 rounded-lg bg-green-50 text-green-700 text-sm font-medium">
-                          <CheckCircle className="h-4 w-4 mr-1" />
-                          Approved
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center px-3 py-1 rounded-lg bg-yellow-50 text-yellow-700 text-sm font-medium">
-                          <Clock className="h-4 w-4 mr-1" />
-                          Pending
-                        </span>
-                      )}
-                    </td>
-
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex flex-col gap-1">
-                        <div className="flex items-center gap-1 text-xs">
+                    <div className="pt-2 border-t border-gray-100">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-xs text-gray-500">KYC Progress</span>
+                        <div className="flex items-center gap-1">
                           {kyc.kyc_progress?.personal_info_completed && (
                             <CheckCircle className="h-3 w-3 text-green-600" />
                           )}
@@ -311,23 +442,21 @@ export default function KycData() {
                             <CheckCircle className="h-3 w-3 text-green-600" />
                           )}
                         </div>
-                        <div className="text-xs text-gray-500">
-                          {kyc.kyc_progress?.current_step || 'Not started'}
-                        </div>
                       </div>
-                    </td>
+                      <div className="text-xs text-gray-600">
+                        {kyc.kyc_progress?.current_step || 'Not started'}
+                      </div>
+                    </div>
 
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center gap-2 text-sm text-gray-500">
-                        <Calendar className="h-3 w-3" />
-                        {format(new Date(kyc.created_at), 'MMM d, yyyy')}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                    <div className="flex items-center gap-1.5 text-xs text-gray-500 pt-2 border-t border-gray-100">
+                      <Calendar className="h-3 w-3" />
+                      Submitted {format(new Date(kyc.created_at), 'MMM d, yyyy')}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
         ) : (
           <div className="text-center py-12">
             <FileText className="h-12 w-12 mx-auto mb-4 text-gray-300" />

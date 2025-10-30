@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { RefreshCw, Plus, X } from 'lucide-react';
 import { useRefreshData } from '@/hooks/mutations/useRefreshData';
+import { usePermissions } from '@/contexts/PermissionsContext';
 import BannerUploadForm from '@/components/BannerUploadForm';
 import BannerDisplay from '@/components/BannerDisplay';
-import BannerCarousel from '@/components/BannerCarousel';
 
 export default function Banners() {
   const [isAddingBanner, setIsAddingBanner] = useState(false);
   const refreshData = useRefreshData();
+  const { hasPermission, isSuperAdmin } = usePermissions();
 
   const handleRefresh = () => {
     refreshData.mutate(['banners']);
@@ -33,29 +34,31 @@ export default function Banners() {
             <RefreshCw className={`h-5 w-5 text-gray-600 ${refreshData.isPending ? 'animate-spin' : ''}`} />
           </button>
 
-          <button
-            onClick={() => setIsAddingBanner(!isAddingBanner)}
-            className={`
-              flex items-center gap-2 px-5 py-3 rounded-xl font-medium transition-all shadow-soft
-              ${isAddingBanner
-                ? 'bg-gray-500 hover:bg-gray-600 text-white'
-                : 'bg-gray-900 hover:bg-gray-800 text-white'
-              }
-            `}
-          >
-            {isAddingBanner ? (
-              <>
-                <X className="h-4 w-4" />
-                <span>Cancel</span>
-              </>
-            ) : (
-              <>
-                <Plus className="h-4 w-4" />
-                <span className="hidden sm:inline">Add Banner</span>
-                <span className="sm:hidden">Add</span>
-              </>
-            )}
-          </button>
+          {(isSuperAdmin || hasPermission('banners', 'create')) && (
+            <button
+              onClick={() => setIsAddingBanner(!isAddingBanner)}
+              className={`
+                flex items-center gap-2 px-5 py-3 rounded-xl font-medium transition-all shadow-soft
+                ${isAddingBanner
+                  ? 'bg-gray-500 hover:bg-gray-600 text-white'
+                  : 'bg-gray-900 hover:bg-gray-800 text-white'
+                }
+              `}
+            >
+              {isAddingBanner ? (
+                <>
+                  <X className="h-4 w-4" />
+                  <span>Cancel</span>
+                </>
+              ) : (
+                <>
+                  <Plus className="h-4 w-4" />
+                  <span className="hidden sm:inline">Add Banner</span>
+                  <span className="sm:hidden">Add</span>
+                </>
+              )}
+            </button>
+          )}
         </div>
       </div>
 
@@ -66,17 +69,17 @@ export default function Banners() {
       )}
 
       <div className="space-y-8">
-        <div className=" bg-white rounded-2xl p-6 border border-gray-100">
-          <div className="mb-6">
-            <h3 className="text-lg font-semibold text-gray-900">Banner Preview</h3>
+        {/* <div className="bg-white rounded-2xl p-4 md:p-6 border border-gray-100">
+          <div className="mb-4 md:mb-6">
+            <h3 className="text-base md:text-lg font-semibold text-gray-900">Banner Preview</h3>
             <p className="text-sm text-gray-500 mt-1">
               This is how your banners will appear to users on the dashboard
             </p>
           </div>
-          <div className="w-[600] max-w-500 mx-auto">
+          <div className="w-full md:max-w-2xl md:mx-auto">
             <BannerCarousel maxHeight="max-h-48 sm:max-h-56" />
           </div>
-        </div>
+        </div> */}
 
         <BannerDisplay showAdminControls={true} />
       </div>

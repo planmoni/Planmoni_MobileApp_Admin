@@ -22,7 +22,7 @@ export function useCalendarEvents(currentDate: Date) {
 
       const events: CalendarEvent[] = [];
 
-      const [automatedPayoutsResult, payoutPlansResult, transactionsResult] = await Promise.all([
+      const [automatedPayoutsResult, payoutPlansResult, scheduledPlansResult, transactionsResult] = await Promise.all([
         supabase
           .from('automated_payouts')
           .select(`
@@ -61,6 +61,24 @@ export function useCalendarEvents(currentDate: Date) {
           .gte('created_at', monthStart.toISOString())
           .lte('created_at', monthEnd.toISOString())
           .order('created_at', { ascending: true }),
+
+        supabase
+          .from('payout_plans')
+          .select(`
+            id,
+            name,
+            payout_amount,
+            next_payout_date,
+            user_id,
+            profiles!payout_plans_user_id_fkey (
+              first_name,
+              last_name
+            )
+          `)
+          .gte('next_payout_date', monthStart.toISOString())
+          .lte('next_payout_date', monthEnd.toISOString())
+          .eq('status', 'active')
+          .order('next_payout_date', { ascending: true }),
 
         supabase
           .from('transactions')
@@ -145,6 +163,27 @@ export function useCalendarEvents(currentDate: Date) {
             title: 'Payout Created',
             description: `${userName} created "${plan.name}"`,
             amount: parseFloat(plan.total_amount),
+            user_name: userName,
+            plan_name: plan.name,
+          });
+        });
+      }
+
+      if (scheduledPlansResult.error) {
+        console.error('Error fetching scheduled plans:', scheduledPlansResult.error);
+      } else {
+        scheduledPlansResult.data?.forEach((plan: any) => {
+          const userName = plan.profiles
+            ? `${plan.profiles.first_name || ''} ${plan.profiles.last_name || ''}`.trim()
+            : 'Unknown User';
+
+          events.push({
+            id: `scheduled-${plan.id}`,
+            type: 'scheduled_payout',
+            date: new Date(plan.next_payout_date),
+            title: 'Scheduled Payout',
+            description: `${userName} - ${plan.name}`,
+            amount: parseFloat(plan.payout_amount),
             user_name: userName,
             plan_name: plan.name,
           });

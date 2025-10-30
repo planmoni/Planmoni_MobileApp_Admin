@@ -267,16 +267,16 @@ export default function PayoutPlans() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-6">
-        <div className="bg-white rounded-2xl p-6 shadow-soft border border-gray-100">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Plans by Frequency</h3>
-          <div className="h-80">
+        <div className="bg-white rounded-2xl p-4 md:p-6 shadow-soft border border-gray-100">
+          <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-4">Plans by Frequency</h3>
+          <div className="h-64 md:h-80">
             <Pie data={frequencyPieData} options={chartOptions} />
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl p-6 shadow-soft border border-gray-100">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Plans by Status</h3>
-          <div className="h-80">
+        <div className="bg-white rounded-2xl p-4 md:p-6 shadow-soft border border-gray-100">
+          <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-4">Plans by Status</h3>
+          <div className="h-64 md:h-80">
             <Bar data={statusBarData} options={barChartOptions} />
           </div>
         </div>
@@ -352,9 +352,9 @@ export default function PayoutPlans() {
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl p-6 shadow-soft border border-gray-100 mb-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Plans by Frequency Type</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="bg-white rounded-2xl p-4 md:p-6 shadow-soft border border-gray-100 mb-6">
+        <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-4">Plans by Frequency Type</h3>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4">
           <div className="p-4 bg-blue-50 rounded-xl">
             <p className="text-xs text-blue-600 font-medium mb-1">Daily</p>
             <p className="text-2xl font-bold text-gray-900 mb-1">{stats?.daily || 0}</p>
@@ -477,9 +477,9 @@ export default function PayoutPlans() {
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl p-6 shadow-soft border border-gray-100 mb-6">
-        <div className="flex flex-col lg:flex-row gap-4">
-          <div className="flex-1 relative">
+      <div className="bg-white rounded-2xl p-4 md:p-6 shadow-soft border border-gray-100 mb-6">
+        <div className="flex flex-col gap-3">
+          <div className="relative">
             <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
             <input
               type="text"
@@ -493,16 +493,16 @@ export default function PayoutPlans() {
             />
           </div>
 
-          <div className="flex gap-3">
+          <div className="grid grid-cols-2 gap-3">
             <div className="relative">
-              <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
               <select
                 value={statusFilter}
                 onChange={(e) => {
                   setStatusFilter(e.target.value as any);
                   setCurrentPage(1);
                 }}
-                className="pl-10 pr-8 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all appearance-none bg-white cursor-pointer"
+                className="w-full pl-10 pr-3 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all appearance-none bg-white cursor-pointer text-sm"
               >
                 <option value="all">All Status</option>
                 <option value="active">Active</option>
@@ -512,14 +512,14 @@ export default function PayoutPlans() {
             </div>
 
             <div className="relative">
-              <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
               <select
                 value={frequencyFilter}
                 onChange={(e) => {
                   setFrequencyFilter(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="pl-10 pr-8 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all appearance-none bg-white cursor-pointer"
+                className="w-full pl-10 pr-3 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all appearance-none bg-white cursor-pointer text-sm"
               >
                 <option value="all">All Frequencies</option>
                 <option value="daily">Daily</option>
@@ -574,140 +574,244 @@ export default function PayoutPlans() {
 
       <div className="bg-white rounded-2xl shadow-soft border border-gray-100 overflow-hidden">
         {plans && plans.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-100">
-                <tr>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                    User
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                    Plan Name
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                    Frequency
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                    Total Amount
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                    Payout Amount
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                    Start Date
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                    Progress
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {plans.map((plan: any) => (
-                  <tr
-                    key={plan.id}
-                    className="hover:bg-gray-50 transition-colors cursor-pointer"
-                    onClick={() => navigate(`/users/${plan.user_id}`)}
-                  >
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center gap-3">
-                        <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-primary-light flex items-center justify-center text-white shadow-sm">
-                          {plan.user?.first_name && plan.user?.last_name ? (
-                            <span className="text-sm font-semibold">
-                              {plan.user.first_name[0]}{plan.user.last_name[0]}
+          <>
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50 border-b border-gray-100">
+                  <tr>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      User
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      Plan Name
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      Frequency
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      Total Amount
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      Payout Amount
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      Start Date
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      Progress
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {plans.map((plan: any) => (
+                    <tr
+                      key={plan.id}
+                      className="hover:bg-gray-50 transition-colors cursor-pointer"
+                      onClick={() => navigate(`/users/${plan.user_id}`)}
+                    >
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center gap-3">
+                          <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-primary-light flex items-center justify-center text-white shadow-sm">
+                            {plan.user?.first_name && plan.user?.last_name ? (
+                              <span className="text-sm font-semibold">
+                                {plan.user.first_name[0]}{plan.user.last_name[0]}
+                              </span>
+                            ) : (
+                              <User className="h-5 w-5" />
+                            )}
+                          </div>
+                          <div>
+                            {plan.user?.first_name && plan.user?.last_name ? (
+                              <div className="font-medium text-gray-900">
+                                {plan.user.first_name} {plan.user.last_name}
+                              </div>
+                            ) : null}
+                            <div className="text-sm text-gray-500">{plan.user?.email}</div>
+                          </div>
+                        </div>
+                      </td>
+
+                      <td className="px-6 py-4">
+                        <div className="space-y-1">
+                          <div className="text-sm font-medium text-gray-900">{plan.name}</div>
+                          {plan.description && (
+                            <div className="text-xs text-gray-500 max-w-xs truncate">{plan.description}</div>
+                          )}
+                          {plan.is_ai_generated && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-50 text-purple-700">
+                              AI Generated
                             </span>
-                          ) : (
-                            <User className="h-5 w-5" />
                           )}
                         </div>
-                        <div>
-                          {plan.user?.first_name && plan.user?.last_name ? (
-                            <div className="font-medium text-gray-900">
-                              {plan.user.first_name} {plan.user.last_name}
-                            </div>
-                          ) : null}
-                          <div className="text-sm text-gray-500">{plan.user?.email}</div>
+                      </td>
+
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="text-sm text-gray-900 capitalize">
+                          {plan.frequency.replace('_', ' ').replace('-', ' ')}
+                        </span>
+                      </td>
+
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-semibold text-gray-900">
+                          {new Intl.NumberFormat('en-NG', {
+                            style: 'currency',
+                            currency: 'NGN'
+                          }).format(plan.total_amount || 0)}
                         </div>
-                      </div>
-                    </td>
+                      </td>
 
-                    <td className="px-6 py-4">
-                      <div className="space-y-1">
-                        <div className="text-sm font-medium text-gray-900">{plan.name}</div>
-                        {plan.description && (
-                          <div className="text-xs text-gray-500 max-w-xs truncate">{plan.description}</div>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-semibold text-green-600">
+                          {new Intl.NumberFormat('en-NG', {
+                            style: 'currency',
+                            currency: 'NGN'
+                          }).format(plan.payout_amount || 0)}
+                        </div>
+                      </td>
+
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`inline-flex items-center px-3 py-1 rounded-lg text-sm font-medium ${getStatusColor(plan.status)}`}>
+                          {getStatusIcon(plan.status)}
+                          <span className="ml-1 capitalize">{plan.status}</span>
+                        </span>
+                      </td>
+
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center gap-2 text-sm text-gray-500">
+                          <Calendar className="h-3 w-3" />
+                          {plan.start_date ? format(new Date(plan.start_date), 'MMM d, yyyy') : 'N/A'}
+                        </div>
+                        {plan.next_payout_date && (
+                          <div className="text-xs text-gray-400">
+                            Next: {format(new Date(plan.next_payout_date), 'MMM d')}
+                          </div>
                         )}
-                        {plan.is_ai_generated && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-50 text-purple-700">
-                            AI Generated
-                          </span>
-                        )}
-                      </div>
-                    </td>
+                      </td>
 
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="text-sm text-gray-900 capitalize">
-                        {plan.frequency.replace('_', ' ').replace('-', ' ')}
-                      </span>
-                    </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="space-y-1">
+                          <div className="text-sm text-gray-900">
+                            {plan.completed_payouts || 0} / {plan.duration}
+                          </div>
+                          <div className="w-24 bg-gray-200 rounded-full h-2">
+                            <div
+                              className="bg-green-600 h-2 rounded-full transition-all"
+                              style={{ width: `${Math.min(100, ((plan.completed_payouts || 0) / plan.duration) * 100)}%` }}
+                            ></div>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
 
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-semibold text-gray-900">
-                        {new Intl.NumberFormat('en-NG', {
-                          style: 'currency',
-                          currency: 'NGN'
-                        }).format(plan.total_amount || 0)}
-                      </div>
-                    </td>
-
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-semibold text-green-600">
-                        {new Intl.NumberFormat('en-NG', {
-                          style: 'currency',
-                          currency: 'NGN'
-                        }).format(plan.payout_amount || 0)}
-                      </div>
-                    </td>
-
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex items-center px-3 py-1 rounded-lg text-sm font-medium ${getStatusColor(plan.status)}`}>
-                        {getStatusIcon(plan.status)}
-                        <span className="ml-1 capitalize">{plan.status}</span>
-                      </span>
-                    </td>
-
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center gap-2 text-sm text-gray-500">
-                        <Calendar className="h-3 w-3" />
-                        {plan.start_date ? format(new Date(plan.start_date), 'MMM d, yyyy') : 'N/A'}
-                      </div>
-                      {plan.next_payout_date && (
-                        <div className="text-xs text-gray-400">
-                          Next: {format(new Date(plan.next_payout_date), 'MMM d')}
+            <div className="md:hidden divide-y divide-gray-100">
+              {plans.map((plan: any) => (
+                <div
+                  key={plan.id}
+                  className="p-4 hover:bg-gray-50 transition-colors cursor-pointer"
+                  onClick={() => navigate(`/users/${plan.user_id}`)}
+                >
+                  <div className="flex items-start gap-3 mb-3">
+                    <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-primary-light flex items-center justify-center text-white shadow-sm">
+                      {plan.user?.first_name && plan.user?.last_name ? (
+                        <span className="text-sm font-semibold">
+                          {plan.user.first_name[0]}{plan.user.last_name[0]}
+                        </span>
+                      ) : (
+                        <User className="h-5 w-5" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      {plan.user?.first_name && plan.user?.last_name && (
+                        <div className="font-semibold text-gray-900 mb-0.5">
+                          {plan.user.first_name} {plan.user.last_name}
                         </div>
                       )}
-                    </td>
+                      <div className="text-sm text-gray-500 truncate">{plan.user?.email}</div>
+                    </div>
+                    <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium ${getStatusColor(plan.status)} flex-shrink-0`}>
+                      {getStatusIcon(plan.status)}
+                    </span>
+                  </div>
 
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="space-y-1">
-                        <div className="text-sm text-gray-900">
-                          {plan.completed_payouts || 0} / {plan.duration}
-                        </div>
-                        <div className="w-24 bg-gray-200 rounded-full h-2">
-                          <div
-                            className="bg-green-600 h-2 rounded-full transition-all"
-                            style={{ width: `${Math.min(100, ((plan.completed_payouts || 0) / plan.duration) * 100)}%` }}
-                          ></div>
+                  <div className="space-y-2.5">
+                    <div>
+                      <div className="text-sm font-semibold text-gray-900 mb-0.5">{plan.name}</div>
+                      {plan.description && (
+                        <div className="text-xs text-gray-500 line-clamp-2">{plan.description}</div>
+                      )}
+                      {plan.is_ai_generated && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-50 text-purple-700 mt-1">
+                          AI Generated
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3 pt-2 border-t border-gray-100">
+                      <div className="min-w-0">
+                        <div className="text-xs text-gray-500 mb-0.5">Total Amount</div>
+                        <div className="text-sm font-semibold text-gray-900 truncate">
+                          {new Intl.NumberFormat('en-NG', {
+                            style: 'currency',
+                            currency: 'NGN',
+                            notation: 'compact'
+                          }).format(plan.total_amount || 0)}
                         </div>
                       </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                      <div className="min-w-0">
+                        <div className="text-xs text-gray-500 mb-0.5">Payout Amount</div>
+                        <div className="text-sm font-semibold text-green-600 truncate">
+                          {new Intl.NumberFormat('en-NG', {
+                            style: 'currency',
+                            currency: 'NGN',
+                            notation: 'compact'
+                          }).format(plan.payout_amount || 0)}
+                        </div>
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-xs text-gray-500 mb-0.5">Frequency</div>
+                        <div className="text-sm text-gray-900 capitalize truncate">
+                          {plan.frequency.replace('_', ' ').replace('-', ' ')}
+                        </div>
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-xs text-gray-500 mb-0.5">Start Date</div>
+                        <div className="text-sm text-gray-900 truncate">
+                          {plan.start_date ? format(new Date(plan.start_date), 'MMM d, yy') : 'N/A'}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="pt-2 border-t border-gray-100">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-xs text-gray-500">Progress</span>
+                        <span className="text-xs font-medium text-gray-900">
+                          {plan.completed_payouts || 0} / {plan.duration}
+                        </span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div
+                          className="bg-green-600 h-2 rounded-full transition-all"
+                          style={{ width: `${Math.min(100, ((plan.completed_payouts || 0) / plan.duration) * 100)}%` }}
+                        ></div>
+                      </div>
+                      {plan.next_payout_date && (
+                        <div className="text-xs text-gray-500 mt-1.5">
+                          Next: {format(new Date(plan.next_payout_date), 'MMM d, yy')}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
         ) : (
           <div className="text-center py-12">
             <TrendingUp className="h-12 w-12 mx-auto mb-4 text-gray-300" />
@@ -720,55 +824,57 @@ export default function PayoutPlans() {
         )}
 
         {totalPages > 1 && (
-          <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between">
-            <div className="text-sm text-gray-500">
-              Showing {((currentPage - 1) * pageSize) + 1} to {Math.min(currentPage * pageSize, totalCount)} of {totalCount} results
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                disabled={currentPage === 1}
-                className="px-3 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </button>
-
-              <div className="flex items-center gap-1">
-                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                  let pageNum;
-                  if (totalPages <= 5) {
-                    pageNum = i + 1;
-                  } else if (currentPage <= 3) {
-                    pageNum = i + 1;
-                  } else if (currentPage >= totalPages - 2) {
-                    pageNum = totalPages - 4 + i;
-                  } else {
-                    pageNum = currentPage - 2 + i;
-                  }
-
-                  return (
-                    <button
-                      key={pageNum}
-                      onClick={() => setCurrentPage(pageNum)}
-                      className={`px-3 py-2 rounded-lg transition-colors ${
-                        currentPage === pageNum
-                          ? 'bg-gray-900 text-white'
-                          : 'border border-gray-200 hover:bg-gray-50'
-                      }`}
-                    >
-                      {pageNum}
-                    </button>
-                  );
-                })}
+          <div className="px-4 md:px-6 py-4 border-t border-gray-100">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-3">
+              <div className="text-sm text-gray-500 text-center md:text-left">
+                Showing {((currentPage - 1) * pageSize) + 1} to {Math.min(currentPage * pageSize, totalCount)} of {totalCount} results
               </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="px-3 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </button>
 
-              <button
-                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                disabled={currentPage === totalPages}
-                className="px-3 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </button>
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    let pageNum;
+                    if (totalPages <= 5) {
+                      pageNum = i + 1;
+                    } else if (currentPage <= 3) {
+                      pageNum = i + 1;
+                    } else if (currentPage >= totalPages - 2) {
+                      pageNum = totalPages - 4 + i;
+                    } else {
+                      pageNum = currentPage - 2 + i;
+                    }
+
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => setCurrentPage(pageNum)}
+                        className={`px-3 py-2 rounded-lg transition-colors text-sm ${
+                          currentPage === pageNum
+                            ? 'bg-gray-900 text-white'
+                            : 'border border-gray-200 hover:bg-gray-50'
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <button
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className="px-3 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              </div>
             </div>
           </div>
         )}

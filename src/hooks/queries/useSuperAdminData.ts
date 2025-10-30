@@ -73,6 +73,19 @@ const fetchSuperAdminData = async () => {
     roles = rolesData || [];
   }
   
+  // Fetch all permissions
+  const { data: permissionsData, error: permissionsError } = await supabase
+    .from('permissions')
+    .select('*')
+    .order('resource', { ascending: true });
+
+  let permissions = [];
+  if (permissionsError) {
+    console.error('Error fetching permissions:', permissionsError);
+  } else {
+    permissions = permissionsData || [];
+  }
+
   // Fetch users with their roles
   const { data: usersData, error: usersError } = await supabase
     .from('profiles')
@@ -101,7 +114,8 @@ const fetchSuperAdminData = async () => {
   return {
     stats,
     roles,
-    users
+    users,
+    permissions
   };
 };
 
