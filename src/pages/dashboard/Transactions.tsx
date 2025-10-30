@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Search, Filter, ArrowUpRight, ArrowDownRight, RefreshCw } from 'lucide-react';
 import DateRangePicker from '../../components/DateRangePicker';
+import TransactionDetailsModal from '../../components/TransactionDetailsModal';
 import { format } from 'date-fns';
 import { useTransactionsData } from '@/hooks/queries/useTransactionsData';
 import { useRefreshData } from '@/hooks/mutations/useRefreshData';
@@ -14,6 +15,8 @@ export default function Transactions() {
     start: null,
     end: null,
   });
+  const [selectedTransaction, setSelectedTransaction] = useState<any>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const { data: transactionsData, isLoading, error } = useTransactionsData({
     searchQuery,
@@ -29,6 +32,16 @@ export default function Transactions() {
 
   const handleDateRangeChange = (startDate: Date, endDate: Date) => {
     setDateRange({ start: startDate, end: endDate });
+  };
+
+  const handleTransactionClick = (transaction: any) => {
+    setSelectedTransaction(transaction);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedTransaction(null);
   };
 
   const groupTransactionsByDate = () => {
@@ -202,7 +215,8 @@ export default function Transactions() {
                       return (
                         <div
                           key={transaction.id}
-                          className={`flex justify-between items-center p-5 hover:bg-gray-50 transition-colors ${
+                          onClick={() => handleTransactionClick(transaction)}
+                          className={`flex justify-between items-center p-5 hover:bg-gray-50 transition-colors cursor-pointer ${
                             index !== transactions.length - 1 ? 'border-b border-gray-100' : ''
                           }`}
                         >
@@ -240,6 +254,12 @@ export default function Transactions() {
           })}
         </div>
       )}
+
+      <TransactionDetailsModal
+        transaction={selectedTransaction}
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+      />
     </div>
   );
 }
