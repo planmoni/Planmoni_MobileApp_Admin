@@ -384,9 +384,9 @@ const fetchDashboardData = async (): Promise<DashboardStats> => {
       .lte('created_at', endOfToday.toISOString())
       .order('created_at', { ascending: false });
 
-    // Fetch today's payout events
+    // Fetch today's payout events (automated payouts)
     const { data: todayPayoutEvents } = await supabase
-      .from('payout_events')
+      .from('automated_payouts')
       .select(`
         id,
         payout_plan_id,
@@ -403,9 +403,9 @@ const fetchDashboardData = async (): Promise<DashboardStats> => {
           )
         )
       `)
-      .gte('scheduled_date', startOfToday.toISOString())
-      .lte('scheduled_date', endOfToday.toISOString())
-      .order('scheduled_date', { ascending: false })
+      .gte('created_at', startOfToday.toISOString())
+      .lte('created_at', endOfToday.toISOString())
+      .order('created_at', { ascending: false })
       .limit(10);
 
     // Fetch today's KYC submissions
@@ -415,6 +415,25 @@ const fetchDashboardData = async (): Promise<DashboardStats> => {
         id,
         user_id,
         status,
+        created_at,
+        profiles (
+          first_name,
+          last_name,
+          email
+        )
+      `)
+      .gte('created_at', startOfToday.toISOString())
+      .lte('created_at', endOfToday.toISOString())
+      .order('created_at', { ascending: false });
+
+    // Fetch today's payout plans created
+    const { data: todayPayoutPlansCreated } = await supabase
+      .from('payout_plans')
+      .select(`
+        id,
+        user_id,
+        frequency,
+        total_amount,
         created_at,
         profiles (
           first_name,
@@ -442,6 +461,16 @@ const fetchDashboardData = async (): Promise<DashboardStats> => {
         type: 'kyc_submission',
         description: `${kyc.profiles?.first_name} ${kyc.profiles?.last_name} submitted KYC`,
         timestamp: kyc.created_at
+      })),
+      ...(todayPayoutPlansCreated || []).map((plan: any) => ({
+        type: 'payout_plan_created',
+        description: `${plan.profiles?.first_name} ${plan.profiles?.last_name} created a ${plan.frequency} payout plan (₦${Number(plan.total_amount).toLocaleString()})`,
+        timestamp: plan.created_at
+      })),
+      ...(todayPayoutEvents || []).map((payout: any) => ({
+        type: 'automated_payout',
+        description: `Automated payout of ₦${Number(payout.amount).toLocaleString()} - ${payout.status}`,
+        timestamp: payout.created_at
       }))
     ].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).slice(0, 10);
 
@@ -844,9 +873,9 @@ const fetchDashboardDataFallback = async (): Promise<DashboardStats> => {
     .lte('created_at', endOfToday.toISOString())
     .order('created_at', { ascending: false});
 
-  // Fetch today's payout events
+  // Fetch today's payout events (automated payouts)
   const { data: todayPayoutEvents } = await supabase
-    .from('payout_events')
+    .from('automated_payouts')
     .select(`
       id,
       payout_plan_id,
@@ -863,9 +892,9 @@ const fetchDashboardDataFallback = async (): Promise<DashboardStats> => {
         )
       )
     `)
-    .gte('scheduled_date', startOfToday.toISOString())
-    .lte('scheduled_date', endOfToday.toISOString())
-    .order('scheduled_date', { ascending: false })
+    .gte('created_at', startOfToday.toISOString())
+    .lte('created_at', endOfToday.toISOString())
+    .order('created_at', { ascending: false })
     .limit(10);
 
   // Fetch today's KYC submissions
@@ -875,6 +904,25 @@ const fetchDashboardDataFallback = async (): Promise<DashboardStats> => {
       id,
       user_id,
       status,
+      created_at,
+      profiles (
+        first_name,
+        last_name,
+        email
+      )
+    `)
+    .gte('created_at', startOfToday.toISOString())
+    .lte('created_at', endOfToday.toISOString())
+    .order('created_at', { ascending: false });
+
+  // Fetch today's payout plans created
+  const { data: todayPayoutPlansCreated } = await supabase
+    .from('payout_plans')
+    .select(`
+      id,
+      user_id,
+      frequency,
+      total_amount,
       created_at,
       profiles (
         first_name,
@@ -902,6 +950,16 @@ const fetchDashboardDataFallback = async (): Promise<DashboardStats> => {
       type: 'kyc_submission',
       description: `${kyc.profiles?.first_name} ${kyc.profiles?.last_name} submitted KYC`,
       timestamp: kyc.created_at
+    })),
+    ...(todayPayoutPlansCreated || []).map((plan: any) => ({
+      type: 'payout_plan_created',
+      description: `${plan.profiles?.first_name} ${plan.profiles?.last_name} created a ${plan.frequency} payout plan (₦${Number(plan.total_amount).toLocaleString()})`,
+      timestamp: plan.created_at
+    })),
+    ...(todayPayoutEvents || []).map((payout: any) => ({
+      type: 'automated_payout',
+      description: `Automated payout of ₦${Number(payout.amount).toLocaleString()} - ${payout.status}`,
+      timestamp: payout.created_at
     }))
   ].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).slice(0, 10);
 
