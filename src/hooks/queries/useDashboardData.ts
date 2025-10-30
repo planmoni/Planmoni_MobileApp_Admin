@@ -384,9 +384,9 @@ const fetchDashboardData = async (): Promise<DashboardStats> => {
       .lte('created_at', endOfToday.toISOString())
       .order('created_at', { ascending: false });
 
-    // Fetch today's payout events
+    // Fetch today's payout events (automated payouts)
     const { data: todayPayoutEvents } = await supabase
-      .from('payout_events')
+      .from('automated_payouts')
       .select(`
         id,
         payout_plan_id,
@@ -403,9 +403,9 @@ const fetchDashboardData = async (): Promise<DashboardStats> => {
           )
         )
       `)
-      .gte('scheduled_date', startOfToday.toISOString())
-      .lte('scheduled_date', endOfToday.toISOString())
-      .order('scheduled_date', { ascending: false })
+      .gte('created_at', startOfToday.toISOString())
+      .lte('created_at', endOfToday.toISOString())
+      .order('created_at', { ascending: false })
       .limit(10);
 
     // Fetch today's KYC submissions
@@ -844,9 +844,9 @@ const fetchDashboardDataFallback = async (): Promise<DashboardStats> => {
     .lte('created_at', endOfToday.toISOString())
     .order('created_at', { ascending: false});
 
-  // Fetch today's payout events
+  // Fetch today's payout events (automated payouts)
   const { data: todayPayoutEvents } = await supabase
-    .from('payout_events')
+    .from('automated_payouts')
     .select(`
       id,
       payout_plan_id,
@@ -863,9 +863,9 @@ const fetchDashboardDataFallback = async (): Promise<DashboardStats> => {
         )
       )
     `)
-    .gte('scheduled_date', startOfToday.toISOString())
-    .lte('scheduled_date', endOfToday.toISOString())
-    .order('scheduled_date', { ascending: false })
+    .gte('created_at', startOfToday.toISOString())
+    .lte('created_at', endOfToday.toISOString())
+    .order('created_at', { ascending: false })
     .limit(10);
 
   // Fetch today's KYC submissions
