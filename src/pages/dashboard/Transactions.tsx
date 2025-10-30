@@ -166,18 +166,18 @@ export default function Transactions() {
       </div>
 
       <div className="bg-white rounded-2xl shadow-soft border border-gray-100 mb-8 overflow-hidden">
-        <div className="grid grid-cols-3 gap-4 p-6">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-6">
           <div className="text-center">
             <p className="text-sm text-gray-500 mb-2">Total Inflows</p>
-            <p className="text-xl font-bold text-green-600">₦{stats.inflows.toLocaleString()}</p>
+            <p className="text-xl sm:text-2xl font-bold text-green-600">₦{stats.inflows.toLocaleString()}</p>
           </div>
-          <div className="text-center border-x border-gray-100">
+          <div className="text-center sm:border-x border-gray-100 py-4 sm:py-0 border-y sm:border-y-0">
             <p className="text-sm text-gray-500 mb-2">Total Outflows</p>
-            <p className="text-xl font-bold text-red-600">₦{stats.outflows.toLocaleString()}</p>
+            <p className="text-xl sm:text-2xl font-bold text-red-600">₦{stats.outflows.toLocaleString()}</p>
           </div>
           <div className="text-center">
             <p className="text-sm text-gray-500 mb-2">Net Movement</p>
-            <p className={`text-xl font-bold ${
+            <p className={`text-xl sm:text-2xl font-bold ${
               stats.netMovement >= 0 ? 'text-green-600' : 'text-red-600'
             }`}>
               ₦{stats.netMovement.toLocaleString()}
