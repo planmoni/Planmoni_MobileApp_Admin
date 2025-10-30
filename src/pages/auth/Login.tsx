@@ -44,14 +44,17 @@ export default function Login() {
         throw new Error('No user found after login');
       }
 
-      const { data: globalTwoFactorSettings } = await supabase
-        .from('admin_2fa_settings')
-        .select('is_enabled')
-        .eq('is_enabled', true)
-        .limit(1)
-        .maybeSingle();
+      const { data: is2FAEnabled, error: twoFactorCheckError } = await supabase
+        .rpc('is_2fa_enabled_system_wide');
 
-      if (globalTwoFactorSettings) {
+      if (twoFactorCheckError) {
+        console.error('Error checking 2FA status:', twoFactorCheckError);
+      }
+
+      console.log('2FA Enabled:', is2FAEnabled);
+
+      if (is2FAEnabled) {
+        console.log('Opening 2FA modal...');
         setShow2FAModal(true);
         setIsLoading(false);
         return;
@@ -81,18 +84,16 @@ export default function Login() {
         throw new Error('Session expired. Please login again.');
       }
 
-      const { data: twoFactorSettings } = await supabase
-        .from('admin_2fa_settings')
-        .select('secret, backup_codes, user_id')
-        .eq('is_enabled', true)
-        .limit(1)
-        .maybeSingle();
+      const { data: twoFactorSettingsArray, error: settingsError } = await supabase
+        .rpc('get_2fa_settings_for_verification');
 
-      if (!twoFactorSettings) {
+      if (settingsError || !twoFactorSettingsArray || twoFactorSettingsArray.length === 0) {
         await supabase.auth.signOut();
         setShow2FAModal(false);
         throw new Error('2FA configuration not found. Please contact your administrator.');
       }
+
+      const twoFactorSettings = twoFactorSettingsArray[0];
 
       const totp = new TOTP({
         issuer: 'Planmoni Admin',
