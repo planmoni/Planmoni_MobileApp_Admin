@@ -43,13 +43,14 @@ export default function Login() {
         throw new Error('No user found after login');
       }
 
-      const { data: twoFactorSettings } = await supabase
+      const { data: globalTwoFactorSettings } = await supabase
         .from('admin_2fa_settings')
-        .select('is_enabled, secret')
-        .eq('user_id', user.id)
+        .select('is_enabled')
+        .eq('is_enabled', true)
+        .limit(1)
         .maybeSingle();
 
-      if (twoFactorSettings && twoFactorSettings.is_enabled) {
+      if (globalTwoFactorSettings) {
         setRequires2FA(true);
         setIsLoading(false);
         await supabase.auth.signOut();
@@ -94,8 +95,9 @@ export default function Login() {
 
       const { data: twoFactorSettings } = await supabase
         .from('admin_2fa_settings')
-        .select('secret, backup_codes')
-        .eq('user_id', user.id)
+        .select('secret, backup_codes, user_id')
+        .eq('is_enabled', true)
+        .limit(1)
         .single();
 
       if (!twoFactorSettings) {
@@ -125,7 +127,7 @@ export default function Login() {
         await supabase
           .from('admin_2fa_settings')
           .update({ backup_codes: updatedCodes })
-          .eq('user_id', user.id);
+          .eq('user_id', twoFactorSettings.user_id);
         showToast('Backup code used successfully', 'success');
       }
 
@@ -181,7 +183,7 @@ export default function Login() {
               </h2>
               <p className="text-gray-500">
                 {requires2FA
-                  ? 'Enter the 6-digit code from your authenticator app'
+                  ? 'This system requires two-factor authentication. Enter the 6-digit code from the authenticator app.'
                   : 'Enter your credentials to access your account'}
               </p>
             </div>
@@ -219,7 +221,7 @@ export default function Login() {
                     />
                   </div>
                   <p className="text-xs text-gray-500 mt-2">
-                    You can also use one of your backup codes
+                    Contact your system administrator if you need access to backup codes
                   </p>
                 </div>
 
