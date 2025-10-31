@@ -211,11 +211,11 @@ const fetchAnalyticsDataFallback = async (): Promise<AnalyticsData> => {
   const dailyPlans = payoutPlans?.filter(p => p.frequency === 'daily').length || 0;
   const weeklyPlans = payoutPlans?.filter(p => p.frequency === 'weekly').length || 0;
   const biweeklyPlans = payoutPlans?.filter(p => p.frequency === 'biweekly').length || 0;
-  const specificDaysPlans = payoutPlans?.filter(p => p.frequency === 'specific_days').length || 0;
-  const monthEndPlans = payoutPlans?.filter(p => p.frequency === 'month_end').length || 0;
+  const specificDaysPlans = payoutPlans?.filter(p => p.frequency === 'weekly_specific').length || 0;
+  const monthEndPlans = payoutPlans?.filter(p => p.frequency === 'end_of_month').length || 0;
   const monthlyPlans = payoutPlans?.filter(p => p.frequency === 'monthly').length || 0;
   const quarterlyPlans = payoutPlans?.filter(p => p.frequency === 'quarterly').length || 0;
-  const biAnnuallyPlans = payoutPlans?.filter(p => p.frequency === 'bi_annually').length || 0;
+  const biAnnuallyPlans = payoutPlans?.filter(p => p.frequency === 'biannual').length || 0;
   const annuallyPlans = payoutPlans?.filter(p => p.frequency === 'annually').length || 0;
   const customPlans = payoutPlans?.filter(p => p.frequency === 'custom').length || 0;
   
