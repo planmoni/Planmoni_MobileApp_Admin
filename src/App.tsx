@@ -23,6 +23,7 @@ const SettingsPage = lazy(() => import('./pages/dashboard/Settings'));
 const UserDetailsPage = lazy(() => import('./pages/dashboard/UserDetails'));
 const SuperAdminPage = lazy(() => import('./pages/dashboard/SuperAdmin'));
 const BannersPage = lazy(() => import('./pages/dashboard/Banners'));
+const AppVersionsPage = lazy(() => import('./pages/dashboard/AppVersions'));
 const AuditLogsPage = lazy(() => import('./pages/dashboard/AuditLogs'));
 const EmergencyWithdrawalsPage = lazy(() => import('./pages/dashboard/EmergencyWithdrawals'));
 const NotFoundPage = lazy(() => import('./pages/NotFound'));
@@ -65,6 +66,7 @@ function App() {
                 <Route path="payout-plans" element={<PayoutPlansPage />} />
                 <Route path="super-admin" element={<SuperAdminPage />} />
                 <Route path="banners" element={<BannersPage />} />
+                <Route path="app-versions" element={<AppVersionsPage />} />
                 <Route path="audit-logs" element={<AuditLogsPage />} />
                 <Route path="emergency-withdrawals" element={<EmergencyWithdrawalsPage />} />
                 <Route path="settings" element={<SettingsPage />} />

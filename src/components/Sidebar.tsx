@@ -17,7 +17,8 @@ import {
   CalendarDays,
   Repeat,
   ScrollText,
-  AlertTriangle
+  AlertTriangle,
+  Smartphone
 } from 'lucide-react';
 
 export default function Sidebar({ isMobileMenuOpen, closeMobileMenu }: { isMobileMenuOpen: boolean, closeMobileMenu: () => void }) {
@@ -141,8 +142,9 @@ export default function Sidebar({ isMobileMenuOpen, closeMobileMenu }: { isMobil
     { name: 'Payout Plans', path: '/payout-plans', icon: Repeat, resource: 'payout_plans', action: 'list' },
     { name: 'Emergency Withdrawals', path: '/emergency-withdrawals', icon: AlertTriangle, resource: 'emergency_withdrawals', action: 'list' },
     { name: 'Banners', path: '/banners', icon: Image, resource: 'banners', action: 'view' },
+    { name: 'App Versions', path: '/app-versions', icon: Smartphone, resource: 'app_versions', action: 'view' },
     { name: 'Audit Logs', path: '/audit-logs', icon: ScrollText, resource: 'audit_logs', action: 'view' },
- 
+
     ...(isSuperAdmin ? [{ name: 'Super Admin', path: '/super-admin', icon: Shield, resource: 'super_admin', action: 'roles' }] : []),
   ];
 
