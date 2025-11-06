@@ -93,8 +93,8 @@ Deno.serve(async (req: Request) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
     const resendApiKey = Deno.env.get('RESEND_API_KEY');
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
@@ -102,11 +102,23 @@ Deno.serve(async (req: Request) => {
     }
 
     const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+
+    // Create client with anon key to validate user token
+    const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
+      global: {
+        headers: { Authorization: authHeader },
+      },
+    });
+
+    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
 
     if (authError || !user) {
+      console.error('Auth error:', authError);
       throw new Error('Unauthorized');
     }
+
+    // Create client with service role key for database operations
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
@@ -115,6 +127,7 @@ Deno.serve(async (req: Request) => {
       .single();
 
     if (profileError || !profile?.is_admin) {
+      console.error('Profile error:', profileError);
       throw new Error('Unauthorized: Admin access required');
     }
 
