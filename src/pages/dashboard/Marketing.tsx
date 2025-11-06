@@ -361,13 +361,34 @@ export default function Marketing() {
 
 function CreateCampaignModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: () => void }) {
   const { showToast } = useToast();
+  const { data: segments } = useSegments();
   const [formData, setFormData] = useState({
     title: '',
     subject: '',
     html_content: '',
     category: 'promotional',
+    target_segment: 'all',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [estimatedRecipients, setEstimatedRecipients] = useState(0);
+
+  const calculateRecipients = async () => {
+    try {
+      if (formData.target_segment === 'all') {
+        const { count } = await supabase
+          .from('profiles')
+          .select('id', { count: 'exact', head: true });
+        setEstimatedRecipients(count || 0);
+      } else {
+        const segment = segments?.find(s => s.id === formData.target_segment);
+        if (segment) {
+          setEstimatedRecipients(segment.user_count || 0);
+        }
+      }
+    } catch (error) {
+      console.error('Error calculating recipients:', error);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -436,22 +457,61 @@ function CreateCampaignModal({ onClose, onSuccess }: { onClose: () => void; onSu
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Category
-            </label>
-            <select
-              value={formData.category}
-              onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-accent focus:border-transparent"
-            >
-              <option value="promotional">Promotional</option>
-              <option value="product_update">Product Update</option>
-              <option value="educational">Educational</option>
-              <option value="announcement">Announcement</option>
-              <option value="retention">Retention</option>
-            </select>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Category
+              </label>
+              <select
+                value={formData.category}
+                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-accent focus:border-transparent"
+              >
+                <option value="promotional">Promotional</option>
+                <option value="product_update">Product Update</option>
+                <option value="educational">Educational</option>
+                <option value="announcement">Announcement</option>
+                <option value="retention">Retention</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Target Audience
+              </label>
+              <select
+                value={formData.target_segment}
+                onChange={(e) => {
+                  setFormData({ ...formData, target_segment: e.target.value });
+                  setTimeout(calculateRecipients, 100);
+                }}
+                className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-accent focus:border-transparent"
+              >
+                <option value="all">All Users</option>
+                {segments && segments.length > 0 && (
+                  <optgroup label="Custom Segments">
+                    {segments.map((segment) => (
+                      <option key={segment.id} value={segment.id}>
+                        {segment.name} ({segment.user_count} users)
+                      </option>
+                    ))}
+                  </optgroup>
+                )}
+              </select>
+            </div>
           </div>
+
+          {estimatedRecipients > 0 && (
+            <div className="bg-blue-50 rounded-xl p-4 border border-blue-100">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-900">Estimated Recipients</p>
+                  <p className="text-xs text-gray-500">Based on selected audience</p>
+                </div>
+                <p className="text-2xl font-bold text-blue-600">{estimatedRecipients}</p>
+              </div>
+            </div>
+          )}
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
