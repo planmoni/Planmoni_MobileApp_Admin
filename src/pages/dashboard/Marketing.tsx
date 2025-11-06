@@ -1,20 +1,42 @@
 import { useState } from 'react';
-import { Plus, RefreshCw, Mail, TrendingUp, Send, Users, BarChart } from 'lucide-react';
+import { Plus, RefreshCw, Mail, TrendingUp, Send, Users, BarChart, Edit2, Trash2, Target } from 'lucide-react';
 import { useMarketingCampaigns, useCampaignStats } from '@/hooks/queries/useMarketingCampaigns';
+import { useSegments } from '@/hooks/queries/useSegments';
 import { useRefreshData } from '@/hooks/mutations/useRefreshData';
 import { useToast } from '@/contexts/ToastContext';
+import { supabase } from '@/lib/supabase';
 import { format } from 'date-fns';
 
 export default function Marketing() {
   const { data: campaigns, isLoading, error } = useMarketingCampaigns();
   const { data: stats } = useCampaignStats();
+  const { data: segments } = useSegments();
   const refreshData = useRefreshData();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showSendModal, setShowSendModal] = useState(false);
+  const [showSegmentModal, setShowSegmentModal] = useState(false);
   const [selectedCampaign, setSelectedCampaign] = useState<any>(null);
+  const [selectedSegment, setSelectedSegment] = useState<any>(null);
 
   const handleRefresh = () => {
-    refreshData.mutate(['marketing-campaigns', 'campaign-stats']);
+    refreshData.mutate(['marketing-campaigns', 'campaign-stats', 'campaign-segments']);
+  };
+
+  const handleDeleteSegment = async (segmentId: string) => {
+    if (!confirm('Are you sure you want to delete this segment?')) return;
+
+    try {
+      const { error } = await supabase
+        .from('campaign_segments')
+        .delete()
+        .eq('id', segmentId);
+
+      if (error) throw error;
+
+      refreshData.mutate(['campaign-segments']);
+    } catch (error) {
+      console.error('Error deleting segment:', error);
+    }
   };
 
   const getCategoryBadgeColor = (category: string) => {
@@ -137,6 +159,78 @@ export default function Marketing() {
       </div>
 
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm">
+        <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
+          <h2 className="text-lg font-semibold text-gray-900">User Segments</h2>
+          <button
+            onClick={() => {
+              setSelectedSegment(null);
+              setShowSegmentModal(true);
+            }}
+            className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors text-sm"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Create Segment</span>
+          </button>
+        </div>
+        <div className="p-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {segments?.map((segment) => (
+              <div
+                key={segment.id}
+                className="border border-gray-200 rounded-xl p-4 hover:border-blue-300 hover:shadow-sm transition-all"
+              >
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center">
+                      <Target className="w-5 h-5 text-blue-600" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-gray-900">{segment.name}</h3>
+                      <p className="text-xs text-gray-500">{segment.user_count} users</p>
+                    </div>
+                  </div>
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={() => {
+                        setSelectedSegment(segment);
+                        setShowSegmentModal(true);
+                      }}
+                      className="text-gray-400 hover:text-blue-600 transition-colors"
+                    >
+                      <Edit2 className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteSegment(segment.id)}
+                      className="text-gray-400 hover:text-red-600 transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+                {segment.description && (
+                  <p className="text-sm text-gray-600 mb-3">{segment.description}</p>
+                )}
+                <div className="space-y-1">
+                  {Object.entries(segment.filters).map(([key, value]) => (
+                    <div key={key} className="text-xs text-gray-500">
+                      <span className="font-medium">{key.replace('_', ' ')}:</span> {String(value)}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+            {(!segments || segments.length === 0) && (
+              <div className="col-span-full text-center py-12 text-gray-500">
+                <Target className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                <p>No segments created yet</p>
+                <p className="text-sm">Create custom audience segments to target your campaigns</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-xl border border-gray-100 shadow-sm">
         <div className="px-6 py-4 border-b border-gray-100">
           <h2 className="text-lg font-semibold text-gray-900">All Campaigns</h2>
         </div>
@@ -243,6 +337,21 @@ export default function Marketing() {
             setShowSendModal(false);
             setSelectedCampaign(null);
             refreshData.mutate(['marketing-campaigns', 'campaign-stats']);
+          }}
+        />
+      )}
+
+      {showSegmentModal && (
+        <SegmentModal
+          segment={selectedSegment}
+          onClose={() => {
+            setShowSegmentModal(false);
+            setSelectedSegment(null);
+          }}
+          onSuccess={() => {
+            setShowSegmentModal(false);
+            setSelectedSegment(null);
+            refreshData.mutate(['campaign-segments']);
           }}
         />
       )}
@@ -503,6 +612,249 @@ function SendCampaignModal({
               className="flex-1 px-4 py-2 bg-accent text-white rounded-xl hover:bg-accent-dark transition-colors disabled:opacity-50"
             >
               {isSubmitting ? 'Sending...' : isScheduled ? 'Schedule' : 'Send Now'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function SegmentModal({
+  segment,
+  onClose,
+  onSuccess,
+}: {
+  segment?: any;
+  onClose: () => void;
+  onSuccess: () => void;
+}) {
+  const { showToast } = useToast();
+  const [formData, setFormData] = useState({
+    name: segment?.name || '',
+    description: segment?.description || '',
+    kycStatus: segment?.filters?.kyc_status || '',
+    hasPayoutPlan: segment?.filters?.has_payout_plan || false,
+    inactiveDays: segment?.filters?.inactive_days || '',
+    minBalance: segment?.filters?.min_balance || '',
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [estimatedUsers, setEstimatedUsers] = useState(segment?.user_count || 0);
+
+  const calculateUserCount = async () => {
+    try {
+      let query = supabase.from('profiles').select('id', { count: 'exact', head: true });
+
+      if (formData.kycStatus) {
+        query = query.eq('kyc_status', formData.kycStatus);
+      }
+
+      if (formData.hasPayoutPlan) {
+        const { data: activePlans } = await supabase
+          .from('payout_plans')
+          .select('user_id')
+          .eq('status', 'active');
+
+        const userIds = activePlans?.map((p) => p.user_id) || [];
+        if (userIds.length > 0) {
+          query = query.in('id', userIds);
+        } else {
+          setEstimatedUsers(0);
+          return;
+        }
+      }
+
+      const { count } = await query;
+      setEstimatedUsers(count || 0);
+    } catch (error) {
+      console.error('Error calculating user count:', error);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+
+    try {
+      const filters: Record<string, any> = {};
+      if (formData.kycStatus) filters.kyc_status = formData.kycStatus;
+      if (formData.hasPayoutPlan) filters.has_payout_plan = true;
+      if (formData.inactiveDays) filters.inactive_days = parseInt(formData.inactiveDays);
+      if (formData.minBalance) filters.min_balance = parseFloat(formData.minBalance);
+
+      const payload = {
+        name: formData.name,
+        description: formData.description || null,
+        filters,
+        user_count: estimatedUsers,
+      };
+
+      let error;
+      if (segment) {
+        const result = await supabase
+          .from('campaign_segments')
+          .update(payload)
+          .eq('id', segment.id);
+        error = result.error;
+      } else {
+        const result = await supabase.from('campaign_segments').insert([payload]);
+        error = result.error;
+      }
+
+      if (error) throw error;
+
+      showToast(
+        segment ? 'Segment updated successfully' : 'Segment created successfully',
+        'success'
+      );
+      onSuccess();
+    } catch (error) {
+      console.error('Error saving segment:', error);
+      showToast('Failed to save segment', 'error');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="p-6 border-b border-gray-100">
+          <h2 className="text-2xl font-bold text-gray-900">
+            {segment ? 'Edit Segment' : 'Create New Segment'}
+          </h2>
+          <p className="text-sm text-gray-500 mt-1">
+            Define filters to create a targeted audience segment
+          </p>
+        </div>
+        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Segment Name *
+            </label>
+            <input
+              type="text"
+              required
+              placeholder="e.g., Active Premium Users"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Description
+            </label>
+            <textarea
+              rows={2}
+              placeholder="Brief description of this segment..."
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+            />
+          </div>
+
+          <div className="border-t border-gray-200 pt-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Audience Filters</h3>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  KYC Status
+                </label>
+                <select
+                  value={formData.kycStatus}
+                  onChange={(e) => setFormData({ ...formData, kycStatus: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="">All Users</option>
+                  <option value="verified">Verified</option>
+                  <option value="pending">Pending</option>
+                  <option value="rejected">Rejected</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.hasPayoutPlan}
+                    onChange={(e) =>
+                      setFormData({ ...formData, hasPayoutPlan: e.target.checked })
+                    }
+                    className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-gray-700">Has Active Payout Plan</span>
+                </label>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Inactive for (days)
+                </label>
+                <input
+                  type="number"
+                  placeholder="e.g., 30"
+                  value={formData.inactiveDays}
+                  onChange={(e) => setFormData({ ...formData, inactiveDays: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Minimum Balance
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  placeholder="e.g., 1000"
+                  value={formData.minBalance}
+                  onChange={(e) => setFormData({ ...formData, minBalance: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-blue-50 rounded-xl p-4 border border-blue-100">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-900">Estimated Audience Size</p>
+                <p className="text-xs text-gray-500">Based on current filters</p>
+              </div>
+              <div className="text-right">
+                <p className="text-2xl font-bold text-blue-600">{estimatedUsers}</p>
+                <button
+                  type="button"
+                  onClick={calculateUserCount}
+                  className="text-xs text-blue-600 hover:text-blue-700 underline"
+                >
+                  Recalculate
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex space-x-4 pt-4">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50"
+            >
+              {isSubmitting
+                ? 'Saving...'
+                : segment
+                ? 'Update Segment'
+                : 'Create Segment'}
             </button>
           </div>
         </form>
