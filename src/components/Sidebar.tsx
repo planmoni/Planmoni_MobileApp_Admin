@@ -18,7 +18,8 @@ import {
   Repeat,
   ScrollText,
   AlertTriangle,
-  Smartphone
+  Smartphone,
+  Mail
 } from 'lucide-react';
 
 export default function Sidebar({ isMobileMenuOpen, closeMobileMenu }: { isMobileMenuOpen: boolean, closeMobileMenu: () => void }) {
@@ -141,6 +142,7 @@ export default function Sidebar({ isMobileMenuOpen, closeMobileMenu }: { isMobil
     { name: 'Payout Events', path: '/payout-events', icon: DollarSign, resource: 'payout_events', action: 'list' },
     { name: 'Payout Plans', path: '/payout-plans', icon: Repeat, resource: 'payout_plans', action: 'list' },
     { name: 'Emergency Withdrawals', path: '/emergency-withdrawals', icon: AlertTriangle, resource: 'emergency_withdrawals', action: 'list' },
+    { name: 'Marketing', path: '/marketing', icon: Mail, resource: 'marketing', action: 'view' },
     { name: 'Banners', path: '/banners', icon: Image, resource: 'banners', action: 'view' },
     { name: 'App Versions', path: '/app-versions', icon: Smartphone, resource: 'app_versions', action: 'view' },
     { name: 'Audit Logs', path: '/audit-logs', icon: ScrollText, resource: 'audit_logs', action: 'view' },
