@@ -414,7 +414,7 @@ const fetchDashboardData = async (): Promise<DashboardStats> => {
       .select(`
         id,
         user_id,
-        status,
+        approved,
         created_at,
         profiles (
           first_name,
@@ -903,7 +903,7 @@ const fetchDashboardDataFallback = async (): Promise<DashboardStats> => {
     .select(`
       id,
       user_id,
-      status,
+      approved,
       created_at,
       profiles (
         first_name,
