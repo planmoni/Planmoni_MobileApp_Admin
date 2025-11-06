@@ -494,6 +494,7 @@ function CreateCampaignModal({ campaign, onClose, onSuccess }: { campaign?: any;
   const [isSavingDraft, setIsSavingDraft] = useState(false);
   const [estimatedRecipients, setEstimatedRecipients] = useState(0);
   const [lastSaved, setLastSaved] = useState<Date | null>(campaign?.updated_at ? new Date(campaign.updated_at) : null);
+  const [showHtmlPreview, setShowHtmlPreview] = useState(false);
 
   useEffect(() => {
     const autoSaveInterval = setInterval(() => {
@@ -720,17 +721,49 @@ function CreateCampaignModal({ campaign, onClose, onSuccess }: { campaign?: any;
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Email Content (HTML)
-            </label>
-            <textarea
-              rows={12}
-              required
-              placeholder="Enter HTML content..."
-              value={formData.html_content}
-              onChange={(e) => setFormData({ ...formData, html_content: e.target.value })}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-accent focus:border-transparent resize-none font-mono text-sm"
-            />
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Email Content (HTML)
+              </label>
+              <button
+                type="button"
+                onClick={() => setShowHtmlPreview(!showHtmlPreview)}
+                className="flex items-center space-x-2 px-3 py-1.5 text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                <Eye className="w-4 h-4" />
+                <span>{showHtmlPreview ? 'Show Code' : 'Show Preview'}</span>
+              </button>
+            </div>
+            {!showHtmlPreview ? (
+              <textarea
+                rows={12}
+                required
+                placeholder="Enter HTML content..."
+                value={formData.html_content}
+                onChange={(e) => setFormData({ ...formData, html_content: e.target.value })}
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-accent focus:border-transparent resize-none font-mono text-sm"
+              />
+            ) : (
+              <div className="border border-gray-200 rounded-xl overflow-hidden bg-white min-h-[300px]">
+                {formData.html_content ? (
+                  <>
+                    <div className="p-3 bg-gray-100 border-b border-gray-200">
+                      <p className="text-xs text-gray-600">Preview</p>
+                    </div>
+                    <div className="p-6 max-h-96 overflow-y-auto">
+                      <div dangerouslySetInnerHTML={{ __html: formData.html_content }} />
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex items-center justify-center h-64 text-gray-400">
+                    <div className="text-center">
+                      <Eye className="w-12 h-12 mx-auto mb-2 opacity-30" />
+                      <p className="text-sm">Enter HTML content to see preview</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <div>
