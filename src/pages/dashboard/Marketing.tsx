@@ -559,7 +559,8 @@ function SendCampaignModal({
   onSuccess: () => void;
 }) {
   const { showToast } = useToast();
-  const [segment, setSegment] = useState('all_active');
+  const { data: segments } = useSegments();
+  const [segmentId, setSegmentId] = useState('all');
   const [scheduledDate, setScheduledDate] = useState('');
   const [isScheduled, setIsScheduled] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -576,12 +577,12 @@ function SendCampaignModal({
             action: 'schedule_campaign',
             campaign_id: campaign.id,
             scheduled_at: scheduledDate,
-            recipient_filters: { segment },
+            recipient_filters: { segment_id: segmentId },
           }
         : {
             action: 'send_campaign',
             campaign_id: campaign.id,
-            recipient_filters: { segment },
+            recipient_filters: { segment_id: segmentId },
           };
 
       const response = await fetch(apiUrl, {
@@ -621,13 +622,20 @@ function SendCampaignModal({
               Target Audience
             </label>
             <select
-              value={segment}
-              onChange={(e) => setSegment(e.target.value)}
+              value={segmentId}
+              onChange={(e) => setSegmentId(e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-accent focus:border-transparent"
             >
-              <option value="all_active">All Active Users</option>
-              <option value="kyc_verified">KYC Verified Users</option>
-              <option value="active_payout_plans">Users with Active Payout Plans</option>
+              <option value="all">All Users</option>
+              {segments && segments.length > 0 && (
+                <optgroup label="Custom Segments">
+                  {segments.map((segment) => (
+                    <option key={segment.id} value={segment.id}>
+                      {segment.name} ({segment.user_count} users)
+                    </option>
+                  ))}
+                </optgroup>
+              )}
             </select>
           </div>
 
