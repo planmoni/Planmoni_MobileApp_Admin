@@ -17,6 +17,17 @@ interface CreateCampaignRequest {
   metadata?: Record<string, any>;
 }
 
+interface UpdateCampaignRequest {
+  action: 'update_campaign';
+  campaign_id: string;
+  title: string;
+  subject: string;
+  html_content: string;
+  plain_text_content?: string;
+  category: string;
+  metadata?: Record<string, any>;
+}
+
 interface SendCampaignRequest {
   action: 'send_campaign';
   campaign_id: string;
@@ -36,7 +47,7 @@ interface ScheduleCampaignRequest {
   recipient_filters: Record<string, any>;
 }
 
-type RequestBody = CreateCampaignRequest | SendCampaignRequest | ScheduleCampaignRequest;
+type RequestBody = CreateCampaignRequest | UpdateCampaignRequest | SendCampaignRequest | ScheduleCampaignRequest;
 
 async function sendEmailViaResend(
   to: string,
@@ -211,6 +222,37 @@ Deno.serve(async (req: Request) => {
         );
       }
 
+      if (body.action === 'update_campaign') {
+        const { campaign_id, ...updateData } = body;
+
+        const { data: campaign, error } = await supabase
+          .from('marketing_campaigns')
+          .update({
+            title: updateData.title,
+            subject: updateData.subject,
+            html_content: updateData.html_content,
+            plain_text_content: updateData.plain_text_content || '',
+            category: updateData.category,
+            metadata: updateData.metadata || {},
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', campaign_id)
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        return new Response(
+          JSON.stringify({ success: true, campaign }),
+          {
+            headers: {
+              ...corsHeaders,
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+      }
+
       if (body.action === 'send_campaign') {
         if (!resendApiKey) {
           throw new Error('RESEND_API_KEY not configured');
@@ -347,7 +389,7 @@ Deno.serve(async (req: Request) => {
                 .eq('user_id', recipient.id);
             }
 
-            await new Promise((resolve) => setTimeout(resolve, 100));
+            await new Promise((resolve) => setTimeout(resolve, 500));
           }
 
           await supabase

@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Plus, RefreshCw, Mail, TrendingUp, Send, Users, BarChart, Edit2, Trash2, Target } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Plus, RefreshCw, Mail, TrendingUp, Send, Users, BarChart, Edit2, Trash2, Target, Eye, Save } from 'lucide-react';
 import { useMarketingCampaigns, useCampaignStats } from '@/hooks/queries/useMarketingCampaigns';
 import { useSegments } from '@/hooks/queries/useSegments';
 import { useRefreshData } from '@/hooks/mutations/useRefreshData';
@@ -15,8 +15,10 @@ export default function Marketing() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showSendModal, setShowSendModal] = useState(false);
   const [showSegmentModal, setShowSegmentModal] = useState(false);
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [selectedCampaign, setSelectedCampaign] = useState<any>(null);
   const [selectedSegment, setSelectedSegment] = useState<any>(null);
+  const [editingCampaign, setEditingCampaign] = useState<any>(null);
 
   const handleRefresh = () => {
     refreshData.mutate(['marketing-campaigns', 'campaign-stats', 'campaign-segments']);
@@ -297,17 +299,42 @@ export default function Marketing() {
                     {format(new Date(campaign.created_at), 'MMM dd, yyyy')}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    {campaign.status === 'draft' && (
+                    <div className="flex items-center space-x-3">
                       <button
                         onClick={() => {
                           setSelectedCampaign(campaign);
-                          setShowSendModal(true);
+                          setShowPreviewModal(true);
                         }}
-                        className="text-accent hover:text-accent-dark transition-colors"
+                        className="text-blue-600 hover:text-blue-800 transition-colors"
+                        title="Preview"
                       >
-                        <Send className="w-4 h-4" />
+                        <Eye className="w-4 h-4" />
                       </button>
-                    )}
+                      {campaign.status === 'draft' && (
+                        <>
+                          <button
+                            onClick={() => {
+                              setEditingCampaign(campaign);
+                              setShowCreateModal(true);
+                            }}
+                            className="text-gray-600 hover:text-gray-800 transition-colors"
+                            title="Edit"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => {
+                              setSelectedCampaign(campaign);
+                              setShowSendModal(true);
+                            }}
+                            className="text-accent hover:text-accent-dark transition-colors"
+                            title="Send"
+                          >
+                            <Send className="w-4 h-4" />
+                          </button>
+                        </>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -318,9 +345,14 @@ export default function Marketing() {
 
       {showCreateModal && (
         <CreateCampaignModal
-          onClose={() => setShowCreateModal(false)}
+          campaign={editingCampaign}
+          onClose={() => {
+            setShowCreateModal(false);
+            setEditingCampaign(null);
+          }}
           onSuccess={() => {
             setShowCreateModal(false);
+            setEditingCampaign(null);
             refreshData.mutate(['marketing-campaigns', 'campaign-stats']);
           }}
         />
@@ -355,22 +387,173 @@ export default function Marketing() {
           }}
         />
       )}
+
+      {showPreviewModal && selectedCampaign && (
+        <PreviewModal
+          campaign={selectedCampaign}
+          onClose={() => {
+            setShowPreviewModal(false);
+            setSelectedCampaign(null);
+          }}
+        />
+      )}
     </div>
   );
 }
 
-function CreateCampaignModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: () => void }) {
+function PreviewModal({ campaign, onClose }: { campaign: any; onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">Campaign Preview</h2>
+            <p className="text-sm text-gray-500 mt-1">{campaign.title}</p>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <div className="p-6 space-y-6">
+          <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+            <div className="space-y-3">
+              <div>
+                <p className="text-xs font-medium text-gray-500 mb-1">Subject</p>
+                <p className="text-base font-semibold text-gray-900">{campaign.subject}</p>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-xs font-medium text-gray-500 mb-1">Category</p>
+                  <p className="text-sm text-gray-900 capitalize">{campaign.category.replace('_', ' ')}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-gray-500 mb-1">Status</p>
+                  <p className="text-sm text-gray-900 capitalize">{campaign.status}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-lg font-semibold text-gray-900">Email Content</h3>
+              <span className="text-xs text-gray-500">HTML Preview</span>
+            </div>
+            <div className="border border-gray-200 rounded-xl overflow-hidden bg-white">
+              <div className="p-4 bg-gray-100 border-b border-gray-200">
+                <p className="text-xs text-gray-600">From: Martins Osodi - Planmoni CEO &lt;hello@planmoni.com&gt;</p>
+                <p className="text-xs text-gray-600 mt-1">Subject: {campaign.subject}</p>
+              </div>
+              <div className="p-6 max-h-96 overflow-y-auto">
+                <div dangerouslySetInnerHTML={{ __html: campaign.html_content }} />
+              </div>
+            </div>
+          </div>
+
+          {campaign.plain_text_content && (
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-3">Plain Text Version</h3>
+              <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+                <pre className="text-sm text-gray-700 whitespace-pre-wrap font-sans">
+                  {campaign.plain_text_content}
+                </pre>
+              </div>
+            </div>
+          )}
+        </div>
+        <div className="p-6 border-t border-gray-100">
+          <button
+            onClick={onClose}
+            className="w-full px-4 py-2 bg-gray-900 text-white rounded-xl hover:bg-gray-800 transition-colors"
+          >
+            Close Preview
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CreateCampaignModal({ campaign, onClose, onSuccess }: { campaign?: any; onClose: () => void; onSuccess: () => void }) {
   const { showToast } = useToast();
   const { data: segments } = useSegments();
   const [formData, setFormData] = useState({
-    title: '',
-    subject: '',
-    html_content: '',
-    category: 'promotional',
+    title: campaign?.title || '',
+    subject: campaign?.subject || '',
+    html_content: campaign?.html_content || '',
+    plain_text_content: campaign?.plain_text_content || '',
+    category: campaign?.category || 'promotional',
     target_segment: 'all',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSavingDraft, setIsSavingDraft] = useState(false);
   const [estimatedRecipients, setEstimatedRecipients] = useState(0);
+  const [lastSaved, setLastSaved] = useState<Date | null>(campaign?.updated_at ? new Date(campaign.updated_at) : null);
+
+  useEffect(() => {
+    const autoSaveInterval = setInterval(() => {
+      if (formData.title && formData.subject && !isSubmitting && !isSavingDraft) {
+        handleSaveDraft(true);
+      }
+    }, 30000);
+
+    return () => clearInterval(autoSaveInterval);
+  }, [formData, isSubmitting, isSavingDraft]);
+
+  const handleSaveDraft = async (isAutoSave = false) => {
+    if (!formData.title || !formData.subject) {
+      if (!isAutoSave) {
+        showToast('Please enter title and subject to save draft', 'error');
+      }
+      return;
+    }
+
+    setIsSavingDraft(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('No active session');
+      }
+
+      const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/marketing-campaigns`;
+
+      const payload = {
+        action: campaign ? 'update_campaign' : 'create_campaign',
+        ...(campaign && { campaign_id: campaign.id }),
+        ...formData,
+      };
+
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save draft');
+      }
+
+      setLastSaved(new Date());
+      if (!isAutoSave) {
+        showToast('Draft saved successfully', 'success');
+      }
+    } catch (error) {
+      console.error('Error saving draft:', error);
+      if (!isAutoSave) {
+        showToast('Failed to save draft', 'error');
+      }
+    } finally {
+      setIsSavingDraft(false);
+    }
+  };
 
   const calculateRecipients = async () => {
     try {
@@ -431,7 +614,25 @@ function CreateCampaignModal({ onClose, onSuccess }: { onClose: () => void; onSu
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
         <div className="p-6 border-b border-gray-100">
-          <h2 className="text-2xl font-bold text-gray-900">Create New Campaign</h2>
+          <div className="flex justify-between items-start">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900">{campaign ? 'Edit Campaign' : 'Create New Campaign'}</h2>
+              {lastSaved && (
+                <p className="text-xs text-gray-500 mt-1">
+                  {isSavingDraft ? 'Saving...' : `Last saved: ${format(lastSaved, 'MMM dd, yyyy h:mm a')}`}
+                </p>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={() => handleSaveDraft(false)}
+              disabled={isSavingDraft}
+              className="flex items-center space-x-2 px-3 py-1.5 text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+            >
+              <Save className="w-4 h-4" />
+              <span>{isSavingDraft ? 'Saving...' : 'Save Draft'}</span>
+            </button>
+          </div>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           <div>
@@ -532,6 +733,20 @@ function CreateCampaignModal({ onClose, onSuccess }: { onClose: () => void; onSu
             />
           </div>
 
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Plain Text Content (Optional)
+            </label>
+            <textarea
+              rows={6}
+              placeholder="Enter plain text fallback content..."
+              value={formData.plain_text_content}
+              onChange={(e) => setFormData({ ...formData, plain_text_content: e.target.value })}
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-accent focus:border-transparent resize-none text-sm"
+            />
+            <p className="text-xs text-gray-500 mt-1">Used as fallback for email clients that don't support HTML</p>
+          </div>
+
           <div className="flex space-x-4 pt-4">
             <button
               type="button"
@@ -542,10 +757,10 @@ function CreateCampaignModal({ onClose, onSuccess }: { onClose: () => void; onSu
             </button>
             <button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isSubmitting || isSavingDraft}
               className="flex-1 px-4 py-2 bg-accent text-white rounded-xl hover:bg-accent-dark transition-colors disabled:opacity-50"
             >
-              {isSubmitting ? 'Creating...' : 'Create Campaign'}
+              {isSubmitting ? (campaign ? 'Updating...' : 'Creating...') : (campaign ? 'Update Campaign' : 'Create Campaign')}
             </button>
           </div>
         </form>
