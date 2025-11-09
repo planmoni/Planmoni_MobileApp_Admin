@@ -17,6 +17,7 @@ interface NotificationFormData {
   send_time: 'now' | 'later';
   scheduled_date: string;
   scheduled_time: string;
+  personalize: boolean;
 }
 
 export default function Notifications() {
@@ -41,6 +42,7 @@ export default function Notifications() {
     send_time: 'now',
     scheduled_date: '',
     scheduled_time: '',
+    personalize: false,
   });
 
   const handleRefresh = () => {
@@ -91,6 +93,7 @@ export default function Notifications() {
             schedule_for: formData.send_time === 'later'
               ? new Date(`${formData.scheduled_date}T${formData.scheduled_time}`).toISOString()
               : undefined,
+            personalize: formData.personalize,
           }),
         }
       );
@@ -113,6 +116,7 @@ export default function Notifications() {
         send_time: 'now',
         scheduled_date: '',
         scheduled_time: '',
+        personalize: false,
       });
       handleRefresh();
     } catch (err) {
@@ -379,12 +383,26 @@ export default function Notifications() {
                   className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent resize-none"
                   maxLength={200}
                 />
-                <div className="flex justify-between items-start mt-1">
-                  <p className="text-xs text-gray-500">
-                    Your message will automatically include a personalized greeting (e.g., "Hello John, your message here")
-                  </p>
-                  <p className="text-xs text-gray-500">{formData.body.length}/200</p>
-                </div>
+                <p className="text-xs text-gray-500 mt-1 text-right">{formData.body.length}/200</p>
+              </div>
+
+              <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+                <label className="flex items-start cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.personalize}
+                    onChange={(e) => setFormData({ ...formData, personalize: e.target.checked })}
+                    className="mt-0.5 h-4 w-4 text-gray-900 focus:ring-gray-900 border-gray-300 rounded"
+                  />
+                  <div className="ml-3">
+                    <span className="text-sm font-medium text-gray-900">Add personalized greeting</span>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {formData.personalize
+                        ? 'Message will start with "Hello [FirstName], ..." Users without a first name will see "Hello there, ..."'
+                        : 'Your message will be sent exactly as written without personalization'}
+                    </p>
+                  </div>
+                </label>
               </div>
 
               <div>
@@ -493,14 +511,20 @@ export default function Notifications() {
                     <div className="mt-2 text-sm text-blue-800">
                       <p className="font-semibold">{formData.title || 'Notification title'}</p>
                       <p className="mt-1">
-                        {formData.body
-                          ? `Hello John, ${formData.body}`
-                          : 'Hello John, your notification message will appear here'}
+                        {formData.personalize ? (
+                          formData.body
+                            ? `Hello John, ${formData.body}`
+                            : 'Hello John, your notification message will appear here'
+                        ) : (
+                          formData.body || 'Your notification message will appear here'
+                        )}
                       </p>
                     </div>
-                    <p className="mt-2 text-xs text-blue-700">
-                      Each user will see their own first name. Users without a first name will see "Hello there" instead.
-                    </p>
+                    {formData.personalize && (
+                      <p className="mt-2 text-xs text-blue-700">
+                        "John" is shown as example. Each user will see their own first name. Users without a first name will see "Hello there" instead.
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -520,6 +544,7 @@ export default function Notifications() {
                     send_time: 'now',
                     scheduled_date: '',
                     scheduled_time: '',
+                    personalize: false,
                   });
                 }}
                 className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-xl transition-colors"

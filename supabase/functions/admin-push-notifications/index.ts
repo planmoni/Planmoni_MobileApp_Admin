@@ -16,6 +16,7 @@ interface SendPushNotificationRequest {
   target_user_ids?: string[];
   target_segment_id?: string;
   schedule_for?: string;
+  personalize?: boolean;
 }
 
 interface ExpoPushMessage {
@@ -70,7 +71,10 @@ function isValidExpoPushToken(token: string): boolean {
   );
 }
 
-function personalizeMessage(message: string, firstName: string | null): string {
+function personalizeMessage(message: string, firstName: string | null, shouldPersonalize: boolean): string {
+  if (!shouldPersonalize) {
+    return message;
+  }
   const name = firstName && firstName.trim() ? firstName.trim() : 'there';
   return `Hello ${name}, ${message}`;
 }
@@ -171,7 +175,7 @@ Deno.serve(async (req: Request) => {
       const body: SendPushNotificationRequest = await req.json();
 
       if (body.action === 'send_notification') {
-        const { title, body: messageBody, data, target_type, target_user_ids, target_segment_id, schedule_for } = body;
+        const { title, body: messageBody, data, target_type, target_user_ids, target_segment_id, schedule_for, personalize } = body;
 
         const { data: notificationRecord, error: createError } = await supabase
           .from('push_notifications')
@@ -312,7 +316,7 @@ Deno.serve(async (req: Request) => {
           to: token.expo_push_token,
           sound: 'default',
           title,
-          body: personalizeMessage(messageBody, token.first_name),
+          body: personalizeMessage(messageBody, token.first_name, personalize || false),
           data: data || {},
           priority: 'high',
         }));
