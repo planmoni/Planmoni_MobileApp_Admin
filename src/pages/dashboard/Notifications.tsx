@@ -359,7 +359,7 @@ export default function Notifications() {
                 />
                 <div className="flex justify-between items-start mt-1">
                   <p className="text-xs text-gray-500">
-                    Use <span className="font-mono bg-gray-100 px-1 rounded">{'{{first_name}}'}</span> to personalize (e.g., "Hello {'{{first_name}}'}, your payout is ready")
+                    Your message will automatically include a personalized greeting (e.g., "Hello John, your message here")
                   </p>
                   <p className="text-xs text-gray-500">{formData.body.length}/200</p>
                 </div>
@@ -408,15 +408,13 @@ export default function Notifications() {
                       <p className="font-semibold">{formData.title || 'Notification title'}</p>
                       <p className="mt-1">
                         {formData.body
-                          ? formData.body.replace(/\{\{\s*first_name\s*\}\}/gi, 'John')
-                          : 'Notification message will appear here'}
+                          ? `Hello John, ${formData.body}`
+                          : 'Hello John, your notification message will appear here'}
                       </p>
                     </div>
-                    {formData.body.match(/\{\{\s*first_name\s*\}\}/gi) && (
-                      <p className="mt-2 text-xs text-blue-700">
-                        "John" is shown as example. Users without a first name will see "there" instead.
-                      </p>
-                    )}
+                    <p className="mt-2 text-xs text-blue-700">
+                      Each user will see their own first name. Users without a first name will see "Hello there" instead.
+                    </p>
                   </div>
                 </div>
               </div>

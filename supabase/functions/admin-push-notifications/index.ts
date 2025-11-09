@@ -72,7 +72,7 @@ function isValidExpoPushToken(token: string): boolean {
 
 function personalizeMessage(message: string, firstName: string | null): string {
   const name = firstName && firstName.trim() ? firstName.trim() : 'there';
-  return message.replace(/\{\{\s*first_name\s*\}\}/gi, name);
+  return `Hello ${name}, ${message}`;
 }
 
 Deno.serve(async (req: Request) => {
