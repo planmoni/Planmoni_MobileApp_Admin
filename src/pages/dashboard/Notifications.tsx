@@ -136,7 +136,15 @@ export default function Notifications() {
             target_user_ids: formData.target_user_ids,
             target_segment_id: formData.target_segment_id || undefined,
             schedule_for: formData.send_time === 'later'
-              ? new Date(`${formData.scheduled_date}T${formData.scheduled_time}`).toISOString()
+              ? (() => {
+                  const watDateTime = `${formData.scheduled_date}T${formData.scheduled_time}:00`;
+                  const date = new Date(watDateTime);
+                  const watOffset = 1 * 60;
+                  const localOffset = date.getTimezoneOffset();
+                  const offsetDiff = watOffset + localOffset;
+                  date.setMinutes(date.getMinutes() - offsetDiff);
+                  return date.toISOString();
+                })()
               : undefined,
             personalize: formData.personalize,
           }),
