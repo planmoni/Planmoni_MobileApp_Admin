@@ -257,17 +257,11 @@ Deno.serve(async (req: Request) => {
 
         const { data: pushTokensData } = await supabase
           .from('user_push_tokens')
-          .select('user_id, expo_push_token, profiles!inner(first_name)')
+          .select('user_id, expo_push_token')
           .in('user_id', recipientUserIds)
           .eq('is_active', true);
 
-        const pushTokens = pushTokensData?.map(item => ({
-          user_id: item.user_id,
-          expo_push_token: item.expo_push_token,
-          first_name: (item.profiles as any)?.first_name || null,
-        })) || [];
-
-        if (!pushTokens || pushTokens.length === 0) {
+        if (!pushTokensData || pushTokensData.length === 0) {
           await supabase
             .from('push_notifications')
             .update({
@@ -290,6 +284,20 @@ Deno.serve(async (req: Request) => {
             }
           );
         }
+
+        const userIds = pushTokensData.map(t => t.user_id);
+        const { data: profilesData } = await supabase
+          .from('profiles')
+          .select('id, first_name')
+          .in('id', userIds);
+
+        const profilesMap = new Map(profilesData?.map(p => [p.id, p.first_name]) || []);
+
+        const pushTokens = pushTokensData.map(item => ({
+          user_id: item.user_id,
+          expo_push_token: item.expo_push_token,
+          first_name: profilesMap.get(item.user_id) || null,
+        }));
 
         const validTokens = pushTokens.filter(t => isValidExpoPushToken(t.expo_push_token));
 
