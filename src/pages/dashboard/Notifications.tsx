@@ -31,6 +31,7 @@ export default function Notifications() {
   const [isSending, setIsSending] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [processingScheduled, setProcessingScheduled] = useState<string | null>(null);
 
   const [formData, setFormData] = useState<NotificationFormData>({
     title: '',
@@ -47,6 +48,50 @@ export default function Notifications() {
 
   const handleRefresh = () => {
     refreshData.mutate(['push-notifications', 'notification-stats', 'push-notification-segments']);
+  };
+
+  const handleSendScheduledNotification = async (notificationId: string) => {
+    setProcessingScheduled(notificationId);
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session) {
+        throw new Error('Not authenticated');
+      }
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-push-notifications`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            action: 'process_scheduled',
+            notification_id: notificationId,
+          }),
+        }
+      );
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to send scheduled notification');
+      }
+
+      showToast(result.message || 'Scheduled notification sent successfully', 'success');
+      handleRefresh();
+    } catch (err) {
+      console.error('Error sending scheduled notification:', err);
+      showToast(
+        err instanceof Error ? err.message : 'Failed to send scheduled notification',
+        'error'
+      );
+    } finally {
+      setProcessingScheduled(null);
+    }
   };
 
   const handleSendNotification = async () => {
@@ -285,6 +330,9 @@ export default function Notifications() {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Date
                 </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-100">
@@ -331,12 +379,33 @@ export default function Notifications() {
                           ? format(new Date(notification.sent_at), 'MMM dd, yyyy HH:mm')
                           : format(new Date(notification.created_at), 'MMM dd, yyyy HH:mm')}
                       </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        {notification.status === 'scheduled' && (
+                          <button
+                            onClick={() => handleSendScheduledNotification(notification.id)}
+                            disabled={processingScheduled === notification.id}
+                            className="flex items-center space-x-1 px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {processingScheduled === notification.id ? (
+                              <>
+                                <div className="animate-spin rounded-full h-3 w-3 border-t-2 border-b-2 border-white"></div>
+                                <span className="text-xs">Sending...</span>
+                              </>
+                            ) : (
+                              <>
+                                <Send className="h-3 w-3" />
+                                <span className="text-xs">Send Now</span>
+                              </>
+                            )}
+                          </button>
+                        )}
+                      </td>
                     </tr>
                   );
                 })
               ) : (
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center">
+                  <td colSpan={7} className="px-6 py-12 text-center">
                     <Bell className="mx-auto h-12 w-12 text-gray-400" />
                     <p className="mt-2 text-sm text-gray-500">No notifications found</p>
                   </td>

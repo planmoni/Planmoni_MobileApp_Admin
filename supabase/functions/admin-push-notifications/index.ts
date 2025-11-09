@@ -8,15 +8,16 @@ const corsHeaders = {
 };
 
 interface SendPushNotificationRequest {
-  action: 'send_notification';
-  title: string;
-  body: string;
+  action: 'send_notification' | 'process_scheduled';
+  title?: string;
+  body?: string;
   data?: Record<string, any>;
-  target_type: 'all' | 'individual' | 'segment';
+  target_type?: 'all' | 'individual' | 'segment';
   target_user_ids?: string[];
   target_segment_id?: string;
   schedule_for?: string;
   personalize?: boolean;
+  notification_id?: string;
 }
 
 interface ExpoPushMessage {
@@ -400,6 +401,233 @@ Deno.serve(async (req: Request) => {
             success: true,
             message: `Notification sent to ${deliveredCount} recipients (${failedCount} failed)`,
             notification_id: notificationRecord.id,
+            delivered_count: deliveredCount,
+            failed_count: failedCount,
+            total_recipients: validTokens.length,
+          }),
+          {
+            headers: {
+              ...corsHeaders,
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+      }
+
+      if (body.action === 'process_scheduled') {
+        const notificationId = body.notification_id;
+
+        if (!notificationId) {
+          throw new Error('notification_id is required for process_scheduled action');
+        }
+
+        const { data: notificationRecord, error: fetchError } = await supabase
+          .from('push_notifications')
+          .select('*')
+          .eq('id', notificationId)
+          .eq('status', 'scheduled')
+          .single();
+
+        if (fetchError || !notificationRecord) {
+          throw new Error('Scheduled notification not found or already processed');
+        }
+
+        const { title, body: messageBody, data, target_type, target_user_ids, target_segment_id } = notificationRecord;
+
+        await supabase
+          .from('push_notifications')
+          .update({ status: 'sending' })
+          .eq('id', notificationId);
+
+        let recipientUserIds: string[] = [];
+
+        if (target_type === 'all') {
+          const { data: tokens } = await supabase
+            .from('user_push_tokens')
+            .select('user_id')
+            .eq('is_active', true);
+          recipientUserIds = tokens?.map(t => t.user_id) || [];
+        } else if (target_type === 'individual' && target_user_ids) {
+          recipientUserIds = target_user_ids;
+        } else if (target_type === 'segment' && target_segment_id) {
+          const { data: segment } = await supabase
+            .from('push_notification_segments')
+            .select('filter_criteria')
+            .eq('id', target_segment_id)
+            .single();
+
+          if (segment) {
+            const filterType = segment.filter_criteria.type;
+
+            if (filterType === 'all') {
+              const { data: allUsers } = await supabase
+                .from('profiles')
+                .select('id');
+              recipientUserIds = allUsers?.map(u => u.id) || [];
+            } else if (filterType === 'has_active_plans') {
+              const { data: activePlans } = await supabase
+                .from('payout_plans')
+                .select('user_id')
+                .eq('status', 'active');
+              recipientUserIds = [...new Set(activePlans?.map(p => p.user_id) || [])];
+            } else if (filterType === 'kyc_approved') {
+              const { data: kycUsers } = await supabase
+                .from('kyc_data')
+                .select('user_id')
+                .eq('approved', true);
+              recipientUserIds = kycUsers?.map(k => k.user_id) || [];
+            } else if (filterType === 'joined_recently') {
+              const days = segment.filter_criteria.days || 30;
+              const { data: recentUsers } = await supabase
+                .from('profiles')
+                .select('id')
+                .gte('created_at', new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString());
+              recipientUserIds = recentUsers?.map(u => u.id) || [];
+            }
+          }
+        }
+
+        const { data: pushTokensData } = await supabase
+          .from('user_push_tokens')
+          .select('user_id, expo_push_token')
+          .in('user_id', recipientUserIds)
+          .eq('is_active', true);
+
+        if (!pushTokensData || pushTokensData.length === 0) {
+          await supabase
+            .from('push_notifications')
+            .update({
+              status: 'failed',
+              total_recipients: 0,
+              failed_count: 0,
+            })
+            .eq('id', notificationId);
+
+          return new Response(
+            JSON.stringify({
+              success: false,
+              message: 'No active push tokens found for recipients',
+            }),
+            {
+              headers: {
+                ...corsHeaders,
+                'Content-Type': 'application/json',
+              },
+            }
+          );
+        }
+
+        const userIds = pushTokensData.map(t => t.user_id);
+        const { data: profilesData } = await supabase
+          .from('profiles')
+          .select('id, first_name')
+          .in('id', userIds);
+
+        const profilesMap = new Map(profilesData?.map(p => [p.id, p.first_name]) || []);
+
+        const pushTokens = pushTokensData.map(item => ({
+          user_id: item.user_id,
+          expo_push_token: item.expo_push_token,
+          first_name: profilesMap.get(item.user_id) || null,
+        }));
+
+        const validTokens = pushTokens.filter(t => isValidExpoPushToken(t.expo_push_token));
+
+        await supabase
+          .from('push_notifications')
+          .update({
+            total_recipients: validTokens.length,
+          })
+          .eq('id', notificationId);
+
+        const messages: ExpoPushMessage[] = validTokens.map(token => ({
+          to: token.expo_push_token,
+          sound: 'default',
+          title,
+          body: personalizeMessage(messageBody, token.first_name, false),
+          data: data || {},
+          priority: 'high',
+        }));
+
+        const BATCH_SIZE = 100;
+        let deliveredCount = 0;
+        let failedCount = 0;
+
+        for (let i = 0; i < messages.length; i += BATCH_SIZE) {
+          const batch = messages.slice(i, i + BATCH_SIZE);
+          const batchTokens = validTokens.slice(i, i + BATCH_SIZE);
+
+          try {
+            const tickets = await sendPushNotifications(batch);
+
+            for (let j = 0; j < tickets.length; j++) {
+              const ticket = tickets[j];
+              const tokenInfo = batchTokens[j];
+
+              const logStatus = ticket.status === 'ok' ? 'sent' : 'failed';
+              const errorMessage = ticket.status === 'error' ? ticket.message || 'Unknown error' : null;
+
+              if (ticket.status === 'ok') {
+                deliveredCount++;
+              } else {
+                failedCount++;
+              }
+
+              await supabase
+                .from('push_notification_logs')
+                .insert({
+                  push_notification_id: notificationId,
+                  user_id: tokenInfo.user_id,
+                  push_token: tokenInfo.expo_push_token,
+                  status: logStatus,
+                  error_message: errorMessage,
+                  expo_receipt_id: ticket.id || null,
+                  sent_at: new Date().toISOString(),
+                });
+
+              if (ticket.status === 'ok') {
+                await supabase
+                  .from('user_push_tokens')
+                  .update({ last_used: new Date().toISOString() })
+                  .eq('expo_push_token', tokenInfo.expo_push_token);
+              }
+            }
+          } catch (error) {
+            console.error('Batch send error:', error);
+            failedCount += batch.length;
+
+            for (const tokenInfo of batchTokens) {
+              await supabase
+                .from('push_notification_logs')
+                .insert({
+                  push_notification_id: notificationId,
+                  user_id: tokenInfo.user_id,
+                  push_token: tokenInfo.expo_push_token,
+                  status: 'failed',
+                  error_message: error instanceof Error ? error.message : 'Batch send failed',
+                  sent_at: new Date().toISOString(),
+                });
+            }
+          }
+
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+
+        await supabase
+          .from('push_notifications')
+          .update({
+            status: 'sent',
+            sent_at: new Date().toISOString(),
+            delivered_count: deliveredCount,
+            failed_count: failedCount,
+          })
+          .eq('id', notificationId);
+
+        return new Response(
+          JSON.stringify({
+            success: true,
+            message: `Scheduled notification sent to ${deliveredCount} recipients (${failedCount} failed)`,
+            notification_id: notificationId,
             delivered_count: deliveredCount,
             failed_count: failedCount,
             total_recipients: validTokens.length,
