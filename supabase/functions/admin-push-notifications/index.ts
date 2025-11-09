@@ -70,6 +70,11 @@ function isValidExpoPushToken(token: string): boolean {
   );
 }
 
+function personalizeMessage(message: string, firstName: string | null): string {
+  const name = firstName && firstName.trim() ? firstName.trim() : 'there';
+  return message.replace(/\{\{\s*first_name\s*\}\}/gi, name);
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, {
@@ -250,11 +255,17 @@ Deno.serve(async (req: Request) => {
           }
         }
 
-        const { data: pushTokens } = await supabase
+        const { data: pushTokensData } = await supabase
           .from('user_push_tokens')
-          .select('user_id, expo_push_token')
+          .select('user_id, expo_push_token, profiles!inner(first_name)')
           .in('user_id', recipientUserIds)
           .eq('is_active', true);
+
+        const pushTokens = pushTokensData?.map(item => ({
+          user_id: item.user_id,
+          expo_push_token: item.expo_push_token,
+          first_name: (item.profiles as any)?.first_name || null,
+        })) || [];
 
         if (!pushTokens || pushTokens.length === 0) {
           await supabase
@@ -293,7 +304,7 @@ Deno.serve(async (req: Request) => {
           to: token.expo_push_token,
           sound: 'default',
           title,
-          body: messageBody,
+          body: personalizeMessage(messageBody, token.first_name),
           data: data || {},
           priority: 'high',
         }));

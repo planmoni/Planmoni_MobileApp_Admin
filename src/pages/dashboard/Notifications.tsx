@@ -357,7 +357,12 @@ export default function Notifications() {
                   className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent resize-none"
                   maxLength={200}
                 />
-                <p className="text-xs text-gray-500 mt-1">{formData.body.length}/200</p>
+                <div className="flex justify-between items-start mt-1">
+                  <p className="text-xs text-gray-500">
+                    Use <span className="font-mono bg-gray-100 px-1 rounded">{'{{first_name}}'}</span> to personalize (e.g., "Hello {'{{first_name}}'}, your payout is ready")
+                  </p>
+                  <p className="text-xs text-gray-500">{formData.body.length}/200</p>
+                </div>
               </div>
 
               <div>
@@ -397,12 +402,21 @@ export default function Notifications() {
               <div className="bg-blue-50 border border-blue-100 rounded-xl p-4">
                 <div className="flex">
                   <Bell className="h-5 w-5 text-blue-600 mt-0.5" />
-                  <div className="ml-3">
+                  <div className="ml-3 flex-1">
                     <h3 className="text-sm font-medium text-blue-900">Preview</h3>
                     <div className="mt-2 text-sm text-blue-800">
                       <p className="font-semibold">{formData.title || 'Notification title'}</p>
-                      <p className="mt-1">{formData.body || 'Notification message will appear here'}</p>
+                      <p className="mt-1">
+                        {formData.body
+                          ? formData.body.replace(/\{\{\s*first_name\s*\}\}/gi, 'John')
+                          : 'Notification message will appear here'}
+                      </p>
                     </div>
+                    {formData.body.match(/\{\{\s*first_name\s*\}\}/gi) && (
+                      <p className="mt-2 text-xs text-blue-700">
+                        "John" is shown as example. Users without a first name will see "there" instead.
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
