@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Bell, Send, RefreshCw, Users, CheckCircle, XCircle, Search, Filter, Clock } from 'lucide-react';
 import { useNotifications, useNotificationSegments, useNotificationStats } from '@/hooks/queries/useNotifications';
 import { useRefreshData } from '@/hooks/mutations/useRefreshData';
@@ -49,6 +49,38 @@ export default function Notifications() {
   const handleRefresh = () => {
     refreshData.mutate(['push-notifications', 'notification-stats', 'push-notification-segments']);
   };
+
+  const processDueScheduledNotifications = async () => {
+    try {
+      if (!notifications) return;
+
+      const dueNotifications = notifications.filter((n: any) =>
+        n.status === 'scheduled' &&
+        n.scheduled_for &&
+        new Date(n.scheduled_for) <= new Date()
+      );
+
+      if (dueNotifications.length === 0) return;
+
+      console.log(`Found ${dueNotifications.length} due notifications, processing...`);
+
+      for (const notification of dueNotifications) {
+        await handleSendScheduledNotification(notification.id);
+      }
+    } catch (err) {
+      console.error('Error processing due notifications:', err);
+    }
+  };
+
+  useEffect(() => {
+    processDueScheduledNotifications();
+
+    const interval = setInterval(() => {
+      processDueScheduledNotifications();
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, [notifications]);
 
   const handleSendScheduledNotification = async (notificationId: string) => {
     setProcessingScheduled(notificationId);
