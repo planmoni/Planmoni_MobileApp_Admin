@@ -392,9 +392,6 @@ export default function Notifications() {
                             </div>
                             <ScheduledNotificationCountdown
                               scheduledFor={notification.scheduled_for}
-                              notificationId={notification.id}
-                              onTimeUp={handleSendScheduledNotification}
-                              isProcessing={processingScheduled === notification.id}
                             />
                           </div>
                         ) : (

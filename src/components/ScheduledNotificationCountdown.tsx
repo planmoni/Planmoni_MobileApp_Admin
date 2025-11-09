@@ -3,16 +3,10 @@ import { Clock, Send } from 'lucide-react';
 
 interface ScheduledNotificationCountdownProps {
   scheduledFor: string;
-  notificationId: string;
-  onTimeUp: (notificationId: string) => void;
-  isProcessing: boolean;
 }
 
 export default function ScheduledNotificationCountdown({
   scheduledFor,
-  notificationId,
-  onTimeUp,
-  isProcessing,
 }: ScheduledNotificationCountdownProps) {
   const [timeRemaining, setTimeRemaining] = useState<string>('');
   const [isDue, setIsDue] = useState(false);
@@ -25,10 +19,7 @@ export default function ScheduledNotificationCountdown({
 
       if (diff <= 0) {
         setIsDue(true);
-        setTimeRemaining('Due now');
-        if (!isProcessing) {
-          onTimeUp(notificationId);
-        }
+        setTimeRemaining('Processing...');
         return;
       }
 
@@ -52,22 +43,13 @@ export default function ScheduledNotificationCountdown({
     const interval = setInterval(calculateTimeRemaining, 1000);
 
     return () => clearInterval(interval);
-  }, [scheduledFor, notificationId, onTimeUp, isProcessing]);
+  }, [scheduledFor]);
 
-  if (isDue && !isProcessing) {
+  if (isDue) {
     return (
       <div className="flex items-center space-x-2 text-orange-600">
         <Send className="h-4 w-4 animate-pulse" />
-        <span className="text-sm font-medium">Sending...</span>
-      </div>
-    );
-  }
-
-  if (isProcessing) {
-    return (
-      <div className="flex items-center space-x-2 text-blue-600">
-        <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-blue-600"></div>
-        <span className="text-sm font-medium">Processing...</span>
+        <span className="text-sm font-medium">Will send shortly...</span>
       </div>
     );
   }
