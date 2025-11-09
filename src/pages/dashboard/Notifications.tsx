@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Bell, Send, RefreshCw, Users, CheckCircle, XCircle, Search, Filter } from 'lucide-react';
+import { Bell, Send, RefreshCw, Users, CheckCircle, XCircle, Search, Filter, Clock } from 'lucide-react';
 import { useNotifications, useNotificationSegments, useNotificationStats } from '@/hooks/queries/useNotifications';
 import { useRefreshData } from '@/hooks/mutations/useRefreshData';
 import { useToast } from '@/contexts/ToastContext';
@@ -14,6 +14,9 @@ interface NotificationFormData {
   target_type: 'all' | 'individual' | 'segment';
   target_user_ids: string[];
   target_segment_id: string;
+  send_time: 'now' | 'later';
+  scheduled_date: string;
+  scheduled_time: string;
 }
 
 export default function Notifications() {
@@ -35,6 +38,9 @@ export default function Notifications() {
     target_type: 'all',
     target_user_ids: [],
     target_segment_id: '',
+    send_time: 'now',
+    scheduled_date: '',
+    scheduled_time: '',
   });
 
   const handleRefresh = () => {
@@ -49,6 +55,11 @@ export default function Notifications() {
 
     if (formData.target_type === 'segment' && !formData.target_segment_id) {
       showToast('Please select a segment', 'error');
+      return;
+    }
+
+    if (formData.send_time === 'later' && (!formData.scheduled_date || !formData.scheduled_time)) {
+      showToast('Please select date and time for scheduled notification', 'error');
       return;
     }
 
@@ -71,7 +82,15 @@ export default function Notifications() {
           },
           body: JSON.stringify({
             action: 'send_notification',
-            ...formData,
+            title: formData.title,
+            body: formData.body,
+            data: formData.data,
+            target_type: formData.target_type,
+            target_user_ids: formData.target_user_ids,
+            target_segment_id: formData.target_segment_id || undefined,
+            schedule_for: formData.send_time === 'later'
+              ? new Date(`${formData.scheduled_date}T${formData.scheduled_time}`).toISOString()
+              : undefined,
           }),
         }
       );
@@ -91,6 +110,9 @@ export default function Notifications() {
         target_type: 'all',
         target_user_ids: [],
         target_segment_id: '',
+        send_time: 'now',
+        scheduled_date: '',
+        scheduled_time: '',
       });
       handleRefresh();
     } catch (err) {
@@ -399,6 +421,70 @@ export default function Notifications() {
                 </div>
               )}
 
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Send Time *
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, send_time: 'now' })}
+                    className={`px-4 py-3 rounded-xl border-2 transition-all ${
+                      formData.send_time === 'now'
+                        ? 'border-gray-900 bg-gray-50'
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    <div className="flex items-center justify-center space-x-2">
+                      <Send className="h-4 w-4" />
+                      <span className="font-medium">Send Now</span>
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, send_time: 'later' })}
+                    className={`px-4 py-3 rounded-xl border-2 transition-all ${
+                      formData.send_time === 'later'
+                        ? 'border-gray-900 bg-gray-50'
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    <div className="flex items-center justify-center space-x-2">
+                      <Clock className="h-4 w-4" />
+                      <span className="font-medium">Schedule</span>
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              {formData.send_time === 'later' && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Date *
+                    </label>
+                    <input
+                      type="date"
+                      value={formData.scheduled_date}
+                      onChange={(e) => setFormData({ ...formData, scheduled_date: e.target.value })}
+                      min={new Date().toISOString().split('T')[0]}
+                      className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Time *
+                    </label>
+                    <input
+                      type="time"
+                      value={formData.scheduled_time}
+                      onChange={(e) => setFormData({ ...formData, scheduled_time: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                    />
+                  </div>
+                </div>
+              )}
+
               <div className="bg-blue-50 border border-blue-100 rounded-xl p-4">
                 <div className="flex">
                   <Bell className="h-5 w-5 text-blue-600 mt-0.5" />
@@ -431,6 +517,9 @@ export default function Notifications() {
                     target_type: 'all',
                     target_user_ids: [],
                     target_segment_id: '',
+                    send_time: 'now',
+                    scheduled_date: '',
+                    scheduled_time: '',
                   });
                 }}
                 className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-xl transition-colors"
@@ -446,12 +535,21 @@ export default function Notifications() {
                 {isSending ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white"></div>
-                    <span>Sending...</span>
+                    <span>{formData.send_time === 'later' ? 'Scheduling...' : 'Sending...'}</span>
                   </>
                 ) : (
                   <>
-                    <Send className="h-4 w-4" />
-                    <span>Send Notification</span>
+                    {formData.send_time === 'later' ? (
+                      <>
+                        <Clock className="h-4 w-4" />
+                        <span>Schedule Notification</span>
+                      </>
+                    ) : (
+                      <>
+                        <Send className="h-4 w-4" />
+                        <span>Send Notification</span>
+                      </>
+                    )}
                   </>
                 )}
               </button>
