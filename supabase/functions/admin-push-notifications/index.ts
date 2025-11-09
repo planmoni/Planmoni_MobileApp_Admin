@@ -227,51 +227,88 @@ Deno.serve(async (req: Request) => {
         let recipientUserIds: string[] = [];
 
         if (target_type === 'all') {
-          const { data: tokens } = await supabase
+          const { data: tokens, error: tokensError } = await supabase
             .from('user_push_tokens')
             .select('user_id')
             .eq('is_active', true);
+
+          if (tokensError) {
+            console.error('Error fetching tokens for all users:', tokensError);
+          }
+
           recipientUserIds = tokens?.map(t => t.user_id) || [];
+          console.log(`Target type: all, found ${recipientUserIds.length} users with push tokens`);
         } else if (target_type === 'individual' && target_user_ids) {
           recipientUserIds = target_user_ids;
+          console.log(`Target type: individual, targeting ${recipientUserIds.length} specific users`);
         } else if (target_type === 'segment' && target_segment_id) {
-          const { data: segment } = await supabase
+          const { data: segment, error: segmentError } = await supabase
             .from('push_notification_segments')
             .select('filter_criteria')
             .eq('id', target_segment_id)
             .single();
 
+          if (segmentError) {
+            console.error('Error fetching segment:', segmentError);
+          }
+
           if (segment) {
             const filterType = segment.filter_criteria.type;
+            console.log(`Target type: segment (${filterType})`);
 
             if (filterType === 'all') {
-              const { data: allUsers } = await supabase
+              const { data: allUsers, error: usersError } = await supabase
                 .from('profiles')
                 .select('id');
+
+              if (usersError) {
+                console.error('Error fetching all users from profiles:', usersError);
+              }
+
               recipientUserIds = allUsers?.map(u => u.id) || [];
+              console.log(`Segment 'all' found ${recipientUserIds.length} users`);
             } else if (filterType === 'has_active_plans') {
-              const { data: activePlans } = await supabase
+              const { data: activePlans, error: plansError } = await supabase
                 .from('payout_plans')
                 .select('user_id')
                 .eq('status', 'active');
+
+              if (plansError) {
+                console.error('Error fetching active plans:', plansError);
+              }
+
               recipientUserIds = [...new Set(activePlans?.map(p => p.user_id) || [])];
+              console.log(`Segment 'has_active_plans' found ${recipientUserIds.length} users`);
             } else if (filterType === 'kyc_approved') {
-              const { data: kycUsers } = await supabase
+              const { data: kycUsers, error: kycError } = await supabase
                 .from('kyc_data')
                 .select('user_id')
                 .eq('status', 'approved');
+
+              if (kycError) {
+                console.error('Error fetching KYC approved users:', kycError);
+              }
+
               recipientUserIds = kycUsers?.map(k => k.user_id) || [];
+              console.log(`Segment 'kyc_approved' found ${recipientUserIds.length} users`);
             }
           }
         }
 
         recipientUserIds = [...new Set(recipientUserIds)];
+        console.log(`Total unique recipient user IDs: ${recipientUserIds.length}`);
 
-        const { data: tokensData } = await supabase
+        const { data: tokensData, error: tokensDataError } = await supabase
           .from('user_push_tokens')
-          .select('token, user_id, profiles(first_name)')
+          .select('expo_push_token, user_id, profiles(first_name)')
           .in('user_id', recipientUserIds)
           .eq('is_active', true);
+
+        if (tokensDataError) {
+          console.error('Error fetching token data:', tokensDataError);
+        }
+
+        console.log(`Found ${tokensData?.length || 0} active push tokens for recipients`);
 
         if (!tokensData || tokensData.length === 0) {
           await supabase
@@ -301,14 +338,14 @@ Deno.serve(async (req: Request) => {
           );
         }
 
-        const validTokensData = tokensData.filter(t => isValidExpoPushToken(t.token));
+        const validTokensData = tokensData.filter(t => isValidExpoPushToken(t.expo_push_token));
 
         const messages: ExpoPushMessage[] = validTokensData.map(tokenData => {
           const profile = tokenData.profiles as any;
           const firstName = profile?.first_name || null;
 
           return {
-            to: tokenData.token,
+            to: tokenData.expo_push_token,
             sound: 'default' as const,
             title,
             body: personalizeMessage(messageBody, firstName, personalize),
@@ -330,7 +367,7 @@ Deno.serve(async (req: Request) => {
             const logEntry = {
               push_notification_id: notificationRecord.data.id,
               user_id: tokenData.user_id,
-              push_token: tokenData.token,
+              push_token: tokenData.expo_push_token,
               status: ticket.status === 'ok' ? 'delivered' : 'failed',
               error: ticket.status === 'error' ? ticket.message : null,
               expo_ticket_id: ticket.id,
