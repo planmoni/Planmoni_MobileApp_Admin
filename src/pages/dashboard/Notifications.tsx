@@ -1,12 +1,11 @@
 import { useState } from 'react';
-import { Bell, Send, RefreshCw, Users, CheckCircle, XCircle, Search, Filter, Clock } from 'lucide-react';
+import { Bell, Send, RefreshCw, Users, CheckCircle, XCircle, Search, Filter } from 'lucide-react';
 import { useNotifications, useNotificationSegments, useNotificationStats } from '@/hooks/queries/useNotifications';
 import { useRefreshData } from '@/hooks/mutations/useRefreshData';
 import { useToast } from '@/contexts/ToastContext';
 import { supabase } from '@/lib/supabase';
 import { format } from 'date-fns';
 import StatCard from '@/components/StatCard';
-import ScheduledNotificationCountdown from '@/components/ScheduledNotificationCountdown';
 
 interface NotificationFormData {
   title: string;
@@ -15,9 +14,6 @@ interface NotificationFormData {
   target_type: 'all' | 'individual' | 'segment';
   target_user_ids: string[];
   target_segment_id: string;
-  send_time: 'now' | 'later';
-  scheduled_date: string;
-  scheduled_time: string;
   personalize: boolean;
 }
 
@@ -32,7 +28,6 @@ export default function Notifications() {
   const [isSending, setIsSending] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [processingScheduled, setProcessingScheduled] = useState<string | null>(null);
 
   const [formData, setFormData] = useState<NotificationFormData>({
     title: '',
@@ -41,9 +36,6 @@ export default function Notifications() {
     target_type: 'all',
     target_user_ids: [],
     target_segment_id: '',
-    send_time: 'now',
-    scheduled_date: '',
-    scheduled_time: '',
     personalize: false,
   });
 
@@ -52,49 +44,6 @@ export default function Notifications() {
   };
 
 
-  const handleSendScheduledNotification = async (notificationId: string) => {
-    setProcessingScheduled(notificationId);
-
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-
-      if (!session) {
-        throw new Error('Not authenticated');
-      }
-
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-push-notifications`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            action: 'process_scheduled',
-            notification_id: notificationId,
-          }),
-        }
-      );
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || 'Failed to send scheduled notification');
-      }
-
-      showToast(result.message || 'Scheduled notification sent successfully', 'success');
-      handleRefresh();
-    } catch (err) {
-      console.error('Error sending scheduled notification:', err);
-      showToast(
-        err instanceof Error ? err.message : 'Failed to send scheduled notification',
-        'error'
-      );
-    } finally {
-      setProcessingScheduled(null);
-    }
-  };
 
   const handleSendNotification = async () => {
     if (!formData.title.trim() || !formData.body.trim()) {
@@ -107,10 +56,6 @@ export default function Notifications() {
       return;
     }
 
-    if (formData.send_time === 'later' && (!formData.scheduled_date || !formData.scheduled_time)) {
-      showToast('Please select date and time for scheduled notification', 'error');
-      return;
-    }
 
     setIsSending(true);
 
@@ -137,17 +82,6 @@ export default function Notifications() {
             target_type: formData.target_type,
             target_user_ids: formData.target_user_ids,
             target_segment_id: formData.target_segment_id || undefined,
-            schedule_for: formData.send_time === 'later'
-              ? (() => {
-                  const watDateTime = `${formData.scheduled_date}T${formData.scheduled_time}:00`;
-                  const date = new Date(watDateTime);
-                  const watOffset = 1 * 60;
-                  const localOffset = date.getTimezoneOffset();
-                  const offsetDiff = watOffset + localOffset;
-                  date.setMinutes(date.getMinutes() - offsetDiff);
-                  return date.toISOString();
-                })()
-              : undefined,
             personalize: formData.personalize,
           }),
         }
@@ -168,9 +102,6 @@ export default function Notifications() {
         target_type: 'all',
         target_user_ids: [],
         target_segment_id: '',
-        send_time: 'now',
-        scheduled_date: '',
-        scheduled_time: '',
         personalize: false,
       });
       handleRefresh();
@@ -188,7 +119,6 @@ export default function Notifications() {
   const getStatusBadge = (status: string) => {
     const badges: Record<string, { bg: string; text: string; label: string }> = {
       draft: { bg: 'bg-gray-100', text: 'text-gray-800', label: 'Draft' },
-      scheduled: { bg: 'bg-blue-100', text: 'text-blue-800', label: 'Scheduled' },
       sending: { bg: 'bg-yellow-100', text: 'text-yellow-800', label: 'Sending' },
       sent: { bg: 'bg-green-100', text: 'text-green-800', label: 'Sent' },
       failed: { bg: 'bg-red-100', text: 'text-red-800', label: 'Failed' },
@@ -310,7 +240,6 @@ export default function Notifications() {
                 <option value="all">All Status</option>
                 <option value="sent">Sent</option>
                 <option value="sending">Sending</option>
-                <option value="scheduled">Scheduled</option>
                 <option value="failed">Failed</option>
                 <option value="draft">Draft</option>
               </select>
@@ -385,41 +314,9 @@ export default function Notifications() {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {notification.status === 'scheduled' && notification.scheduled_for ? (
-                          <div>
-                            <div className="text-sm font-medium text-gray-900">
-                              {format(new Date(notification.scheduled_for), 'MMM dd, yyyy HH:mm')}
-                            </div>
-                            <ScheduledNotificationCountdown
-                              scheduledFor={notification.scheduled_for}
-                            />
-                          </div>
-                        ) : (
-                          notification.sent_at
-                            ? format(new Date(notification.sent_at), 'MMM dd, yyyy HH:mm')
-                            : format(new Date(notification.created_at), 'MMM dd, yyyy HH:mm')
-                        )}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        {notification.status === 'scheduled' && (
-                          <button
-                            onClick={() => handleSendScheduledNotification(notification.id)}
-                            disabled={processingScheduled === notification.id}
-                            className="flex items-center space-x-1 px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            {processingScheduled === notification.id ? (
-                              <>
-                                <div className="animate-spin rounded-full h-3 w-3 border-t-2 border-b-2 border-white"></div>
-                                <span className="text-xs">Sending...</span>
-                              </>
-                            ) : (
-                              <>
-                                <Send className="h-3 w-3" />
-                                <span className="text-xs">Send Now</span>
-                              </>
-                            )}
-                          </button>
-                        )}
+                        {notification.sent_at
+                          ? format(new Date(notification.sent_at), 'MMM dd, yyyy HH:mm')
+                          : format(new Date(notification.created_at), 'MMM dd, yyyy HH:mm')}
                       </td>
                     </tr>
                   );
@@ -529,69 +426,6 @@ export default function Notifications() {
                 </div>
               )}
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Send Time *
-                </label>
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setFormData({ ...formData, send_time: 'now' })}
-                    className={`px-4 py-3 rounded-xl border-2 transition-all ${
-                      formData.send_time === 'now'
-                        ? 'border-gray-900 bg-gray-50'
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                  >
-                    <div className="flex items-center justify-center space-x-2">
-                      <Send className="h-4 w-4" />
-                      <span className="font-medium">Send Now</span>
-                    </div>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setFormData({ ...formData, send_time: 'later' })}
-                    className={`px-4 py-3 rounded-xl border-2 transition-all ${
-                      formData.send_time === 'later'
-                        ? 'border-gray-900 bg-gray-50'
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                  >
-                    <div className="flex items-center justify-center space-x-2">
-                      <Clock className="h-4 w-4" />
-                      <span className="font-medium">Schedule</span>
-                    </div>
-                  </button>
-                </div>
-              </div>
-
-              {formData.send_time === 'later' && (
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Date *
-                    </label>
-                    <input
-                      type="date"
-                      value={formData.scheduled_date}
-                      onChange={(e) => setFormData({ ...formData, scheduled_date: e.target.value })}
-                      min={new Date().toISOString().split('T')[0]}
-                      className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Time *
-                    </label>
-                    <input
-                      type="time"
-                      value={formData.scheduled_time}
-                      onChange={(e) => setFormData({ ...formData, scheduled_time: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
-                    />
-                  </div>
-                </div>
-              )}
 
               <div className="bg-blue-50 border border-blue-100 rounded-xl p-4">
                 <div className="flex">
@@ -631,9 +465,6 @@ export default function Notifications() {
                     target_type: 'all',
                     target_user_ids: [],
                     target_segment_id: '',
-                    send_time: 'now',
-                    scheduled_date: '',
-                    scheduled_time: '',
                     personalize: false,
                   });
                 }}
@@ -650,21 +481,12 @@ export default function Notifications() {
                 {isSending ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white"></div>
-                    <span>{formData.send_time === 'later' ? 'Scheduling...' : 'Sending...'}</span>
+                    <span>Sending...</span>
                   </>
                 ) : (
                   <>
-                    {formData.send_time === 'later' ? (
-                      <>
-                        <Clock className="h-4 w-4" />
-                        <span>Schedule Notification</span>
-                      </>
-                    ) : (
-                      <>
-                        <Send className="h-4 w-4" />
-                        <span>Send Notification</span>
-                      </>
-                    )}
+                    <Send className="h-4 w-4" />
+                    <span>Send Notification</span>
                   </>
                 )}
               </button>
