@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Bell, Send, RefreshCw, Users, CheckCircle, XCircle, Search, Filter, Clock } from 'lucide-react';
 import { useNotifications, useNotificationSegments, useNotificationStats } from '@/hooks/queries/useNotifications';
 import { useRefreshData } from '@/hooks/mutations/useRefreshData';
@@ -6,6 +6,7 @@ import { useToast } from '@/contexts/ToastContext';
 import { supabase } from '@/lib/supabase';
 import { format } from 'date-fns';
 import StatCard from '@/components/StatCard';
+import ScheduledNotificationCountdown from '@/components/ScheduledNotificationCountdown';
 
 interface NotificationFormData {
   title: string;
@@ -50,37 +51,6 @@ export default function Notifications() {
     refreshData.mutate(['push-notifications', 'notification-stats', 'push-notification-segments']);
   };
 
-  const processDueScheduledNotifications = async () => {
-    try {
-      if (!notifications) return;
-
-      const dueNotifications = notifications.filter((n: any) =>
-        n.status === 'scheduled' &&
-        n.scheduled_for &&
-        new Date(n.scheduled_for) <= new Date()
-      );
-
-      if (dueNotifications.length === 0) return;
-
-      console.log(`Found ${dueNotifications.length} due notifications, processing...`);
-
-      for (const notification of dueNotifications) {
-        await handleSendScheduledNotification(notification.id);
-      }
-    } catch (err) {
-      console.error('Error processing due notifications:', err);
-    }
-  };
-
-  useEffect(() => {
-    processDueScheduledNotifications();
-
-    const interval = setInterval(() => {
-      processDueScheduledNotifications();
-    }, 30000);
-
-    return () => clearInterval(interval);
-  }, [notifications]);
 
   const handleSendScheduledNotification = async (notificationId: string) => {
     setProcessingScheduled(notificationId);
@@ -415,9 +385,23 @@ export default function Notifications() {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {notification.sent_at
-                          ? format(new Date(notification.sent_at), 'MMM dd, yyyy HH:mm')
-                          : format(new Date(notification.created_at), 'MMM dd, yyyy HH:mm')}
+                        {notification.status === 'scheduled' && notification.scheduled_for ? (
+                          <div>
+                            <div className="text-sm font-medium text-gray-900">
+                              {format(new Date(notification.scheduled_for), 'MMM dd, yyyy HH:mm')}
+                            </div>
+                            <ScheduledNotificationCountdown
+                              scheduledFor={notification.scheduled_for}
+                              notificationId={notification.id}
+                              onTimeUp={handleSendScheduledNotification}
+                              isProcessing={processingScheduled === notification.id}
+                            />
+                          </div>
+                        ) : (
+                          notification.sent_at
+                            ? format(new Date(notification.sent_at), 'MMM dd, yyyy HH:mm')
+                            : format(new Date(notification.created_at), 'MMM dd, yyyy HH:mm')
+                        )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
                         {notification.status === 'scheduled' && (
