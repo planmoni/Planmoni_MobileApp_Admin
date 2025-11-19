@@ -3,6 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { Eye, EyeOff, Mail, Lock, ArrowRight, AlertCircle } from 'lucide-react';
+import { TOTP } from 'otpauth';
+import { supabase } from '@/lib/supabase';
+import { TwoFactorModal } from '@/components/TwoFactorModal';
 
 export default function Login() {
   const { signIn } = useAuth();
@@ -13,6 +16,8 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [show2FAModal, setShow2FAModal] = useState(false);
+  const [isVerifying2FA, setIsVerifying2FA] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,16 +35,121 @@ export default function Login() {
       if (!result.success) {
         setError(result.error || 'Failed to sign in');
         showToast(result.error || 'Failed to sign in', 'error');
-      } else {
-        navigate('/');
-        showToast('Successfully signed in', 'success');
+        setIsLoading(false);
+        return;
       }
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('No user found after login');
+      }
+
+      const { data: is2FAEnabled, error: twoFactorCheckError } = await supabase
+        .rpc('is_2fa_enabled_system_wide');
+
+      if (twoFactorCheckError) {
+        console.error('Error checking 2FA status:', twoFactorCheckError);
+      }
+
+      console.log('2FA Enabled:', is2FAEnabled);
+
+      if (is2FAEnabled) {
+        console.log('Opening 2FA modal...');
+        setShow2FAModal(true);
+        setIsLoading(false);
+        return;
+      }
+
+      await createSession(user.id);
+      navigate('/');
+      showToast('Successfully signed in', 'success');
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred';
       setError(errorMessage);
       showToast(errorMessage, 'error');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleVerify2FA = async (code: string) => {
+    setIsVerifying2FA(true);
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        await supabase.auth.signOut();
+        setShow2FAModal(false);
+        setError('Session expired. Please login again.');
+        throw new Error('Session expired. Please login again.');
+      }
+
+      const { data: twoFactorSettingsArray, error: settingsError } = await supabase
+        .rpc('get_2fa_settings_for_verification');
+
+      if (settingsError || !twoFactorSettingsArray || twoFactorSettingsArray.length === 0) {
+        await supabase.auth.signOut();
+        setShow2FAModal(false);
+        throw new Error('2FA configuration not found. Please contact your administrator.');
+      }
+
+      const twoFactorSettings = twoFactorSettingsArray[0];
+
+      const totp = new TOTP({
+        issuer: 'Planmoni Admin',
+        label: 'admin@planmoni.com',
+        algorithm: 'SHA1',
+        digits: 6,
+        period: 30,
+        secret: twoFactorSettings.secret,
+      });
+
+      const isValid = totp.validate({ token: code, window: 1 }) !== null;
+      const isBackupCode = twoFactorSettings.backup_codes?.includes(code);
+
+      if (!isValid && !isBackupCode) {
+        throw new Error('Invalid verification code. Please try again.');
+      }
+
+      if (isBackupCode) {
+        const updatedCodes = twoFactorSettings.backup_codes.filter((c: string) => c !== code);
+        await supabase
+          .from('admin_2fa_settings')
+          .update({ backup_codes: updatedCodes })
+          .eq('user_id', twoFactorSettings.user_id);
+        showToast('Backup code used successfully', 'success');
+      }
+
+      await createSession(user.id);
+      setShow2FAModal(false);
+      navigate('/');
+      showToast('Successfully signed in', 'success');
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Verification failed';
+      showToast(errorMessage, 'error');
+      throw err;
+    } finally {
+      setIsVerifying2FA(false);
+    }
+  };
+
+  const createSession = async (userId: string) => {
+    try {
+      const sessionToken = crypto.randomUUID();
+      const expiresAt = new Date();
+      expiresAt.setHours(expiresAt.getHours() + 24);
+
+      await supabase.from('admin_sessions').insert({
+        user_id: userId,
+        session_token: sessionToken,
+        ip_address: null,
+        user_agent: navigator.userAgent,
+        expires_at: expiresAt.toISOString(),
+      });
+
+      localStorage.setItem('admin_session_token', sessionToken);
+    } catch (error) {
+      console.error('Error creating session:', error);
     }
   };
 
@@ -151,6 +261,16 @@ export default function Login() {
           </div>
         </div>
       </div>
+
+      <TwoFactorModal
+        isOpen={show2FAModal}
+        onClose={() => {
+          setShow2FAModal(false);
+          supabase.auth.signOut();
+        }}
+        onVerify={handleVerify2FA}
+        isVerifying={isVerifying2FA}
+      />
     </div>
   );
 }

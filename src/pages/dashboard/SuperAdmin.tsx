@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Shield,
   Users,
@@ -14,7 +14,8 @@ import {
   TrendingUp,
   Edit,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Lock
 } from 'lucide-react';
 import { useSuperAdminData } from '@/hooks/queries/useSuperAdminData';
 import { useRefreshData } from '@/hooks/mutations/useRefreshData';
@@ -22,6 +23,9 @@ import { useCreateRole, useAssignRoles, useDeleteRole, useUpdateRole } from '@/h
 import { CreateRoleModal } from '@/components/CreateRoleModal';
 import { AssignRoleModal } from '@/components/AssignRoleModal';
 import { EditRoleModal } from '@/components/EditRoleModal';
+import { TwoFactorSetup } from '@/components/TwoFactorSetup';
+import { ActiveSessionsManager } from '@/components/ActiveSessionsManager';
+import { supabase } from '@/lib/supabase';
 
 const formatPermissionName = (name: string): string => {
   return name
@@ -31,13 +35,14 @@ const formatPermissionName = (name: string): string => {
 };
 
 export default function SuperAdmin() {
-  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'roles'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'roles' | 'security'>('overview');
   const [searchQuery, setSearchQuery] = useState('');
   const [isCreateRoleModalOpen, setIsCreateRoleModalOpen] = useState(false);
   const [isAssignRoleModalOpen, setIsAssignRoleModalOpen] = useState(false);
   const [isEditRoleModalOpen, setIsEditRoleModalOpen] = useState(false);
   const [selectedRole, setSelectedRole] = useState<any>(null);
   const [expandedRoleId, setExpandedRoleId] = useState<string | null>(null);
+  const [is2FAEnabled, setIs2FAEnabled] = useState(false);
 
   const { data: superAdminData, isLoading, error } = useSuperAdminData();
   const refreshData = useRefreshData();
@@ -89,6 +94,29 @@ export default function SuperAdmin() {
   const toggleRoleExpand = (roleId: string) => {
     setExpandedRoleId(expandedRoleId === roleId ? null : roleId);
   };
+
+  useEffect(() => {
+    const check2FAStatus = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const { data, error } = await supabase
+          .from('admin_2fa_settings')
+          .select('is_enabled')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (!error && data) {
+          setIs2FAEnabled(data.is_enabled);
+        }
+      } catch (error) {
+        console.error('Error checking 2FA status:', error);
+      }
+    };
+
+    check2FAStatus();
+  }, []);
 
   if (error) {
     return (
@@ -159,6 +187,7 @@ export default function SuperAdmin() {
           { id: 'overview', label: 'Overview', icon: BarChart3 },
           { id: 'users', label: 'Users', icon: Users },
           { id: 'roles', label: 'Roles', icon: Key },
+          { id: 'security', label: 'Security', icon: Lock },
         ].map((tab) => (
           <button
             key={tab.id}
@@ -483,6 +512,16 @@ export default function SuperAdmin() {
               <p className="text-gray-400 text-sm">Create your first role to get started</p>
             </div>
           )}
+        </div>
+      )}
+
+      {activeTab === 'security' && (
+        <div className="space-y-6">
+          <TwoFactorSetup
+            isEnabled={is2FAEnabled}
+            onToggle={() => setIs2FAEnabled(!is2FAEnabled)}
+          />
+          <ActiveSessionsManager />
         </div>
       )}
 

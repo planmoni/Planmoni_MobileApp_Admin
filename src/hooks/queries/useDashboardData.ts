@@ -294,11 +294,11 @@ const fetchTodayPlanDistribution = async () => {
   const daily = todayPlans?.filter(p => p.frequency === 'daily').length || 0;
   const weekly = todayPlans?.filter(p => p.frequency === 'weekly').length || 0;
   const biweekly = todayPlans?.filter(p => p.frequency === 'biweekly').length || 0;
-  const specificDays = todayPlans?.filter(p => p.frequency === 'specific_days').length || 0;
-  const monthEnd = todayPlans?.filter(p => p.frequency === 'month_end').length || 0;
+  const specificDays = todayPlans?.filter(p => p.frequency === 'weekly_specific').length || 0;
+  const monthEnd = todayPlans?.filter(p => p.frequency === 'end_of_month').length || 0;
   const monthly = todayPlans?.filter(p => p.frequency === 'monthly').length || 0;
   const quarterly = todayPlans?.filter(p => p.frequency === 'quarterly').length || 0;
-  const biAnnually = todayPlans?.filter(p => p.frequency === 'bi_annually').length || 0;
+  const biAnnually = todayPlans?.filter(p => p.frequency === 'biannual').length || 0;
   const annually = todayPlans?.filter(p => p.frequency === 'annually').length || 0;
   const custom = todayPlans?.filter(p => p.frequency === 'custom').length || 0;
 
@@ -414,7 +414,7 @@ const fetchDashboardData = async (): Promise<DashboardStats> => {
       .select(`
         id,
         user_id,
-        status,
+        approved,
         created_at,
         profiles (
           first_name,
@@ -903,7 +903,7 @@ const fetchDashboardDataFallback = async (): Promise<DashboardStats> => {
     .select(`
       id,
       user_id,
-      status,
+      approved,
       created_at,
       profiles (
         first_name,
