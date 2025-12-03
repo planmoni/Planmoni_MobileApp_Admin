@@ -18,14 +18,13 @@ export default function Login() {
   const [error, setError] = useState<string | null>(null);
   const [show2FAModal, setShow2FAModal] = useState(false);
   const [isVerifying2FA, setIsVerifying2FA] = useState(false);
-  const [loginSuccess, setLoginSuccess] = useState(false);
 
-  // Handle navigation after successful login
+  // Auto-redirect when session is present (user is already logged in)
   useEffect(() => {
-    if (loginSuccess && session) {
+    if (session && !isLoading) {
       navigate('/dashboard', { replace: true });
     }
-  }, [loginSuccess, session, navigate]);
+  }, [session, isLoading, navigate]);
 
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -70,7 +69,7 @@ export default function Login() {
       }
 
       await createSession(user.id);
-      setLoginSuccess(true);
+      // Session will be set by AuthContext, then useEffect will handle navigation
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred';
       setError(errorMessage);
@@ -130,7 +129,7 @@ export default function Login() {
 
       await createSession(user.id);
       setShow2FAModal(false);
-      setLoginSuccess(true);
+      // Session will be set by AuthContext, then useEffect will handle navigation
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Verification failed';
       showToast(errorMessage, 'error');
