@@ -1,5 +1,4 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { Eye, EyeOff, Mail, Lock, ArrowRight, AlertCircle } from 'lucide-react';
@@ -8,8 +7,7 @@ import { supabase } from '@/lib/supabase';
 import { TwoFactorModal } from '@/components/TwoFactorModal';
 
 export default function Login() {
-  const { signIn, session } = useAuth();
-  const navigate = useNavigate();
+  const { signIn } = useAuth();
   const { showToast } = useToast();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -18,13 +16,6 @@ export default function Login() {
   const [error, setError] = useState<string | null>(null);
   const [show2FAModal, setShow2FAModal] = useState(false);
   const [isVerifying2FA, setIsVerifying2FA] = useState(false);
-
-  // Auto-redirect when session is present (user is already logged in)
-  useEffect(() => {
-    if (session && !isLoading) {
-      navigate('/dashboard', { replace: true });
-    }
-  }, [session, isLoading, navigate]);
 
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -69,12 +60,16 @@ export default function Login() {
       }
 
       await createSession(user.id);
-      // Session will be set by AuthContext, then useEffect will handle navigation
+
+      // Wait a moment for onAuthStateChange to fire and set the session
+      // This allows App.tsx to re-render with the authenticated routes
+      await new Promise(resolve => setTimeout(resolve, 300));
+
+      // Session is set by AuthContext via onAuthStateChange, App will handle routing
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred';
       setError(errorMessage);
       showToast(errorMessage, 'error');
-    } finally {
       setIsLoading(false);
     }
   };
@@ -129,13 +124,16 @@ export default function Login() {
 
       await createSession(user.id);
       setShow2FAModal(false);
-      // Session will be set by AuthContext, then useEffect will handle navigation
+
+      // Wait a moment for onAuthStateChange to fire and set the session
+      await new Promise(resolve => setTimeout(resolve, 300));
+
+      // Session is set by AuthContext via onAuthStateChange, App will handle routing
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Verification failed';
       showToast(errorMessage, 'error');
-      throw err;
-    } finally {
       setIsVerifying2FA(false);
+      throw err;
     }
   };
 

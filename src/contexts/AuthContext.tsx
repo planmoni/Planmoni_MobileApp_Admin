@@ -109,9 +109,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         };
       }
 
-      console.log('User has required role, setting session...');
-      // Explicitly set the session to ensure it's available immediately
-      setSession(data.session);
+      console.log('User has required role, login successful');
+      // Session will be set by onAuthStateChange listener
+      // Don't set it manually to avoid race conditions
 
       return { success: true };
     } catch (error) {
