@@ -60,8 +60,11 @@ export default function Login() {
       }
 
       await createSession(user.id);
-      // Force page refresh to ensure clean state
-      window.location.href = '/dashboard';
+
+      // Small delay to ensure session is persisted, then force refresh
+      setTimeout(() => {
+        window.location.href = '/dashboard';
+      }, 100);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred';
       setError(errorMessage);
@@ -120,8 +123,11 @@ export default function Login() {
 
       await createSession(user.id);
       setShow2FAModal(false);
-      // Force page refresh to ensure clean state
-      window.location.href = '/dashboard';
+
+      // Small delay to ensure session is persisted, then force refresh
+      setTimeout(() => {
+        window.location.href = '/dashboard';
+      }, 100);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Verification failed';
       showToast(errorMessage, 'error');
