@@ -283,15 +283,25 @@ export default function KycData() {
                       </td>
 
                       <td className="px-6 py-4 whitespace-nowrap">
-                        {kyc.approved ? (
+                        {kyc.kyc_progress?.tier_3_completed ? (
+                          <span className="inline-flex items-center px-3 py-1 rounded-lg bg-purple-50 text-purple-700 text-sm font-medium">
+                            <CheckCircle className="h-4 w-4 mr-1" />
+                            Tier 3
+                          </span>
+                        ) : kyc.kyc_progress?.tier_2_completed ? (
+                          <span className="inline-flex items-center px-3 py-1 rounded-lg bg-blue-50 text-blue-700 text-sm font-medium">
+                            <CheckCircle className="h-4 w-4 mr-1" />
+                            Tier 2
+                          </span>
+                        ) : kyc.kyc_progress?.tier_1_completed ? (
                           <span className="inline-flex items-center px-3 py-1 rounded-lg bg-green-50 text-green-700 text-sm font-medium">
                             <CheckCircle className="h-4 w-4 mr-1" />
-                            Approved
+                            Tier 1
                           </span>
                         ) : (
-                          <span className="inline-flex items-center px-3 py-1 rounded-lg bg-yellow-50 text-yellow-700 text-sm font-medium">
+                          <span className="inline-flex items-center px-3 py-1 rounded-lg bg-gray-50 text-gray-700 text-sm font-medium">
                             <Clock className="h-4 w-4 mr-1" />
-                            Pending
+                            Not Started
                           </span>
                         )}
                       </td>
@@ -349,15 +359,25 @@ export default function KycData() {
                       </div>
                       <div className="text-sm text-gray-500 truncate">{kyc.user?.email}</div>
                     </div>
-                    {kyc.approved ? (
+                    {kyc.kyc_progress?.tier_3_completed ? (
+                      <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-purple-50 text-purple-700 text-xs font-medium flex-shrink-0">
+                        <CheckCircle className="h-3 w-3 mr-1" />
+                        Tier 3
+                      </span>
+                    ) : kyc.kyc_progress?.tier_2_completed ? (
+                      <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 text-xs font-medium flex-shrink-0">
+                        <CheckCircle className="h-3 w-3 mr-1" />
+                        Tier 2
+                      </span>
+                    ) : kyc.kyc_progress?.tier_1_completed ? (
                       <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-green-50 text-green-700 text-xs font-medium flex-shrink-0">
                         <CheckCircle className="h-3 w-3 mr-1" />
-                        Approved
+                        Tier 1
                       </span>
                     ) : (
-                      <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-yellow-50 text-yellow-700 text-xs font-medium flex-shrink-0">
+                      <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-gray-50 text-gray-700 text-xs font-medium flex-shrink-0">
                         <Clock className="h-3 w-3 mr-1" />
-                        Pending
+                        Not Started
                       </span>
                     )}
                   </div>

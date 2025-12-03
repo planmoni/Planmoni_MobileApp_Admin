@@ -40,6 +40,9 @@ export interface KycData {
     documents_verified: boolean;
     address_completed: boolean;
     overall_completed: boolean;
+    tier_1_completed: boolean;
+    tier_2_completed: boolean;
+    tier_3_completed: boolean;
   };
 }
 
