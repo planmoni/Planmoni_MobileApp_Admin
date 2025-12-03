@@ -76,9 +76,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signIn = async (email: string, password: string) => {
     try {
-      setIsLoading(true);
       console.log('Attempting to sign in with:', email);
-      
+
       const { data, error } = await supabase.auth.signInWithPassword({
         email: email.trim(),
         password,
@@ -89,7 +88,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { success: false, error: error.message };
       }
 
-      if (!data.user) {
+      if (!data.user || !data.session) {
         return { success: false, error: 'Authentication failed' };
       }
 
@@ -100,26 +99,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (!hasRequiredRole) {
         console.log('User does not have required role, signing out...');
-        
+
         // Sign out the user immediately
         await supabase.auth.signOut();
-        
-        return { 
-          success: false, 
-          error: 'Access denied. This dashboard is restricted to administrators only.' 
+
+        return {
+          success: false,
+          error: 'Access denied. This dashboard is restricted to administrators only.'
         };
       }
 
-      console.log('User has required role, sign in successful');
+      console.log('User has required role, setting session...');
+      // Explicitly set the session to ensure it's available immediately
+      setSession(data.session);
+
       return { success: true };
     } catch (error) {
       console.error('Unexpected sign in error:', error);
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'An unknown error occurred' 
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'An unknown error occurred'
       };
-    } finally {
-      setIsLoading(false);
     }
   };
 

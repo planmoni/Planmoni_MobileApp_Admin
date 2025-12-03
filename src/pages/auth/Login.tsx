@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { Eye, EyeOff, Mail, Lock, ArrowRight, AlertCircle } from 'lucide-react';
@@ -7,7 +8,8 @@ import { supabase } from '@/lib/supabase';
 import { TwoFactorModal } from '@/components/TwoFactorModal';
 
 export default function Login() {
-  const { signIn } = useAuth();
+  const { signIn, session } = useAuth();
+  const navigate = useNavigate();
   const { showToast } = useToast();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -16,6 +18,14 @@ export default function Login() {
   const [error, setError] = useState<string | null>(null);
   const [show2FAModal, setShow2FAModal] = useState(false);
   const [isVerifying2FA, setIsVerifying2FA] = useState(false);
+  const [loginSuccess, setLoginSuccess] = useState(false);
+
+  // Handle navigation after successful login
+  useEffect(() => {
+    if (loginSuccess && session) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [loginSuccess, session, navigate]);
 
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -60,9 +70,7 @@ export default function Login() {
       }
 
       await createSession(user.id);
-      // Wait a moment for session to be saved, then redirect
-      await new Promise(resolve => setTimeout(resolve, 100));
-      window.location.replace('/dashboard');
+      setLoginSuccess(true);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred';
       setError(errorMessage);
@@ -122,9 +130,7 @@ export default function Login() {
 
       await createSession(user.id);
       setShow2FAModal(false);
-      // Wait a moment for session to be saved, then redirect
-      await new Promise(resolve => setTimeout(resolve, 100));
-      window.location.replace('/dashboard');
+      setLoginSuccess(true);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Verification failed';
       showToast(errorMessage, 'error');
