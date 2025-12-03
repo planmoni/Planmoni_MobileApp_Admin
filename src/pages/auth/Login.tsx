@@ -61,7 +61,7 @@ export default function Login() {
       }
 
       await createSession(user.id);
-      navigate('/');
+      navigate('/dashboard');
       showToast('Successfully signed in', 'success');
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred';
@@ -122,7 +122,7 @@ export default function Login() {
 
       await createSession(user.id);
       setShow2FAModal(false);
-      navigate('/');
+      navigate('/dashboard');
       showToast('Successfully signed in', 'success');
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Verification failed';

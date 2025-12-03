@@ -133,7 +133,7 @@ export default function Sidebar({ isMobileMenuOpen, closeMobileMenu }: { isMobil
   };
 
   const allNavigationItems = [
-    { name: 'Dashboard', path: '/', icon: Home, resource: 'dashboard', action: 'view', customCheck: hasDashboardPermissions },
+    { name: 'Dashboard', path: '/dashboard', icon: Home, resource: 'dashboard', action: 'view', customCheck: hasDashboardPermissions },
     { name: 'Users', path: '/users', icon: Users, resource: 'users', action: 'list' },
     { name: 'Calendar', path: '/calendar', icon: CalendarDays, resource: 'calendar', action: 'view' },
     { name: 'Transactions', path: '/transactions', icon: CreditCard, resource: 'transactions', action: 'list' },

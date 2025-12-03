@@ -56,7 +56,8 @@ function App() {
             <>
               {/* Dashboard Routes */}
               <Route path="/" element={<DashboardLayout />}>
-                <Route index element={<DashboardPage />} />
+                <Route index element={<Navigate to="/dashboard" replace />} />
+                <Route path="dashboard" element={<DashboardPage />} />
                 <Route path="users" element={<UsersPage />} />
                 <Route path="users/:id" element={<UserDetailsPage />} />
                 <Route path="transactions" element={<TransactionsPage />} />
