@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
@@ -8,7 +8,7 @@ import { supabase } from '@/lib/supabase';
 import { TwoFactorModal } from '@/components/TwoFactorModal';
 
 export default function Login() {
-  const { signIn } = useAuth();
+  const { signIn, session } = useAuth();
   const { showToast } = useToast();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
@@ -18,6 +18,12 @@ export default function Login() {
   const [error, setError] = useState<string | null>(null);
   const [show2FAModal, setShow2FAModal] = useState(false);
   const [isVerifying2FA, setIsVerifying2FA] = useState(false);
+
+  useEffect(() => {
+    if (session && !show2FAModal) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [session, show2FAModal, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,8 +67,8 @@ export default function Login() {
       }
 
       await createSession(user.id);
-      navigate('/dashboard');
       showToast('Successfully signed in', 'success');
+      // Navigation will happen automatically via useEffect
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred';
       setError(errorMessage);
@@ -122,8 +128,8 @@ export default function Login() {
 
       await createSession(user.id);
       setShow2FAModal(false);
-      navigate('/dashboard');
       showToast('Successfully signed in', 'success');
+      // Navigation will happen automatically via useEffect
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Verification failed';
       showToast(errorMessage, 'error');
