@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { Eye, EyeOff, Mail, Lock, ArrowRight, AlertCircle } from 'lucide-react';
@@ -7,7 +8,8 @@ import { supabase } from '@/lib/supabase';
 import { TwoFactorModal } from '@/components/TwoFactorModal';
 
 export default function Login() {
-  const { signIn } = useAuth();
+  const { signIn, session } = useAuth();
+  const navigate = useNavigate();
   const { showToast } = useToast();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -16,6 +18,13 @@ export default function Login() {
   const [error, setError] = useState<string | null>(null);
   const [show2FAModal, setShow2FAModal] = useState(false);
   const [isVerifying2FA, setIsVerifying2FA] = useState(false);
+
+  // Navigate to dashboard when session exists
+  useEffect(() => {
+    if (session) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [session, navigate]);
 
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -60,12 +69,7 @@ export default function Login() {
       }
 
       await createSession(user.id);
-
-      // Wait a moment for onAuthStateChange to fire and set the session
-      // This allows App.tsx to re-render with the authenticated routes
-      await new Promise(resolve => setTimeout(resolve, 300));
-
-      // Session is set by AuthContext via onAuthStateChange, App will handle routing
+      // Session is set immediately by AuthContext.signIn(), App will handle routing
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred';
       setError(errorMessage);
@@ -124,11 +128,7 @@ export default function Login() {
 
       await createSession(user.id);
       setShow2FAModal(false);
-
-      // Wait a moment for onAuthStateChange to fire and set the session
-      await new Promise(resolve => setTimeout(resolve, 300));
-
-      // Session is set by AuthContext via onAuthStateChange, App will handle routing
+      // Session is set immediately by AuthContext.signIn(), App will handle routing
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Verification failed';
       showToast(errorMessage, 'error');
