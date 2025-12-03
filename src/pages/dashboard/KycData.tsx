@@ -253,7 +253,7 @@ export default function KycData() {
                           )}
                           {kyc.document_type && (
                             <div className="text-xs font-medium text-gray-600">
-                              {kyc.document_type}
+                              {typeof kyc.document_type === 'object' ? kyc.document_type.document_name : kyc.document_type}
                             </div>
                           )}
                         </div>
@@ -394,7 +394,7 @@ export default function KycData() {
                           )}
                           {kyc.document_type && (
                             <div className="text-xs font-medium text-gray-700">
-                              {kyc.document_type}
+                              {typeof kyc.document_type === 'object' ? kyc.document_type.document_name : kyc.document_type}
                             </div>
                           )}
                         </div>
