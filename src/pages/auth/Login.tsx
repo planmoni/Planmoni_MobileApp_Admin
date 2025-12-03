@@ -1,5 +1,4 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { Eye, EyeOff, Mail, Lock, ArrowRight, AlertCircle } from 'lucide-react';
@@ -8,9 +7,8 @@ import { supabase } from '@/lib/supabase';
 import { TwoFactorModal } from '@/components/TwoFactorModal';
 
 export default function Login() {
-  const { signIn, session } = useAuth();
+  const { signIn } = useAuth();
   const { showToast } = useToast();
-  const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -19,11 +17,6 @@ export default function Login() {
   const [show2FAModal, setShow2FAModal] = useState(false);
   const [isVerifying2FA, setIsVerifying2FA] = useState(false);
 
-  useEffect(() => {
-    if (session && !show2FAModal) {
-      navigate('/dashboard', { replace: true });
-    }
-  }, [session, show2FAModal, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,8 +60,8 @@ export default function Login() {
       }
 
       await createSession(user.id);
-      showToast('Successfully signed in', 'success');
-      // Navigation will happen automatically via useEffect
+      // Force immediate navigation
+      window.location.href = '/dashboard';
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred';
       setError(errorMessage);
@@ -128,8 +121,8 @@ export default function Login() {
 
       await createSession(user.id);
       setShow2FAModal(false);
-      showToast('Successfully signed in', 'success');
-      // Navigation will happen automatically via useEffect
+      // Force immediate navigation
+      window.location.href = '/dashboard';
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Verification failed';
       showToast(errorMessage, 'error');
