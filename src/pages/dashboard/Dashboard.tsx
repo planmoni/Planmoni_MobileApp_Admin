@@ -313,18 +313,20 @@ export default function Dashboard() {
           )}
 
           {(isSuperAdmin || hasPermission('dashboard', 'stats.payouts')) && (
-          <div className="bg-white rounded-2xl p-4 md:p-6 shadow-soft border border-gray-100">
-            <div className="flex justify-between items-start mb-2">
-              <div className="flex-1 min-w-0">
-                <p className="text-xs md:text-sm font-medium text-gray-500 mb-1">Payouts</p>
-                <p className="text-lg md:text-2xl font-bold text-gray-900 break-words">{formatCurrency(stats.todayPayouts)}</p>
-                {renderComparison(stats.todayPayouts, stats.yesterdayPayouts, false)}
-              </div>
-              <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-red-50 flex items-center justify-center flex-shrink-0">
-                <ArrowDownRight className="h-4 w-4 md:h-5 md:w-5 text-red-600" />
+          <Link to="/transactions" state={{ filterType: 'payout' }}>
+            <div className="bg-white rounded-2xl p-4 md:p-6 shadow-soft border border-gray-100 hover:shadow-md transition-shadow cursor-pointer">
+              <div className="flex justify-between items-start mb-2">
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs md:text-sm font-medium text-gray-500 mb-1">Payouts</p>
+                  <p className="text-lg md:text-2xl font-bold text-gray-900 break-words">{formatCurrency(stats.todayPayouts)}</p>
+                  {renderComparison(stats.todayPayouts, stats.yesterdayPayouts, false)}
+                </div>
+                <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-red-50 flex items-center justify-center flex-shrink-0">
+                  <ArrowDownRight className="h-4 w-4 md:h-5 md:w-5 text-red-600" />
+                </div>
               </div>
             </div>
-          </div>
+          </Link>
           )}
 
           {(isSuperAdmin || hasPermission('dashboard', 'stats.new_plans')) && (

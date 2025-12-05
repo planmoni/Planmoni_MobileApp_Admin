@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Search, Filter, ArrowUpRight, ArrowDownRight, RefreshCw } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
 import DateRangePicker from '../../components/DateRangePicker';
 import TransactionDetailsModal from '../../components/TransactionDetailsModal';
 import { format } from 'date-fns';
@@ -9,6 +10,7 @@ import { useRefreshData } from '@/hooks/mutations/useRefreshData';
 type TransactionType = 'all' | 'deposit' | 'payout' | 'withdrawal';
 
 export default function Transactions() {
+  const location = useLocation();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeType, setActiveType] = useState<TransactionType>('all');
   const [dateRange, setDateRange] = useState<{ start: Date | null; end: Date | null }>({
@@ -17,6 +19,14 @@ export default function Transactions() {
   });
   const [selectedTransaction, setSelectedTransaction] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Set initial filter type from navigation state
+  useEffect(() => {
+    const state = location.state as { filterType?: TransactionType };
+    if (state?.filterType) {
+      setActiveType(state.filterType);
+    }
+  }, [location.state]);
 
   const { data: transactionsData, isLoading, error } = useTransactionsData({
     searchQuery,
