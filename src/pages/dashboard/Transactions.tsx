@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Search, Filter, ArrowUpRight, ArrowDownRight, RefreshCw } from 'lucide-react';
+import { Search, Filter, ArrowUpRight, ArrowDownRight, RefreshCw, X, User } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import DateRangePicker from '../../components/DateRangePicker';
 import TransactionDetailsModal from '../../components/TransactionDetailsModal';
@@ -19,19 +19,26 @@ export default function Transactions() {
   });
   const [selectedTransaction, setSelectedTransaction] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [userName, setUserName] = useState<string | null>(null);
 
-  // Set initial filter type from navigation state
+  // Set initial filter type and userId from navigation state
   useEffect(() => {
-    const state = location.state as { filterType?: TransactionType };
+    const state = location.state as { filterType?: TransactionType; userId?: string; userName?: string };
     if (state?.filterType) {
       setActiveType(state.filterType);
+    }
+    if (state?.userId) {
+      setUserId(state.userId);
+      setUserName(state.userName || null);
     }
   }, [location.state]);
 
   const { data: transactionsData, isLoading, error } = useTransactionsData({
     searchQuery,
     activeType,
-    dateRange
+    dateRange,
+    userId
   });
 
   const refreshData = useRefreshData();
@@ -174,6 +181,25 @@ export default function Transactions() {
           className="w-full sm:w-auto"
         />
       </div>
+
+      {userId && userName && (
+        <div className="mb-6">
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 rounded-xl border border-blue-200">
+            <User className="h-4 w-4" />
+            <span className="text-sm font-medium">Filtered by user: {userName}</span>
+            <button
+              onClick={() => {
+                setUserId(null);
+                setUserName(null);
+              }}
+              className="ml-1 hover:bg-blue-100 rounded-full p-1 transition-colors"
+              title="Clear user filter"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="bg-white rounded-2xl shadow-soft border border-gray-100 mb-8 overflow-hidden">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-6">

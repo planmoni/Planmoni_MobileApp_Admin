@@ -360,9 +360,13 @@ export default function UserDetails() {
               </div>
               {transactions.length > 5 && (
                 <div className="border-t border-gray-100 p-4 text-center bg-gray-50">
-                  <button className="text-gray-900 hover:text-gray-700 text-sm font-semibold transition-colors">
+                  <Link
+                    to="/transactions"
+                    state={{ userId: id, userName: `${user.first_name} ${user.last_name}` }}
+                    className="text-gray-900 hover:text-gray-700 text-sm font-semibold transition-colors"
+                  >
                     View All {transactions.length} Transactions
-                  </button>
+                  </Link>
                 </div>
               )}
             </>

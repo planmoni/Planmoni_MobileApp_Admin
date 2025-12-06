@@ -36,12 +36,18 @@ interface TransactionsQueryParams {
   searchQuery?: string;
   activeType?: TransactionType;
   dateRange?: { start: Date | null; end: Date | null };
+  userId?: string | null;
 }
 
 const fetchTransactionsData = async (params: TransactionsQueryParams = {}) => {
-  const { searchQuery = '', activeType = 'all', dateRange } = params;
+  const { searchQuery = '', activeType = 'all', dateRange, userId = null } = params;
   
   try {
+    // If userId is provided, use fallback method as RPC might not support it
+    if (userId) {
+      return await fetchTransactionsDataFallback(params);
+    }
+
     // Use the optimized RPC function for fetching transactions
     const { data: transactionData, error: transactionError } = await supabase.rpc('get_all_transactions_data', {
       search_query: searchQuery || null,
@@ -51,7 +57,7 @@ const fetchTransactionsData = async (params: TransactionsQueryParams = {}) => {
       limit_count: 100,
       offset_count: 0
     });
-    
+
     if (transactionError) {
       console.error('Error fetching transactions via RPC:', transactionError);
       // Fallback to original method
@@ -107,9 +113,9 @@ const fetchTransactionsData = async (params: TransactionsQueryParams = {}) => {
 };
 
 const fetchTransactionsDataFallback = async (params: TransactionsQueryParams = {}) => {
-  const { searchQuery = '', activeType = 'all', dateRange } = params;
-  
-  const { data, error } = await supabase
+  const { searchQuery = '', activeType = 'all', dateRange, userId = null } = params;
+
+  let query = supabase
     .from('transactions')
     .select(`
       id,
@@ -123,6 +129,7 @@ const fetchTransactionsDataFallback = async (params: TransactionsQueryParams = {
       reference,
       description,
       created_at,
+      user_id,
       profiles (
         id,
         first_name,
@@ -131,6 +138,12 @@ const fetchTransactionsDataFallback = async (params: TransactionsQueryParams = {
       )
     `)
     .order('created_at', { ascending: false });
+
+  if (userId) {
+    query = query.eq('user_id', userId);
+  }
+
+  const { data, error } = await query;
   
   if (error) throw error;
   
