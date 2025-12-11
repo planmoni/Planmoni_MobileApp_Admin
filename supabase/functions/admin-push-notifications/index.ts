@@ -71,33 +71,24 @@ async function sendPushNotifications(
 }
 
 function isValidExpoPushToken(token: string): boolean {
-  // Valid Expo push token formats:
-  // 1. ExponentPushToken[xxxxxxxxxxxxxxxxxxxxxx]
-  // 2. ExpoPushToken[xxxxxxxxxxxxxxxxxxxxxx]
-  // 3. Legacy format: 22 character alphanumeric string
-
   if (!token || typeof token !== 'string') {
     return false;
   }
 
-  // Check for ExponentPushToken format
   if (token.startsWith('ExponentPushToken[') && token.endsWith(']')) {
     const inner = token.slice(18, -1);
     return inner.length > 0 && /^[a-zA-Z0-9_-]+$/.test(inner);
   }
 
-  // Check for ExpoPushToken format (newer)
   if (token.startsWith('ExpoPushToken[') && token.endsWith(']')) {
     const inner = token.slice(14, -1);
     return inner.length > 0 && /^[a-zA-Z0-9_-]+$/.test(inner);
   }
 
-  // Legacy format: exactly 22 characters, alphanumeric with dashes/underscores
   if (/^[a-zA-Z0-9_-]{22}$/.test(token)) {
     return true;
   }
 
-  // Reject everything else (including 64-char hex strings)
   return false;
 }
 
@@ -110,7 +101,6 @@ function personalizeMessage(message: string, firstName: string | null, shouldPer
 }
 
 async function checkNotificationPermission(supabaseAuth: any): Promise<boolean> {
-  // Check if user is super admin using authenticated client
   const { data: isSuperAdmin, error: superAdminError } = await supabaseAuth
     .rpc('is_super_admin');
 
@@ -122,7 +112,6 @@ async function checkNotificationPermission(supabaseAuth: any): Promise<boolean> 
     return true;
   }
 
-  // Check if user has notification permissions using authenticated client
   const { data: hasViewPerm } = await supabaseAuth
     .rpc('has_permission', { permission_name: 'notifications.view' });
 
@@ -168,7 +157,6 @@ Deno.serve(async (req: Request) => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Check if user has notification permissions
     const hasPermission = await checkNotificationPermission(supabaseAuth);
 
     if (!hasPermission) {
@@ -369,7 +357,6 @@ Deno.serve(async (req: Request) => {
           );
         }
 
-        // Filter out invalid tokens and mark them as inactive
         const validTokensData: any[] = [];
         const invalidTokensData: any[] = [];
 
@@ -382,7 +369,6 @@ Deno.serve(async (req: Request) => {
           }
         }
 
-        // Deactivate invalid tokens
         if (invalidTokensData.length > 0) {
           const invalidTokenIds = invalidTokensData.map(t => t.expo_push_token);
           await supabase
@@ -427,14 +413,23 @@ Deno.serve(async (req: Request) => {
           const profile = tokenData.profiles as any;
           const firstName = profile?.first_name || null;
 
-          return {
+          const truncatedTitle = title.length > 100 ? title.substring(0, 97) + '...' : title;
+          const personalizedBody = personalizeMessage(messageBody, firstName, personalize);
+          const truncatedBody = personalizedBody.length > 200 ? personalizedBody.substring(0, 197) + '...' : personalizedBody;
+
+          const messageData: ExpoPushMessage = {
             to: tokenData.expo_push_token,
             sound: 'default' as const,
-            title,
-            body: personalizeMessage(messageBody, firstName, personalize),
-            data,
+            title: truncatedTitle,
+            body: truncatedBody,
             priority: 'high' as const,
           };
+
+          if (data && Object.keys(data).length > 0) {
+            messageData.data = data;
+          }
+
+          return messageData;
         });
 
         try {
@@ -465,7 +460,6 @@ Deno.serve(async (req: Request) => {
             } else {
               failedCount++;
 
-              // Deactivate tokens that are permanently invalid
               if (ticket.message) {
                 const errorMsg = ticket.message.toLowerCase();
                 const shouldDeactivate =
