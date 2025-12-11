@@ -63,11 +63,34 @@ async function sendPushNotifications(
 }
 
 function isValidExpoPushToken(token: string): boolean {
-  return (
-    token.startsWith('ExponentPushToken[') ||
-    token.startsWith('ExpoPushToken[') ||
-    /^[a-zA-Z0-9_-]{22}$/.test(token)
-  );
+  // Valid Expo push token formats:
+  // 1. ExponentPushToken[xxxxxxxxxxxxxxxxxxxxxx]
+  // 2. ExpoPushToken[xxxxxxxxxxxxxxxxxxxxxx]
+  // 3. Legacy format: 22 character alphanumeric string
+
+  if (!token || typeof token !== 'string') {
+    return false;
+  }
+
+  // Check for ExponentPushToken format
+  if (token.startsWith('ExponentPushToken[') && token.endsWith(']')) {
+    const inner = token.slice(18, -1);
+    return inner.length > 0 && /^[a-zA-Z0-9_-]+$/.test(inner);
+  }
+
+  // Check for ExpoPushToken format (newer)
+  if (token.startsWith('ExpoPushToken[') && token.endsWith(']')) {
+    const inner = token.slice(14, -1);
+    return inner.length > 0 && /^[a-zA-Z0-9_-]+$/.test(inner);
+  }
+
+  // Legacy format: exactly 22 characters, alphanumeric with dashes/underscores
+  if (/^[a-zA-Z0-9_-]{22}$/.test(token)) {
+    return true;
+  }
+
+  // Reject everything else (including 64-char hex strings)
+  return false;
 }
 
 function personalizeMessage(message: string, firstName: string | null, shouldPersonalize: boolean): string {
@@ -338,7 +361,59 @@ Deno.serve(async (req: Request) => {
           );
         }
 
-        const validTokensData = tokensData.filter(t => isValidExpoPushToken(t.expo_push_token));
+        // Filter out invalid tokens and mark them as inactive
+        const validTokensData: any[] = [];
+        const invalidTokensData: any[] = [];
+
+        for (const tokenData of tokensData) {
+          if (isValidExpoPushToken(tokenData.expo_push_token)) {
+            validTokensData.push(tokenData);
+          } else {
+            invalidTokensData.push(tokenData);
+            console.warn(`Invalid token format detected: ${tokenData.expo_push_token.substring(0, 20)}...`);
+          }
+        }
+
+        // Deactivate invalid tokens
+        if (invalidTokensData.length > 0) {
+          const invalidTokenIds = invalidTokensData.map(t => t.expo_push_token);
+          await supabase
+            .from('user_push_tokens')
+            .update({ is_active: false })
+            .in('expo_push_token', invalidTokenIds);
+
+          console.log(`Deactivated ${invalidTokensData.length} invalid tokens`);
+        }
+
+        if (validTokensData.length === 0) {
+          await supabase
+            .from('push_notifications')
+            .update({
+              status: 'failed',
+              error: `No valid push tokens found. ${invalidTokensData.length} invalid tokens were deactivated.`,
+              total_recipients: 0,
+              delivered_count: 0,
+              failed_count: 0,
+              sent_at: new Date().toISOString(),
+            })
+            .eq('id', notificationRecord.data.id);
+
+          return new Response(
+            JSON.stringify({
+              success: false,
+              error: `No valid push tokens found. ${invalidTokensData.length} invalid tokens were deactivated.`,
+            }),
+            {
+              status: 400,
+              headers: {
+                ...corsHeaders,
+                'Content-Type': 'application/json',
+              },
+            }
+          );
+        }
+
+        console.log(`Sending to ${validTokensData.length} valid tokens (filtered out ${invalidTokensData.length} invalid tokens)`);
 
         const messages: ExpoPushMessage[] = validTokensData.map(tokenData => {
           const profile = tokenData.profiles as any;
@@ -381,6 +456,24 @@ Deno.serve(async (req: Request) => {
               deliveredCount++;
             } else {
               failedCount++;
+
+              // Deactivate tokens that are permanently invalid
+              if (ticket.message) {
+                const errorMsg = ticket.message.toLowerCase();
+                const shouldDeactivate =
+                  errorMsg.includes('devicenotregistered') ||
+                  errorMsg.includes('invalid credentials') ||
+                  errorMsg.includes('missingscopeorpermission') ||
+                  errorMsg.includes('404');
+
+                if (shouldDeactivate) {
+                  console.log(`Deactivating invalid token for user ${tokenData.user_id}: ${ticket.message}`);
+                  await supabase
+                    .from('user_push_tokens')
+                    .update({ is_active: false })
+                    .eq('expo_push_token', tokenData.expo_push_token);
+                }
+              }
             }
           }
 
