@@ -38,6 +38,9 @@ async function sendPushNotifications(
   messages: ExpoPushMessage[]
 ): Promise<ExpoPushTicket[]> {
   try {
+    console.log(`Sending ${messages.length} messages to Expo API`);
+    console.log('Sample message:', JSON.stringify(messages[0], null, 2));
+
     const response = await fetch('https://exp.host/--/api/v2/push/send', {
       method: 'POST',
       headers: {
@@ -48,13 +51,18 @@ async function sendPushNotifications(
       body: JSON.stringify(messages),
     });
 
+    const responseData = await response.json();
+    console.log('Expo API response:', JSON.stringify(responseData, null, 2));
+
     if (!response.ok) {
-      const errorData = await response.json();
-      console.error('Expo push notification error:', errorData);
-      throw new Error(`Expo API error: ${response.status}`);
+      console.error('Expo push notification error:', {
+        status: response.status,
+        statusText: response.statusText,
+        data: responseData,
+      });
+      throw new Error(`Expo API error ${response.status}: ${JSON.stringify(responseData)}`);
     }
 
-    const responseData = await response.json();
     return responseData.data || [];
   } catch (error) {
     console.error('Error calling Expo API:', error);
