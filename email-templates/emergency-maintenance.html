@@ -1,124 +1,165 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title>Emergency Maintenance - Planmoni</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>Emergency Maintenance - Planmoni</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: Inter, sans-serif;
+      background-color: #F4F6F8;
+    }
+    .container {
+      max-width: 480px;
+      margin: 40px auto;
+      background-color: #fff;
+      border-radius: 12px;
+      border: 1px solid #E0E0E0;
+      overflow: hidden;
+    }
+    .header {
+      background-color: #1A3C89;
+      color: white;
+      text-align: center;
+      padding: 8px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .header img {
+      height: 40px;
+    }
+    .content {
+      padding: 20px;
+      color: #203B8B;
+    }
+    .alert-banner {
+      background-color: #fef3c7;
+      border-left: 4px solid #f59e0b;
+      padding: 16px 20px;
+      margin: 0 0 20px 0;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+    .alert-icon {
+      width: 24px;
+      height: 24px;
+      background-color: #f59e0b;
+      border-radius: 50%;
+      color: white;
+      font-weight: bold;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .alert-text {
+      color: #92400e;
+      font-weight: 600;
+      font-size: 14px;
+      margin: 0;
+    }
+    .info-box {
+      background-color: #EFF6FF;
+      border: 1px solid #BFDBFE;
+      border-radius: 8px;
+      padding: 16px 20px;
+      margin: 20px 0;
+    }
+    .info-box h4 {
+      margin: 0 0 12px 0;
+      color: #1A3C89;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .info-box ul {
+      margin: 0;
+      padding-left: 20px;
+      color: #203B8B;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+    .info-box li {
+      margin-bottom: 8px;
+    }
+    .info-box li:last-child {
+      margin-bottom: 0;
+    }
+    .stores {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin-top: 20px;
+    }
+    .stores img {
+      height: 45px;
+    }
+    .footer {
+      font-size: 12px;
+      color: #888;
+      text-align: center;
+      padding: 20px;
+    }
+  </style>
 </head>
-<body style="margin: 0; padding: 0; background-color: #f5f5f5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
-    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f5f5f5;">
-        <tr>
-            <td style="padding: 40px 20px;">
-                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);">
+<body>
+  <div class="container">
+    <div class="header">
+      <img src="https://rqmpnoaavyizlwzfngpr.supabase.co/storage/v1/object/public/documents/logo4.png" alt="Planmoni Logo" />
+    </div>
+    <div class="content">
+      <div class="alert-banner">
+        <div class="alert-icon">!</div>
+        <p class="alert-text">Emergency Maintenance in Progress</p>
+      </div>
 
-                    <!-- Header -->
-                    <tr>
-                        <td style="padding: 40px 40px 30px; text-align: center; background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); border-radius: 8px 8px 0 0;">
-                            <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 700; letter-spacing: -0.5px;">
-                                Planmoni
-                            </h1>
-                        </td>
-                    </tr>
+      <h3 style="font-size: 1.6rem; font-weight: bold; margin: 0 0 16px 0;">Important Service Update</h3>
 
-                    <!-- Alert Banner -->
-                    <tr>
-                        <td style="padding: 0;">
-                            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
-                                <tr>
-                                    <td style="padding: 20px 40px; background-color: #fef3c7; border-left: 4px solid #f59e0b;">
-                                        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
-                                            <tr>
-                                                <td style="padding-right: 15px; vertical-align: top; width: 24px;">
-                                                    <div style="width: 24px; height: 24px; background-color: #f59e0b; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
-                                                        <span style="color: #ffffff; font-size: 16px; font-weight: bold; line-height: 24px;">!</span>
-                                                    </div>
-                                                </td>
-                                                <td style="vertical-align: top;">
-                                                    <p style="margin: 0; color: #92400e; font-size: 14px; font-weight: 600; line-height: 1.5;">
-                                                        Emergency Maintenance in Progress
-                                                    </p>
-                                                </td>
-                                            </tr>
-                                        </table>
-                                    </td>
-                                </tr>
-                            </table>
-                        </td>
-                    </tr>
+      <p style="font-size: 1.05rem; line-height: 1.6; margin: 0 0 16px 0;">
+        We are performing an emergency maintenance and have temporarily paused automated payouts as we rectify some technical issues.
+      </p>
 
-                    <!-- Main Content -->
-                    <tr>
-                        <td style="padding: 40px 40px 30px;">
-                            <h2 style="margin: 0 0 20px; color: #1f2937; font-size: 22px; font-weight: 600; line-height: 1.3;">
-                                Important Service Update
-                            </h2>
-                            <p style="margin: 0 0 20px; color: #4b5563; font-size: 16px; line-height: 1.6;">
-                                We are performing an emergency maintenance and have temporarily paused automated payouts as we rectify some technical issues.
-                            </p>
-                            <p style="margin: 0 0 30px; color: #4b5563; font-size: 16px; line-height: 1.6;">
-                                All pending payments will be sent shortly.
-                            </p>
+      <p style="font-size: 1.05rem; line-height: 1.6; margin: 0 0 20px 0;">
+        All pending payments will be sent shortly.
+      </p>
 
-                            <!-- Info Box -->
-                            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #eff6ff; border-radius: 6px; border: 1px solid #bfdbfe;">
-                                <tr>
-                                    <td style="padding: 20px;">
-                                        <p style="margin: 0 0 10px; color: #1e40af; font-size: 14px; font-weight: 600;">
-                                            What this means for you:
-                                        </p>
-                                        <ul style="margin: 0; padding-left: 20px; color: #1e3a8a; font-size: 14px; line-height: 1.6;">
-                                            <li style="margin-bottom: 8px;">Automated payouts are temporarily paused</li>
-                                            <li style="margin-bottom: 8px;">Your funds remain safe and secure</li>
-                                            <li style="margin-bottom: 0;">Pending payments will be processed soon</li>
-                                        </ul>
-                                    </td>
-                                </tr>
-                            </table>
-                        </td>
-                    </tr>
+      <div class="info-box">
+        <h4>What this means for you:</h4>
+        <ul>
+          <li>Automated payouts are temporarily paused</li>
+          <li>Your funds remain safe and secure</li>
+          <li>Pending payments will be processed soon</li>
+        </ul>
+      </div>
 
-                    <!-- Footer Message -->
-                    <tr>
-                        <td style="padding: 0 40px 30px;">
-                            <p style="margin: 0 0 10px; color: #6b7280; font-size: 15px; line-height: 1.6;">
-                                We apologize for any inconvenience this may cause and appreciate your patience as we work to resolve this issue.
-                            </p>
-                            <p style="margin: 0; color: #6b7280; font-size: 15px; line-height: 1.6;">
-                                If you have any questions or concerns, please don't hesitate to contact our support team.
-                            </p>
-                        </td>
-                    </tr>
+      <p style="font-size: 0.95rem; line-height: 1.6; margin: 20px 0 0 0; color: #666;">
+        We apologize for any inconvenience this may cause and appreciate your patience as we work to resolve this issue.
+      </p>
 
-                    <!-- Signature -->
-                    <tr>
-                        <td style="padding: 0 40px 40px;">
-                            <div style="padding-top: 20px; border-top: 1px solid #e5e7eb;">
-                                <p style="margin: 0 0 5px; color: #1f2937; font-size: 15px; font-weight: 600;">
-                                    Best regards,
-                                </p>
-                                <p style="margin: 0; color: #3b82f6; font-size: 15px; font-weight: 600;">
-                                    The Planmoni Team
-                                </p>
-                            </div>
-                        </td>
-                    </tr>
+      <p style="font-size: 0.95rem; line-height: 1.6; margin: 12px 0 0 0; color: #666;">
+        If you have any questions or concerns, please do not hesitate to contact our support team.
+      </p>
 
-                    <!-- Footer -->
-                    <tr>
-                        <td style="padding: 30px 40px; background-color: #f9fafb; border-radius: 0 0 8px 8px; border-top: 1px solid #e5e7eb;">
-                            <p style="margin: 0 0 10px; color: #6b7280; font-size: 12px; line-height: 1.5; text-align: center;">
-                                This is an automated message from Planmoni.
-                            </p>
-                            <p style="margin: 0; color: #9ca3af; font-size: 11px; line-height: 1.5; text-align: center;">
-                                © 2024 Planmoni. All rights reserved.
-                            </p>
-                        </td>
-                    </tr>
+      <p style="font-size: 1rem; line-height: 1.6; margin: 24px 0 0 0; font-weight: 600;">
+        Best regards,<br>
+        <span style="color: #1A3C89;">The Planmoni Team</span>
+      </p>
 
-                </table>
-            </td>
-        </tr>
-    </table>
+      <div class="stores">
+        <a href="#"><img src="https://rqmpnoaavyizlwzfngpr.supabase.co/storage/v1/object/public/documents/app-google.png" alt="Google Play"></a>
+        <a href="#"><img src="https://rqmpnoaavyizlwzfngpr.supabase.co/storage/v1/object/public/documents/app-apple.png" alt="App Store"></a>
+      </div>
+    </div>
+  </div>
+  <div class="footer">
+    This is an automated message from Planmoni.<br>
+    If you didn't expect this notification, please contact support immediately.
+  </div>
 </body>
 </html>
