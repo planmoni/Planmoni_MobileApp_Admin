@@ -4,6 +4,7 @@ import Button from '../../components/Button';
 import Card from '../../components/Card';
 import AddCategoryModal from '../../components/AddCategoryModal';
 import AddAuthorModal from '../../components/AddAuthorModal';
+import RichTextEditor from '../../components/RichTextEditor';
 import { useToast } from '../../contexts/ToastContext';
 import {
   getAllBlogPosts,
@@ -604,12 +605,11 @@ export default function Blog() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Content</label>
-                <textarea
+                <RichTextEditor
                   value={formData.content}
-                  onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                  rows={8}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                  placeholder="Full article content..."
+                  onChange={(value) => setFormData({ ...formData, content: value })}
+                  placeholder="Write your blog content here..."
+                  className="min-h-[300px]"
                 />
               </div>
 

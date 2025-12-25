@@ -84,3 +84,198 @@ select:focus {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* Rich Text Editor Styles */
+.ql-container {
+  min-height: 250px;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 14px;
+}
+
+.ql-editor {
+  min-height: 250px;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.ql-editor.ql-blank::before {
+  font-style: normal;
+  color: #94A3B8;
+}
+
+.ql-toolbar {
+  border: 1px solid #E5E7EB !important;
+  border-radius: 0.5rem 0.5rem 0 0 !important;
+  background-color: #FAFAFA;
+}
+
+.ql-container {
+  border: 1px solid #E5E7EB !important;
+  border-top: none !important;
+  border-radius: 0 0 0.5rem 0.5rem !important;
+  background-color: white;
+}
+
+.ql-toolbar button {
+  color: #475569;
+}
+
+.ql-toolbar button:hover {
+  color: #0F172A;
+}
+
+.ql-toolbar button.ql-active {
+  color: #0F172A;
+}
+
+.ql-stroke {
+  stroke: #475569;
+}
+
+.ql-toolbar button:hover .ql-stroke,
+.ql-toolbar button.ql-active .ql-stroke {
+  stroke: #0F172A;
+}
+
+.ql-fill {
+  fill: #475569;
+}
+
+.ql-toolbar button:hover .ql-fill,
+.ql-toolbar button.ql-active .ql-fill {
+  fill: #0F172A;
+}
+
+.ql-picker-label {
+  color: #475569;
+}
+
+.ql-picker-label:hover,
+.ql-picker-label.ql-active {
+  color: #0F172A;
+}
+
+.ql-picker-options {
+  background-color: white;
+  border: 1px solid #E5E7EB;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.ql-picker-item:hover {
+  background-color: #F5F5F5;
+}
+
+.ql-editor a {
+  color: #2563EB;
+  text-decoration: underline;
+}
+
+.ql-editor blockquote {
+  border-left: 4px solid #E5E7EB;
+  padding-left: 1rem;
+  margin-left: 0;
+  margin-right: 0;
+  color: #64748B;
+}
+
+.ql-editor code {
+  background-color: #F1F5F9;
+  padding: 0.125rem 0.25rem;
+  border-radius: 0.25rem;
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+}
+
+.ql-editor pre {
+  background-color: #F1F5F9;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  overflow-x: auto;
+}
+
+.ql-editor ul,
+.ql-editor ol {
+  padding-left: 1.5rem;
+}
+
+.ql-editor li {
+  margin-bottom: 0.25rem;
+}
+
+/* Dark mode styles */
+.dark .ql-toolbar {
+  background-color: #1F2937;
+  border-color: #374151 !important;
+}
+
+.dark .ql-container {
+  background-color: #111827;
+  border-color: #374151 !important;
+}
+
+.dark .ql-editor {
+  color: #F9FAFB;
+}
+
+.dark .ql-editor.ql-blank::before {
+  color: #6B7280;
+}
+
+.dark .ql-toolbar button {
+  color: #9CA3AF;
+}
+
+.dark .ql-toolbar button:hover,
+.dark .ql-toolbar button.ql-active {
+  color: #F9FAFB;
+}
+
+.dark .ql-stroke {
+  stroke: #9CA3AF;
+}
+
+.dark .ql-toolbar button:hover .ql-stroke,
+.dark .ql-toolbar button.ql-active .ql-stroke {
+  stroke: #F9FAFB;
+}
+
+.dark .ql-fill {
+  fill: #9CA3AF;
+}
+
+.dark .ql-toolbar button:hover .ql-fill,
+.dark .ql-toolbar button.ql-active .ql-fill {
+  fill: #F9FAFB;
+}
+
+.dark .ql-picker-label {
+  color: #9CA3AF;
+}
+
+.dark .ql-picker-label:hover,
+.dark .ql-picker-label.ql-active {
+  color: #F9FAFB;
+}
+
+.dark .ql-picker-options {
+  background-color: #1F2937;
+  border-color: #374151;
+}
+
+.dark .ql-picker-item:hover {
+  background-color: #374151;
+}
+
+.dark .ql-editor blockquote {
+  border-left-color: #374151;
+  color: #9CA3AF;
+}
+
+.dark .ql-editor code {
+  background-color: #1F2937;
+}
+
+.dark .ql-editor pre {
+  background-color: #1F2937;
+}
