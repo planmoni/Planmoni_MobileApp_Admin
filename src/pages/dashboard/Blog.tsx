@@ -169,7 +169,14 @@ export default function Blog() {
         const now = new Date();
         const year = now.getFullYear();
         const month = String(now.getMonth() + 1).padStart(2, '0');
-        const fileName = `${Date.now()}-${formData.image_file.name}`;
+
+        const sanitizedFileName = formData.image_file.name
+          .toLowerCase()
+          .replace(/[^a-z0-9.-]/g, '-')
+          .replace(/-+/g, '-')
+          .replace(/^-+|-+$/g, '');
+
+        const fileName = `${Date.now()}-${sanitizedFileName}`;
         const path = `${year}/${month}/${fileName}`;
 
         imagePath = await uploadBlogImage(formData.image_file, path);
