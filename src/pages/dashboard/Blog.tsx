@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { Plus, Search, Edit2, Trash2, Eye, EyeOff, Star, X, Image as ImageIcon } from 'lucide-react';
 import Button from '../../components/Button';
 import Card from '../../components/Card';
+import AddCategoryModal from '../../components/AddCategoryModal';
+import AddAuthorModal from '../../components/AddAuthorModal';
 import { useToast } from '../../contexts/ToastContext';
 import {
   getAllBlogPosts,
@@ -11,19 +13,20 @@ import {
   uploadBlogImage,
   deleteBlogImage,
   generateSlug,
-  getCategories,
-  getAllTags,
+  getAllCategories,
+  getAllAuthors,
+  createCategory,
+  createAuthor,
 } from '../../lib/blog-utils';
-import type { BlogPostWithImageUrl, BlogPostInsert } from '../../types/blog';
+import type { BlogPostWithImageUrl, BlogPostInsert, BlogCategory, BlogAuthor } from '../../types/blog';
 
 interface BlogFormData {
   title: string;
   slug: string;
   excerpt: string;
   content: string;
-  author: string;
+  author_id: string;
   category: string;
-  read_time: string;
   featured: boolean;
   tags: string;
   published: boolean;
@@ -40,17 +43,19 @@ export default function Blog() {
   const [filterCategory, setFilterCategory] = useState<string>('all');
   const [showModal, setShowModal] = useState(false);
   const [editingPost, setEditingPost] = useState<BlogPostWithImageUrl | null>(null);
-  const [categories, setCategories] = useState<string[]>([]);
+  const [categories, setCategories] = useState<BlogCategory[]>([]);
+  const [authors, setAuthors] = useState<BlogAuthor[]>([]);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [showAddCategory, setShowAddCategory] = useState(false);
+  const [showAddAuthor, setShowAddAuthor] = useState(false);
 
   const [formData, setFormData] = useState<BlogFormData>({
     title: '',
     slug: '',
     excerpt: '',
     content: '',
-    author: 'Planmoni Team',
+    author_id: '',
     category: '',
-    read_time: '5 min read',
     featured: false,
     tags: '',
     published: false,
@@ -81,14 +86,33 @@ export default function Blog() {
 
   const fetchCategoriesAndTags = async () => {
     try {
-      const [fetchedCategories] = await Promise.all([
-        getCategories(),
-        getAllTags(),
+      const [fetchedCategories, fetchedAuthors] = await Promise.all([
+        getAllCategories(),
+        getAllAuthors(),
       ]);
       setCategories(fetchedCategories);
+      setAuthors(fetchedAuthors);
     } catch (error) {
-      console.error('Error fetching categories and tags:', error);
+      console.error('Error fetching categories and authors:', error);
     }
+  };
+
+  const handleAddCategory = async (name: string, description: string) => {
+    const slug = generateSlug(name);
+    await createCategory({ name, slug, description: description || null });
+    await fetchCategoriesAndTags();
+    showToast('Category added successfully', 'success');
+  };
+
+  const handleAddAuthor = async (name: string, email: string, bio: string) => {
+    await createAuthor({
+      name,
+      email: email || null,
+      bio: bio || null,
+      avatar_url: null,
+    });
+    await fetchCategoriesAndTags();
+    showToast('Author added successfully', 'success');
   };
 
   const filterPosts = () => {
@@ -200,9 +224,8 @@ export default function Blog() {
         slug: formData.slug,
         excerpt: formData.excerpt,
         content: formData.content || null,
-        author: formData.author,
+        author_id: formData.author_id || null,
         category: formData.category,
-        read_time: formData.read_time,
         featured: formData.featured,
         tags: tagsArray,
         image_path: imagePath,
@@ -237,9 +260,8 @@ export default function Blog() {
       slug: post.slug,
       excerpt: post.excerpt,
       content: post.content || '',
-      author: post.author,
+      author_id: post.author_id || '',
       category: post.category,
-      read_time: post.read_time,
       featured: post.featured,
       tags: post.tags.join(', '),
       published: post.published,
@@ -315,9 +337,8 @@ export default function Blog() {
       slug: '',
       excerpt: '',
       content: '',
-      author: 'Planmoni Team',
+      author_id: '',
       category: '',
-      read_time: '5 min read',
       featured: false,
       tags: '',
       published: false,
@@ -380,8 +401,8 @@ export default function Blog() {
             >
               <option value="all">All Categories</option>
               {categories.map((category) => (
-                <option key={category} value={category}>
-                  {category}
+                <option key={category.id} value={category.name}>
+                  {category.name}
                 </option>
               ))}
             </select>
@@ -425,7 +446,9 @@ export default function Blog() {
                         <p className="text-sm text-gray-600 line-clamp-2 mb-2">{post.excerpt}</p>
                         <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500">
                           <span className="bg-gray-100 px-2 py-1 rounded">{post.category}</span>
-                          <span>{post.author}</span>
+                          {post.author_id && (
+                            <span>{authors.find(a => a.id === post.author_id)?.name || 'Unknown Author'}</span>
+                          )}
                           <span>{post.read_time}</span>
                           <span
                             className={`px-2 py-1 rounded ${
@@ -595,57 +618,69 @@ export default function Blog() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Category <span className="text-red-500">*</span>
                   </label>
-                  <input
-                    type="text"
-                    value={formData.category}
-                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    list="categories"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                    required
-                  />
-                  <datalist id="categories">
-                    {categories.map((category) => (
-                      <option key={category} value={category} />
-                    ))}
-                  </datalist>
+                  <div className="flex gap-2">
+                    <select
+                      value={formData.category}
+                      onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                      required
+                    >
+                      <option value="">Select category...</option>
+                      {categories.map((category) => (
+                        <option key={category.id} value={category.name}>
+                          {category.name}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={() => setShowAddCategory(true)}
+                      className="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700"
+                      title="Add new category"
+                    >
+                      <Plus className="h-5 w-5" />
+                    </button>
+                  </div>
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Author</label>
-                  <input
-                    type="text"
-                    value={formData.author}
-                    onChange={(e) => setFormData({ ...formData, author: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                  />
+                  <div className="flex gap-2">
+                    <select
+                      value={formData.author_id}
+                      onChange={(e) => setFormData({ ...formData, author_id: e.target.value })}
+                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                    >
+                      <option value="">Select author...</option>
+                      {authors.map((author) => (
+                        <option key={author.id} value={author.id}>
+                          {author.name}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={() => setShowAddAuthor(true)}
+                      className="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700"
+                      title="Add new author"
+                    >
+                      <Plus className="h-5 w-5" />
+                    </button>
+                  </div>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Read Time
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.read_time}
-                    onChange={(e) => setFormData({ ...formData, read_time: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Tags (comma separated)
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.tags}
-                    onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
-                    placeholder="budgeting, savings, tips"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                  />
-                </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Tags (comma separated)
+                </label>
+                <input
+                  type="text"
+                  value={formData.tags}
+                  onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
+                  placeholder="budgeting, savings, tips"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                />
               </div>
 
               <div className="flex gap-4">
@@ -681,6 +716,20 @@ export default function Blog() {
             </div>
           </div>
         </div>
+      )}
+
+      {showAddCategory && (
+        <AddCategoryModal
+          onClose={() => setShowAddCategory(false)}
+          onAdd={handleAddCategory}
+        />
+      )}
+
+      {showAddAuthor && (
+        <AddAuthorModal
+          onClose={() => setShowAddAuthor(false)}
+          onAdd={handleAddAuthor}
+        />
       )}
     </div>
   );

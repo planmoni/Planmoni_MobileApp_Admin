@@ -1,5 +1,14 @@
 import { supabase } from './supabase';
-import type { BlogPost, BlogPostWithImageUrl, BlogPostInsert, BlogPostUpdate } from '../types/blog';
+import type {
+  BlogPost,
+  BlogPostWithImageUrl,
+  BlogPostInsert,
+  BlogPostUpdate,
+  BlogCategory,
+  BlogCategoryInsert,
+  BlogAuthor,
+  BlogAuthorInsert
+} from '../types/blog';
 
 const STORAGE_BUCKET = 'blog-images';
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
@@ -9,10 +18,21 @@ export function getBlogImageUrl(imagePath: string | null): string | null {
   return `${SUPABASE_URL}/storage/v1/object/public/${STORAGE_BUCKET}/${imagePath}`;
 }
 
+export function calculateReadTime(content: string | null): string {
+  if (!content) return '1 min read';
+
+  const wordsPerMinute = 200;
+  const wordCount = content.trim().split(/\s+/).length;
+  const minutes = Math.ceil(wordCount / wordsPerMinute);
+
+  return `${minutes} min read`;
+}
+
 export function addImageUrlToPost(post: BlogPost): BlogPostWithImageUrl {
   return {
     ...post,
     image_url: getBlogImageUrl(post.image_path),
+    read_time: calculateReadTime(post.content),
   };
 }
 
@@ -192,4 +212,74 @@ export async function getAllTags(): Promise<string[]> {
   const allTags = data?.flatMap(post => post.tags || []) || [];
   const uniqueTags = [...new Set(allTags)];
   return uniqueTags.sort();
+}
+
+export async function getAllCategories(): Promise<BlogCategory[]> {
+  const { data, error } = await supabase
+    .from('blog_categories')
+    .select('*')
+    .order('name', { ascending: true });
+
+  if (error) throw error;
+  return data || [];
+}
+
+export async function createCategory(category: BlogCategoryInsert): Promise<BlogCategory> {
+  const { data: { user } } = await supabase.auth.getUser();
+
+  const { data, error } = await supabase
+    .from('blog_categories')
+    .insert({
+      ...category,
+      created_by: user?.id || null,
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+export async function deleteCategory(id: string): Promise<void> {
+  const { error } = await supabase
+    .from('blog_categories')
+    .delete()
+    .eq('id', id);
+
+  if (error) throw error;
+}
+
+export async function getAllAuthors(): Promise<BlogAuthor[]> {
+  const { data, error } = await supabase
+    .from('blog_authors')
+    .select('*')
+    .order('name', { ascending: true });
+
+  if (error) throw error;
+  return data || [];
+}
+
+export async function createAuthor(author: BlogAuthorInsert): Promise<BlogAuthor> {
+  const { data: { user } } = await supabase.auth.getUser();
+
+  const { data, error } = await supabase
+    .from('blog_authors')
+    .insert({
+      ...author,
+      created_by: user?.id || null,
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+export async function deleteAuthor(id: string): Promise<void> {
+  const { error } = await supabase
+    .from('blog_authors')
+    .delete()
+    .eq('id', id);
+
+  if (error) throw error;
 }
