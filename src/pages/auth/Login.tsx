@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { Eye, EyeOff, Mail, Lock, ArrowRight, AlertCircle } from 'lucide-react';
@@ -7,6 +8,7 @@ import { supabase } from '@/lib/supabase';
 import { TwoFactorModal } from '@/components/TwoFactorModal';
 
 export default function Login() {
+  const navigate = useNavigate();
   const { signIn } = useAuth();
   const { showToast } = useToast();
   const [email, setEmail] = useState('');
@@ -60,11 +62,7 @@ export default function Login() {
       }
 
       await createSession(user.id);
-
-      // Small delay to ensure session is persisted, then force refresh
-      setTimeout(() => {
-        window.location.href = '/welcome';
-      }, 100);
+      navigate('/welcome');
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred';
       setError(errorMessage);
@@ -123,11 +121,7 @@ export default function Login() {
 
       await createSession(user.id);
       setShow2FAModal(false);
-
-      // Small delay to ensure session is persisted, then force refresh
-      setTimeout(() => {
-        window.location.href = '/welcome';
-      }, 100);
+      navigate('/welcome');
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Verification failed';
       showToast(errorMessage, 'error');
