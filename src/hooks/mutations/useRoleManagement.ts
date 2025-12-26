@@ -88,6 +88,14 @@ export function useAssignRoles() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
+      const { error: deactivateError } = await supabase
+        .from('user_roles')
+        .update({ is_active: false })
+        .eq('user_id', data.userId)
+        .not('role_id', 'in', `(${data.roleIds.join(',')})`);
+
+      if (deactivateError) throw deactivateError;
+
       const userRoles = data.roleIds.map(roleId => ({
         user_id: data.userId,
         role_id: roleId,
