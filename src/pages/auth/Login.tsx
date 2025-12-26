@@ -63,7 +63,7 @@ export default function Login() {
 
       // Small delay to ensure session is persisted, then force refresh
       setTimeout(() => {
-        window.location.href = '/dashboard';
+        window.location.href = '/welcome';
       }, 100);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred';
@@ -126,7 +126,7 @@ export default function Login() {
 
       // Small delay to ensure session is persisted, then force refresh
       setTimeout(() => {
-        window.location.href = '/dashboard';
+        window.location.href = '/welcome';
       }, 100);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Verification failed';

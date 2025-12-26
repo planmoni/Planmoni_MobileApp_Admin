@@ -10,6 +10,7 @@ import Toast from './components/Toast';
 const LoginPage = lazy(() => import('./pages/auth/Login'));
 const ForgotPasswordPage = lazy(() => import('./pages/auth/ForgotPassword'));
 const SignupPage = lazy(() => import('./pages/auth/Signup'));
+const WelcomePage = lazy(() => import('./pages/dashboard/Welcome'));
 const DashboardPage = lazy(() => import('./pages/dashboard/Dashboard'));
 const UsersPage = lazy(() => import('./pages/dashboard/Users'));
 const TransactionsPage = lazy(() => import('./pages/dashboard/Transactions'));
@@ -57,7 +58,8 @@ function App() {
             <>
               {/* Dashboard Routes */}
               <Route path="/" element={<DashboardLayout />}>
-                <Route index element={<Navigate to="/dashboard" replace />} />
+                <Route index element={<Navigate to="/welcome" replace />} />
+                <Route path="welcome" element={<WelcomePage />} />
                 <Route path="dashboard" element={<DashboardPage />} />
                 <Route path="users" element={<UsersPage />} />
                 <Route path="users/:id" element={<UserDetailsPage />} />

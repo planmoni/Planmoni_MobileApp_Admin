@@ -61,11 +61,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return false;
       }
 
-      // Check if user has any of the allowed roles
-      const allowedRoles = ['Super Admin', 'Admin', 'Moderator'];
-      const hasAllowedRole = userRoles?.some((role: any) => 
-        allowedRoles.includes(role.role_name) && role.is_active
-      );
+      // Allow any user with at least one active role
+      const hasAllowedRole = userRoles?.some((role: any) => role.is_active);
 
       return hasAllowedRole || false;
     } catch (error) {
