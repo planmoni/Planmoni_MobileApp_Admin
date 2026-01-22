@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Bell, Send, RefreshCw, Users, CheckCircle, XCircle, Search, Filter } from 'lucide-react';
 import { useNotifications, useNotificationSegments, useNotificationStats } from '@/hooks/queries/useNotifications';
 import { useRefreshData } from '@/hooks/mutations/useRefreshData';
@@ -28,6 +28,7 @@ export default function Notifications() {
   const [isSending, setIsSending] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [allUsersCount, setAllUsersCount] = useState<number | null>(null);
 
   const [formData, setFormData] = useState<NotificationFormData>({
     title: '',
@@ -42,6 +43,26 @@ export default function Notifications() {
   const handleRefresh = () => {
     refreshData.mutate(['push-notifications', 'notification-stats', 'push-notification-segments']);
   };
+
+  // Fetch count of users with active push tokens for "All Users"
+  useEffect(() => {
+    const fetchAllUsersCount = async () => {
+      try {
+        const { count, error } = await supabase
+          .from('user_push_tokens')
+          .select('*', { count: 'exact', head: true })
+          .eq('is_active', true);
+        
+        if (!error && count !== null) {
+          setAllUsersCount(count);
+        }
+      } catch (err) {
+        console.error('Error fetching all users count:', err);
+      }
+    };
+
+    fetchAllUsersCount();
+  }, []);
 
 
 
@@ -401,9 +422,16 @@ export default function Notifications() {
                   onChange={(e) => setFormData({ ...formData, target_type: e.target.value as any })}
                   className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
                 >
-                  <option value="all">All Users</option>
+                  <option value="all">
+                    All Users {allUsersCount !== null ? `(${allUsersCount} users with push tokens)` : ''}
+                  </option>
                   <option value="segment">User Segment</option>
                 </select>
+                {formData.target_type === 'all' && allUsersCount !== null && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    {allUsersCount} users have active push tokens and will receive this notification
+                  </p>
+                )}
               </div>
 
               {formData.target_type === 'segment' && (

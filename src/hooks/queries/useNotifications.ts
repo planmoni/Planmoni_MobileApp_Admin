@@ -58,12 +58,32 @@ export function useNotificationSegments() {
   return useQuery({
     queryKey: ['push-notification-segments'],
     queryFn: async () => {
+      // First, update segment counts to ensure they're accurate
+      const { error: updateError } = await supabase.rpc('update_all_segment_user_counts');
+      if (updateError) {
+        console.warn('Error updating segment counts (non-critical):', updateError);
+      }
+
+      // Then fetch segments with updated counts
       const { data, error } = await supabase
         .from('push_notification_segments')
         .select('*')
         .order('name', { ascending: true });
 
       if (error) throw error;
+      
+      // Calculate "All Users" count separately (users with active push tokens)
+      const { count: allUsersCount } = await supabase
+        .from('user_push_tokens')
+        .select('*', { count: 'exact', head: true })
+        .eq('is_active', true);
+      
+      // Update "All Users" segment count if it exists
+      const allUsersSegment = data?.find(s => s.filter_criteria?.type === 'all');
+      if (allUsersSegment && allUsersCount !== undefined) {
+        allUsersSegment.user_count = allUsersCount;
+      }
+      
       return data as PushNotificationSegment[];
     },
   });

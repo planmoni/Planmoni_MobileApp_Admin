@@ -135,34 +135,87 @@ Deno.serve(async (req: Request) => {
           .single();
 
         if (segment) {
-          const filterType = segment.filter_criteria.type;
+          const filterType = segment.filter_criteria?.type;
 
           if (filterType === 'all') {
-            const { data: allUsers } = await supabase
-              .from('profiles')
-              .select('id');
-            recipientUserIds = allUsers?.map(u => u.id) || [];
+            // Get all users who have active push tokens
+            const { data: tokens } = await supabase
+              .from('user_push_tokens')
+              .select('user_id')
+              .eq('is_active', true);
+            recipientUserIds = tokens?.map(t => t.user_id) || [];
           } else if (filterType === 'has_active_plans') {
             const { data: activePlans } = await supabase
               .from('payout_plans')
               .select('user_id')
               .eq('status', 'active');
-            recipientUserIds = [...new Set(activePlans?.map(p => p.user_id) || [])];
+            const planUserIds = [...new Set(activePlans?.map(p => p.user_id) || [])];
+            
+            // Filter to only users who have active push tokens
+            if (planUserIds.length > 0) {
+              const { data: tokens } = await supabase
+                .from('user_push_tokens')
+                .select('user_id')
+                .in('user_id', planUserIds)
+                .eq('is_active', true);
+              recipientUserIds = tokens?.map(t => t.user_id) || [];
+            }
           } else if (filterType === 'kyc_approved') {
             const { data: kycUsers } = await supabase
               .from('kyc_data')
               .select('user_id')
               .eq('approved', true);
-            recipientUserIds = kycUsers?.map(k => k.user_id) || [];
+            const kycUserIds = kycUsers?.map(k => k.user_id) || [];
+            
+            // Filter to only users who have active push tokens
+            if (kycUserIds.length > 0) {
+              const { data: tokens } = await supabase
+                .from('user_push_tokens')
+                .select('user_id')
+                .in('user_id', kycUserIds)
+                .eq('is_active', true);
+              recipientUserIds = tokens?.map(t => t.user_id) || [];
+            }
           } else if (filterType === 'joined_recently') {
-            const days = segment.filter_criteria.days || 30;
+            const days = segment.filter_criteria?.days || 30;
             const { data: recentUsers } = await supabase
               .from('profiles')
               .select('id')
               .gte('created_at', new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString());
-            recipientUserIds = recentUsers?.map(u => u.id) || [];
+            const recentUserIds = recentUsers?.map(u => u.id) || [];
+            
+            // Filter to only users who have active push tokens
+            if (recentUserIds.length > 0) {
+              const { data: tokens } = await supabase
+                .from('user_push_tokens')
+                .select('user_id')
+                .in('user_id', recentUserIds)
+                .eq('is_active', true);
+              recipientUserIds = tokens?.map(t => t.user_id) || [];
+            }
           }
         }
+      }
+
+      recipientUserIds = [...new Set(recipientUserIds)];
+
+      if (recipientUserIds.length === 0) {
+        await supabase
+          .from('push_notifications')
+          .update({
+            status: 'failed',
+            error: 'No recipients found with active push tokens',
+            total_recipients: 0,
+            failed_count: 0,
+          })
+          .eq('id', notification.id);
+
+        results.push({
+          notification_id: notification.id,
+          success: false,
+          message: 'No active push tokens found for the selected recipients',
+        });
+        continue;
       }
 
       const { data: pushTokensData } = await supabase
