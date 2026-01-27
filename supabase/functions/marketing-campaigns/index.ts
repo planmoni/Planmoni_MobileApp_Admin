@@ -135,15 +135,18 @@ Deno.serve(async (req: Request) => {
     // Create client with service role key for database operations
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('is_admin')
-      .eq('id', user.id)
-      .single();
-
-    if (profileError || !profile?.is_admin) {
-      console.error('Profile error:', profileError);
-      throw new Error('Unauthorized: Admin access required');
+    // Check if user has marketing permissions
+    const { data: isSuperAdmin } = await supabaseAuth.rpc('is_super_admin');
+    if (!isSuperAdmin) {
+      const { data: hasViewPerm } = await supabaseAuth.rpc('has_permission', { permission_name: 'marketing.view' });
+      const { data: hasListPerm } = await supabaseAuth.rpc('has_permission', { permission_name: 'marketing.campaigns.list' });
+      const { data: hasCreatePerm } = await supabaseAuth.rpc('has_permission', { permission_name: 'marketing.campaigns.create' });
+      const { data: hasEditPerm } = await supabaseAuth.rpc('has_permission', { permission_name: 'marketing.campaigns.edit' });
+      const { data: hasSendPerm } = await supabaseAuth.rpc('has_permission', { permission_name: 'marketing.campaigns.send' });
+      
+      if (!hasViewPerm && !hasListPerm && !hasCreatePerm && !hasEditPerm && !hasSendPerm) {
+        throw new Error('Unauthorized: Marketing permissions required');
+      }
     }
 
     if (req.method === 'GET') {
@@ -515,48 +518,111 @@ Deno.serve(async (req: Request) => {
             })
             .eq('id', campaign_id);
 
+          // Improved sending logic with batching, rate limiting, and retries
+          const BATCH_SIZE = 10; // Send 10 emails per batch
+          const DELAY_BETWEEN_BATCHES = 2000; // 2 seconds between batches (50 emails/second max)
+          const MAX_RETRIES = 3;
+          const RETRY_DELAY = 5000; // 5 seconds between retries
+
           let sentCount = 0;
           let deliveredCount = 0;
           let failedCount = 0;
 
-          for (const recipient of recipients) {
-            const result = await sendEmailViaResend(
-              recipient.email,
-              campaign.subject,
-              campaign.html_content,
-              resendApiKey,
-              fromEmailAddress
-            );
+          // Helper function to send email with retry logic
+          const sendEmailWithRetry = async (
+            recipient: any,
+            retryCount = 0
+          ): Promise<{ success: boolean; id?: string; error?: string }> => {
+            try {
+              const result = await sendEmailViaResend(
+                recipient.email,
+                campaign.subject,
+                campaign.html_content,
+                resendApiKey,
+                fromEmailAddress
+              );
 
-            if (result.success) {
-              sentCount++;
-              deliveredCount++;
+              if (result.success) {
+                return result;
+              }
 
-              await supabase
-                .from('campaign_recipients')
-                .update({
-                  status: 'delivered',
-                  sent_at: new Date().toISOString(),
-                  delivered_at: new Date().toISOString(),
-                  metadata: { resend_id: result.id },
-                })
-                .eq('campaign_id', campaign_id)
-                .eq('user_id', recipient.id);
-            } else {
-              failedCount++;
+              // If failed and we have retries left, wait and retry
+              if (retryCount < MAX_RETRIES) {
+                console.log(`Retrying email to ${recipient.email} (attempt ${retryCount + 1}/${MAX_RETRIES})`);
+                await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY * (retryCount + 1)));
+                return sendEmailWithRetry(recipient, retryCount + 1);
+              }
 
-              await supabase
-                .from('campaign_recipients')
-                .update({
-                  status: 'failed',
-                  error_message: result.error,
-                  sent_at: new Date().toISOString(),
-                })
-                .eq('campaign_id', campaign_id)
-                .eq('user_id', recipient.id);
+              return result;
+            } catch (error) {
+              // If error and we have retries left, wait and retry
+              if (retryCount < MAX_RETRIES) {
+                console.log(`Retrying email to ${recipient.email} after error (attempt ${retryCount + 1}/${MAX_RETRIES})`);
+                await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY * (retryCount + 1)));
+                return sendEmailWithRetry(recipient, retryCount + 1);
+              }
+
+              return {
+                success: false,
+                error: error instanceof Error ? error.message : 'Unknown error',
+              };
             }
+          };
 
-            await new Promise((resolve) => setTimeout(resolve, 500));
+          // Process recipients in batches
+          for (let i = 0; i < recipients.length; i += BATCH_SIZE) {
+            const batch = recipients.slice(i, i + BATCH_SIZE);
+            const batchPromises = batch.map(async (recipient) => {
+              const result = await sendEmailWithRetry(recipient);
+
+              if (result.success) {
+                sentCount++;
+                deliveredCount++;
+
+                await supabase
+                  .from('campaign_recipients')
+                  .update({
+                    status: 'delivered',
+                    sent_at: new Date().toISOString(),
+                    delivered_at: new Date().toISOString(),
+                    metadata: { resend_id: result.id },
+                    updated_at: new Date().toISOString(),
+                  })
+                  .eq('campaign_id', campaign_id)
+                  .eq('user_id', recipient.id);
+              } else {
+                failedCount++;
+
+                await supabase
+                  .from('campaign_recipients')
+                  .update({
+                    status: 'failed',
+                    error_message: result.error || 'Failed to send email',
+                    sent_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString(),
+                  })
+                  .eq('campaign_id', campaign_id)
+                  .eq('user_id', recipient.id);
+              }
+            });
+
+            // Wait for all emails in batch to complete
+            await Promise.all(batchPromises);
+
+            // Update campaign progress
+            await supabase
+              .from('marketing_campaigns')
+              .update({
+                delivered_count: deliveredCount,
+                failed_count: failedCount,
+                updated_at: new Date().toISOString(),
+              })
+              .eq('id', campaign_id);
+
+            // Delay between batches (except for the last batch)
+            if (i + BATCH_SIZE < recipients.length) {
+              await new Promise((resolve) => setTimeout(resolve, DELAY_BETWEEN_BATCHES));
+            }
           }
 
           await supabase

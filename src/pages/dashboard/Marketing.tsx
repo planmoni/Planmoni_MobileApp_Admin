@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Plus, RefreshCw, Mail, TrendingUp, Send, Users, BarChart, Edit2, Trash2, Target, Eye, Save, Code } from 'lucide-react';
+import { Plus, RefreshCw, Mail, TrendingUp, Send, Users, BarChart, Edit2, Trash2, Target, Eye, Save, Code, CheckCircle, XCircle, Clock, Search } from 'lucide-react';
 import { useMarketingCampaigns, useCampaignStats } from '@/hooks/queries/useMarketingCampaigns';
 import { useSegments } from '@/hooks/queries/useSegments';
 import { useSenderEmails } from '@/hooks/queries/useSenderEmails';
@@ -8,6 +8,7 @@ import { useToast } from '@/contexts/ToastContext';
 import { supabase } from '@/lib/supabase';
 import { format } from 'date-fns';
 import RichTextEditor from '@/components/RichTextEditor';
+import { useQuery } from '@tanstack/react-query';
 
 export default function Marketing() {
   const { data: campaigns, isLoading, error } = useMarketingCampaigns();
@@ -18,6 +19,7 @@ export default function Marketing() {
   const [showSendModal, setShowSendModal] = useState(false);
   const [showSegmentModal, setShowSegmentModal] = useState(false);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [showRecipientsModal, setShowRecipientsModal] = useState(false);
   const [selectedCampaign, setSelectedCampaign] = useState<any>(null);
   const [selectedSegment, setSelectedSegment] = useState<any>(null);
   const [editingCampaign, setEditingCampaign] = useState<any>(null);
@@ -241,6 +243,18 @@ export default function Marketing() {
                       >
                         <Eye className="w-4 h-4" />
                       </button>
+                      {(campaign.status === 'sent' || campaign.status === 'sending') && (
+                        <button
+                          onClick={() => {
+                            setSelectedCampaign(campaign);
+                            setShowRecipientsModal(true);
+                          }}
+                          className="text-green-600 hover:text-green-800 transition-colors"
+                          title="View Recipients"
+                        >
+                          <Users className="w-4 h-4" />
+                        </button>
+                      )}
                       {campaign.status === 'draft' && (
                         <>
                           <button
@@ -328,6 +342,220 @@ export default function Marketing() {
           }}
         />
       )}
+
+      {showRecipientsModal && selectedCampaign && (
+        <RecipientsModal
+          campaign={selectedCampaign}
+          onClose={() => {
+            setShowRecipientsModal(false);
+            setSelectedCampaign(null);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+function RecipientsModal({ campaign, onClose }: { campaign: any; onClose: () => void }) {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+
+  const { data: recipients, isLoading, refetch } = useQuery({
+    queryKey: ['campaign-recipients', campaign.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('campaign_recipients')
+        .select('*')
+        .eq('campaign_id', campaign.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!campaign.id,
+  });
+
+  const filteredRecipients = recipients?.filter((r: any) => {
+    const matchesSearch = !searchQuery || 
+      r.email?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesStatus = statusFilter === 'all' || r.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  }) || [];
+
+  const statusCounts = recipients?.reduce((acc: any, r: any) => {
+    acc[r.status] = (acc[r.status] || 0) + 1;
+    return acc;
+  }, {}) || {};
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'delivered':
+        return <CheckCircle className="w-4 h-4 text-green-600" />;
+      case 'failed':
+        return <XCircle className="w-4 h-4 text-red-600" />;
+      case 'pending':
+        return <Clock className="w-4 h-4 text-gray-400" />;
+      case 'sent':
+        return <Mail className="w-4 h-4 text-blue-600" />;
+      case 'bounced':
+        return <XCircle className="w-4 h-4 text-orange-600" />;
+      default:
+        return <Clock className="w-4 h-4 text-gray-400" />;
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'delivered':
+        return 'bg-green-50 text-green-700 border-green-200';
+      case 'failed':
+        return 'bg-red-50 text-red-700 border-red-200';
+      case 'pending':
+        return 'bg-gray-50 text-gray-700 border-gray-200';
+      case 'sent':
+        return 'bg-blue-50 text-blue-700 border-blue-200';
+      case 'bounced':
+        return 'bg-orange-50 text-orange-700 border-orange-200';
+      default:
+        return 'bg-gray-50 text-gray-700 border-gray-200';
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+        <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">Campaign Recipients</h2>
+            <p className="text-sm text-gray-500 mt-1">{campaign.title}</p>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <div className="p-6 border-b border-gray-100">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-2">
+                <span className="text-sm font-medium text-gray-700">Total:</span>
+                <span className="text-sm font-bold text-gray-900">{recipients?.length || 0}</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <CheckCircle className="w-4 h-4 text-green-600" />
+                <span className="text-sm text-gray-600">Delivered: {statusCounts.delivered || 0}</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <XCircle className="w-4 h-4 text-red-600" />
+                <span className="text-sm text-gray-600">Failed: {statusCounts.failed || 0}</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Clock className="w-4 h-4 text-gray-400" />
+                <span className="text-sm text-gray-600">Pending: {statusCounts.pending || 0}</span>
+              </div>
+            </div>
+            <button
+              onClick={() => refetch()}
+              className="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center space-x-2"
+            >
+              <RefreshCw className="w-4 h-4" />
+              <span>Refresh</span>
+            </button>
+          </div>
+
+          <div className="flex items-center space-x-4">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search by email..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+              />
+            </div>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+            >
+              <option value="all">All Status</option>
+              <option value="delivered">Delivered</option>
+              <option value="sent">Sent</option>
+              <option value="pending">Pending</option>
+              <option value="failed">Failed</option>
+              <option value="bounced">Bounced</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-6">
+          {isLoading ? (
+            <div className="flex justify-center items-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-gray-900"></div>
+            </div>
+          ) : filteredRecipients.length === 0 ? (
+            <div className="text-center py-12">
+              <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+              <p className="text-gray-500 font-medium">No recipients found</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {filteredRecipients.map((recipient: any) => (
+                <div
+                  key={recipient.id}
+                  className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-sm transition-shadow"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-3 mb-2">
+                        {getStatusIcon(recipient.status)}
+                        <span className="font-medium text-gray-900">{recipient.email}</span>
+                        <span className={`px-2 py-1 rounded text-xs font-medium border ${getStatusColor(recipient.status)}`}>
+                          {recipient.status}
+                        </span>
+                      </div>
+                      {recipient.error_message && (
+                        <p className="text-sm text-red-600 ml-7 mt-1">
+                          Error: {recipient.error_message}
+                        </p>
+                      )}
+                      <div className="flex items-center space-x-4 ml-7 mt-2 text-xs text-gray-500">
+                        {recipient.sent_at && (
+                          <span>Sent: {format(new Date(recipient.sent_at), 'MMM dd, yyyy HH:mm')}</span>
+                        )}
+                        {recipient.delivered_at && (
+                          <span>Delivered: {format(new Date(recipient.delivered_at), 'MMM dd, yyyy HH:mm')}</span>
+                        )}
+                        {recipient.opened_at && (
+                          <span className="text-green-600">Opened: {format(new Date(recipient.opened_at), 'MMM dd, yyyy HH:mm')}</span>
+                        )}
+                        {recipient.clicked_at && (
+                          <span className="text-blue-600">Clicked: {format(new Date(recipient.clicked_at), 'MMM dd, yyyy HH:mm')}</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="p-6 border-t border-gray-100">
+          <button
+            onClick={onClose}
+            className="w-full px-4 py-2 bg-gray-900 text-white rounded-xl hover:bg-gray-800 transition-colors"
+          >
+            Close
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -461,82 +689,41 @@ function CreateCampaignModal({ campaign, onClose, onSuccess }: { campaign?: any;
     setIsCalculatingRecipients(true);
     try {
       if (targetSegment === 'all') {
-        const { count } = await supabase
-          .from('profiles')
-          .select('id', { count: 'exact', head: true });
-        setEstimatedRecipients(count || 0);
+        const { data, error } = await supabase.rpc('get_all_users_count');
+        if (error) throw error;
+        setEstimatedRecipients(data || 0);
       } else if (targetSegment === 'active_users') {
-        // Users with active payout plans OR transactions in last 30 days
-        const thirtyDaysAgo = new Date();
-        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-        
-        const [plansResult, transactionsResult] = await Promise.all([
-          supabase
-            .from('payout_plans')
-            .select('user_id')
-            .eq('status', 'active'),
-          supabase
-            .from('transactions')
-            .select('user_id')
-            .gte('created_at', thirtyDaysAgo.toISOString())
-        ]);
-        
-        const planUserIds = new Set(plansResult.data?.map((p: any) => p.user_id) || []);
-        const transactionUserIds = new Set(transactionsResult.data?.map((t: any) => t.user_id) || []);
-        
-        const allActiveUserIds = new Set([...planUserIds, ...transactionUserIds]);
-        setEstimatedRecipients(allActiveUserIds.size);
+        const { data, error } = await supabase.rpc('get_active_users_count');
+        if (error) throw error;
+        setEstimatedRecipients(data || 0);
       } else if (targetSegment === 'users_with_balance') {
-        const { count } = await supabase
-          .from('wallets')
-          .select('user_id', { count: 'exact', head: true })
-          .gt('balance', 0);
-        setEstimatedRecipients(count || 0);
+        const { data, error } = await supabase.rpc('get_users_with_balance_count');
+        if (error) throw error;
+        setEstimatedRecipients(data || 0);
       } else if (targetSegment === 'users_with_plans') {
-        // Get distinct user count
-        const { data } = await supabase
-          .from('payout_plans')
-          .select('user_id')
-          .eq('status', 'active');
-        const uniqueUsers = new Set(data?.map((p: any) => p.user_id) || []);
-        setEstimatedRecipients(uniqueUsers.size);
+        const { data, error } = await supabase.rpc('get_users_with_plans_count');
+        if (error) throw error;
+        setEstimatedRecipients(data || 0);
       } else if (targetSegment === 'kyc_tier_0') {
-        // Users without any KYC tier completed
-        const { data: allUsers } = await supabase
-          .from('profiles')
-          .select('id');
-        const { data: kycProgress } = await supabase
-          .from('kyc_progress')
-          .select('user_id')
-          .or('tier_1_completed.eq.true,tier_2_completed.eq.true,tier_3_completed.eq.true');
-        
-        const usersWithKyc = new Set(kycProgress?.map((k: any) => k.user_id) || []);
-        const usersWithoutKyc = (allUsers || []).filter((u: any) => !usersWithKyc.has(u.id));
-        setEstimatedRecipients(usersWithoutKyc.length);
+        const { data, error } = await supabase.rpc('get_kyc_tier_count', { tier_level: 0 });
+        if (error) throw error;
+        setEstimatedRecipients(data || 0);
       } else if (targetSegment === 'kyc_tier_1') {
-        const { count } = await supabase
-          .from('kyc_progress')
-          .select('user_id', { count: 'exact', head: true })
-          .eq('tier_1_completed', true);
-        setEstimatedRecipients(count || 0);
+        const { data, error } = await supabase.rpc('get_kyc_tier_count', { tier_level: 1 });
+        if (error) throw error;
+        setEstimatedRecipients(data || 0);
       } else if (targetSegment === 'kyc_tier_2') {
-        const { count } = await supabase
-          .from('kyc_progress')
-          .select('user_id', { count: 'exact', head: true })
-          .eq('tier_2_completed', true);
-        setEstimatedRecipients(count || 0);
+        const { data, error } = await supabase.rpc('get_kyc_tier_count', { tier_level: 2 });
+        if (error) throw error;
+        setEstimatedRecipients(data || 0);
       } else if (targetSegment === 'kyc_tier_3') {
-        const { count } = await supabase
-          .from('kyc_progress')
-          .select('user_id', { count: 'exact', head: true })
-          .eq('tier_3_completed', true);
-        setEstimatedRecipients(count || 0);
+        const { data, error } = await supabase.rpc('get_kyc_tier_count', { tier_level: 3 });
+        if (error) throw error;
+        setEstimatedRecipients(data || 0);
       } else if (targetSegment === 'users_with_zero_balance') {
-        const { count } = await supabase
-          .from('wallets')
-          .select('user_id', { count: 'exact', head: true })
-          .eq('balance', 0);
-        setEstimatedRecipients(count || 0);
+        const { data, error } = await supabase.rpc('get_users_with_zero_balance_count');
+        if (error) throw error;
+        setEstimatedRecipients(data || 0);
       } else {
         // Custom segment
         const segment = segments?.find(s => s.id === targetSegment);

@@ -36,60 +36,51 @@ DROP POLICY IF EXISTS "Admins can update sender emails" ON sender_email_addresse
 DROP POLICY IF EXISTS "Admins can delete sender emails" ON sender_email_addresses;
 DROP POLICY IF EXISTS "Service role has full sender emails access" ON sender_email_addresses;
 
--- RLS Policies for sender_email_addresses
-CREATE POLICY "Admins can view all sender emails"
+-- RLS Policies for sender_email_addresses (using permissions)
+CREATE POLICY "Users with marketing permission can view sender emails"
   ON sender_email_addresses
   FOR SELECT
   TO authenticated
   USING (
-    EXISTS (
-      SELECT 1 FROM profiles
-      WHERE profiles.id = auth.uid()
-      AND profiles.is_admin = true
-    )
+    has_permission('marketing.view')
+    OR has_permission('marketing.campaigns.create')
+    OR has_permission('marketing.campaigns.edit')
+    OR is_admin()
   );
 
-CREATE POLICY "Admins can insert sender emails"
+CREATE POLICY "Users with marketing permission can insert sender emails"
   ON sender_email_addresses
   FOR INSERT
   TO authenticated
   WITH CHECK (
-    EXISTS (
-      SELECT 1 FROM profiles
-      WHERE profiles.id = auth.uid()
-      AND profiles.is_admin = true
-    )
+    has_permission('marketing.view')
+    OR has_permission('marketing.campaigns.create')
+    OR is_admin()
   );
 
-CREATE POLICY "Admins can update sender emails"
+CREATE POLICY "Users with marketing permission can update sender emails"
   ON sender_email_addresses
   FOR UPDATE
   TO authenticated
   USING (
-    EXISTS (
-      SELECT 1 FROM profiles
-      WHERE profiles.id = auth.uid()
-      AND profiles.is_admin = true
-    )
+    has_permission('marketing.view')
+    OR has_permission('marketing.campaigns.edit')
+    OR is_admin()
   )
   WITH CHECK (
-    EXISTS (
-      SELECT 1 FROM profiles
-      WHERE profiles.id = auth.uid()
-      AND profiles.is_admin = true
-    )
+    has_permission('marketing.view')
+    OR has_permission('marketing.campaigns.edit')
+    OR is_admin()
   );
 
-CREATE POLICY "Admins can delete sender emails"
+CREATE POLICY "Users with marketing permission can delete sender emails"
   ON sender_email_addresses
   FOR DELETE
   TO authenticated
   USING (
-    EXISTS (
-      SELECT 1 FROM profiles
-      WHERE profiles.id = auth.uid()
-      AND profiles.is_admin = true
-    )
+    has_permission('marketing.view')
+    OR has_permission('marketing.campaigns.delete')
+    OR is_admin()
   );
 
 -- Service role policy
