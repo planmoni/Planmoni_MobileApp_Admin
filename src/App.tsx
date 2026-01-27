@@ -1,6 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
-import { Suspense, lazy } from 'react';
+import { Suspense, lazy, useEffect, useState } from 'react';
 import LoadingScreen from './components/LoadingScreen';
 import AuthLayout from './layouts/AuthLayout';
 import DashboardLayout from './layouts/DashboardLayout';
@@ -35,6 +35,7 @@ const NotFoundPage = lazy(() => import('./pages/NotFound'));
 function App() {
   const { session, isLoading } = useAuth();
 
+  // Show loading screen while auth is initializing
   if (isLoading) {
     return <LoadingScreen />;
   }

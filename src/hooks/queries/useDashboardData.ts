@@ -337,183 +337,189 @@ const fetchDashboardData = async (): Promise<DashboardStats> => {
   try {
     const { startOfToday, endOfToday } = getTodayRange();
 
-    // Fetch today's and yesterday's stats
-    const todayStats = await fetchTodayStats();
-    const yesterdayStats = await fetchYesterdayStats();
-    const planDistribution = await fetchTodayPlanDistribution();
-    const transactionVolumeTrends = await fetchTransactionVolumeTrends();
+    // Parallelize independent queries for better performance
+    const [
+      todayStats,
+      yesterdayStats,
+      planDistribution,
+      transactionVolumeTrends,
+      dashboardRpcResult,
+      trends,
+      todayTransactionsResult,
+      todayUsersJoinedResult,
+      todayPayoutEventsResult,
+      todayKycSubmissionsResult,
+      todayPayoutPlansCreatedResult,
+      recentTransactionsResult,
+      recentUsersResult,
+      activeUserDataResult,
+      transactionTrends
+    ] = await Promise.all([
+      fetchTodayStats(),
+      fetchYesterdayStats(),
+      fetchTodayPlanDistribution(),
+      fetchTransactionVolumeTrends(),
+      supabase.rpc('get_dashboard_stats'),
+      calculateTrends(),
+      supabase
+        .from('transactions')
+        .select(`
+          id,
+          type,
+          amount,
+          status,
+          created_at,
+          profiles (
+            id,
+            first_name,
+            last_name,
+            email
+          )
+        `)
+        .gte('created_at', startOfToday.toISOString())
+        .lte('created_at', endOfToday.toISOString())
+        .order('created_at', { ascending: false }),
+      supabase
+        .from('profiles')
+        .select('id, first_name, last_name, email, created_at')
+        .gte('created_at', startOfToday.toISOString())
+        .lte('created_at', endOfToday.toISOString())
+        .order('created_at', { ascending: false }),
+      supabase
+        .from('automated_payouts')
+        .select(`
+          id,
+          payout_plan_id,
+          scheduled_date,
+          status,
+          amount,
+          created_at,
+          payout_plans (
+            id,
+            user_id,
+            profiles (
+              first_name,
+              last_name
+            )
+          )
+        `)
+        .gte('created_at', startOfToday.toISOString())
+        .lte('created_at', endOfToday.toISOString())
+        .order('created_at', { ascending: false })
+        .limit(10),
+      supabase
+        .from('kyc_data')
+        .select(`
+          id,
+          user_id,
+          approved,
+          created_at,
+          profiles (
+            first_name,
+            last_name,
+            email
+          )
+        `)
+        .gte('created_at', startOfToday.toISOString())
+        .lte('created_at', endOfToday.toISOString())
+        .order('created_at', { ascending: false }),
+      supabase
+        .from('payout_plans')
+        .select(`
+          id,
+          user_id,
+          frequency,
+          total_amount,
+          created_at,
+          profiles (
+            first_name,
+            last_name,
+            email
+          )
+        `)
+        .gte('created_at', startOfToday.toISOString())
+        .lte('created_at', endOfToday.toISOString())
+        .order('created_at', { ascending: false }),
+      supabase
+        .from('transactions')
+        .select(`
+          id,
+          type,
+          amount,
+          status,
+          created_at,
+          profiles (
+            id,
+            first_name,
+            last_name,
+            email
+          )
+        `)
+        .order('created_at', { ascending: false })
+        .limit(5),
+      supabase
+        .from('profiles')
+        .select('id, first_name, last_name, email, created_at')
+        .order('created_at', { ascending: false })
+        .limit(5),
+      (async () => {
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        return await supabase
+          .from('transactions')
+          .select('user_id')
+          .gte('created_at', thirtyDaysAgo.toISOString())
+          .not('user_id', 'is', null);
+      })(),
+      fetchTransactionTrends()
+    ]);
 
-    // Use the optimized SQL query for main dashboard stats
-    const { data: dashboardData, error: dashboardError } = await supabase.rpc('get_dashboard_stats');
-
+    // Check for RPC error
+    const { data: dashboardData, error: dashboardError } = dashboardRpcResult;
     if (dashboardError) {
       console.error('Dashboard RPC error:', dashboardError);
       return await fetchDashboardDataFallback();
     }
 
     const mainStats = dashboardData?.[0] || {};
-
-    // Calculate trends for current vs previous month
-    const trends = await calculateTrends();
-
-    // Fetch today's transactions
-    const { data: todayTransactions } = await supabase
-      .from('transactions')
-      .select(`
-        id,
-        type,
-        amount,
-        status,
-        created_at,
-        profiles (
-          id,
-          first_name,
-          last_name,
-          email
-        )
-      `)
-      .gte('created_at', startOfToday.toISOString())
-      .lte('created_at', endOfToday.toISOString())
-      .order('created_at', { ascending: false });
-
-    // Fetch today's users joined
-    const { data: todayUsersJoined } = await supabase
-      .from('profiles')
-      .select('id, first_name, last_name, email, created_at')
-      .gte('created_at', startOfToday.toISOString())
-      .lte('created_at', endOfToday.toISOString())
-      .order('created_at', { ascending: false });
-
-    // Fetch today's payout events (automated payouts)
-    const { data: todayPayoutEvents } = await supabase
-      .from('automated_payouts')
-      .select(`
-        id,
-        payout_plan_id,
-        scheduled_date,
-        status,
-        amount,
-        created_at,
-        payout_plans (
-          id,
-          user_id,
-          profiles (
-            first_name,
-            last_name
-          )
-        )
-      `)
-      .gte('created_at', startOfToday.toISOString())
-      .lte('created_at', endOfToday.toISOString())
-      .order('created_at', { ascending: false })
-      .limit(10);
-
-    // Fetch today's KYC submissions
-    const { data: todayKycSubmissions } = await supabase
-      .from('kyc_data')
-      .select(`
-        id,
-        user_id,
-        approved,
-        created_at,
-        profiles (
-          first_name,
-          last_name,
-          email
-        )
-      `)
-      .gte('created_at', startOfToday.toISOString())
-      .lte('created_at', endOfToday.toISOString())
-      .order('created_at', { ascending: false });
-
-    // Fetch today's payout plans created
-    const { data: todayPayoutPlansCreated } = await supabase
-      .from('payout_plans')
-      .select(`
-        id,
-        user_id,
-        frequency,
-        total_amount,
-        created_at,
-        profiles (
-          first_name,
-          last_name,
-          email
-        )
-      `)
-      .gte('created_at', startOfToday.toISOString())
-      .lte('created_at', endOfToday.toISOString())
-      .order('created_at', { ascending: false });
+    const todayTransactions = todayTransactionsResult.data || [];
+    const todayUsersJoined = todayUsersJoinedResult.data || [];
+    const todayPayoutEvents = todayPayoutEventsResult.data || [];
+    const todayKycSubmissions = todayKycSubmissionsResult.data || [];
+    const todayPayoutPlansCreated = todayPayoutPlansCreatedResult.data || [];
+    const recentTransactions = recentTransactionsResult.data || [];
+    const recentUsers = recentUsersResult.data || [];
+    const activeUserData = activeUserDataResult.data || [];
+    const uniqueActiveUsers = new Set(activeUserData.map(t => t.user_id) || []).size;
 
     // Create activities from today's data
     const todayActivities = [
-      ...(todayUsersJoined || []).map((user: any) => ({
+      ...todayUsersJoined.map((user: any) => ({
         type: 'user_joined',
         description: `${user.first_name} ${user.last_name} joined`,
         timestamp: user.created_at
       })),
-      ...(todayTransactions || []).map((tx: any) => ({
+      ...todayTransactions.map((tx: any) => ({
         type: tx.type,
         description: `${tx.profiles?.first_name} ${tx.profiles?.last_name} - ${tx.type} of ₦${tx.amount.toLocaleString()}`,
         timestamp: tx.created_at
       })),
-      ...(todayKycSubmissions || []).map((kyc: any) => ({
+      ...todayKycSubmissions.map((kyc: any) => ({
         type: 'kyc_submission',
         description: `${kyc.profiles?.first_name} ${kyc.profiles?.last_name} submitted KYC`,
         timestamp: kyc.created_at
       })),
-      ...(todayPayoutPlansCreated || []).map((plan: any) => ({
+      ...todayPayoutPlansCreated.map((plan: any) => ({
         type: 'payout_plan_created',
         description: `${plan.profiles?.first_name} ${plan.profiles?.last_name} created a ${plan.frequency} payout plan (₦${Number(plan.total_amount).toLocaleString()})`,
         timestamp: plan.created_at
       })),
-      ...(todayPayoutEvents || []).map((payout: any) => ({
+      ...todayPayoutEvents.map((payout: any) => ({
         type: 'automated_payout',
         description: `Automated payout of ₦${Number(payout.amount).toLocaleString()} - ${payout.status}`,
         timestamp: payout.created_at
       }))
     ].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).slice(0, 10);
-
-    // Fetch recent transactions for backward compatibility
-    const { data: recentTransactions } = await supabase
-      .from('transactions')
-      .select(`
-        id,
-        type,
-        amount,
-        status,
-        created_at,
-        profiles (
-          id,
-          first_name,
-          last_name,
-          email
-        )
-      `)
-      .order('created_at', { ascending: false })
-      .limit(5);
-
-    // Fetch recent users for backward compatibility
-    const { data: recentUsers } = await supabase
-      .from('profiles')
-      .select('id, first_name, last_name, email, created_at')
-      .order('created_at', { ascending: false })
-      .limit(5);
-
-    // Calculate active users (users with transactions in last 30 days)
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
-    const { data: activeUserData } = await supabase
-      .from('transactions')
-      .select('user_id')
-      .gte('created_at', thirtyDaysAgo.toISOString())
-      .not('user_id', 'is', null);
-
-    const uniqueActiveUsers = new Set(activeUserData?.map(t => t.user_id) || []).size;
-
-    // Fetch transaction trends for the last 7 days
-    const transactionTrends = await fetchTransactionTrends();
 
     return {
       ...todayStats,
@@ -523,16 +529,16 @@ const fetchDashboardData = async (): Promise<DashboardStats> => {
       totalPayouts: mainStats.total_payouts || 0,
       totalPlans: mainStats.total_plans || 0,
       activeUsers: uniqueActiveUsers,
-      todayTransactions: todayTransactions || [],
-      todayUsersJoined: todayUsersJoined || [],
-      todayPayoutEvents: todayPayoutEvents || [],
-      todayKycSubmissions: todayKycSubmissions || [],
-      todayActivities: todayActivities,
+      todayTransactions,
+      todayUsersJoined,
+      todayPayoutEvents,
+      todayKycSubmissions,
+      todayActivities,
       planDistribution,
       transactionVolumeTrends,
-      recentTransactions: recentTransactions || [],
-      recentUsers: recentUsers || [],
-      transactionTrends: transactionTrends,
+      recentTransactions,
+      recentUsers,
+      transactionTrends,
       userGrowthTrend: trends.userGrowthTrend,
       depositsTrend: trends.depositsTrend,
       payoutsTrend: trends.payoutsTrend,

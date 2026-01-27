@@ -19,22 +19,64 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const { showToast } = useToast();
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setIsLoading(false);
-    });
+    let isMounted = true;
+    let subscription: { unsubscribe: () => void } | null = null;
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log('Auth state change event:', event, 'Session:', session);
-      if (event === 'SIGNED_OUT') {
-        setSession(null);
-      } else {
-        setSession(session);
+    const initializeSession = async () => {
+      try {
+        // Get initial session
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('Error getting session:', error);
+          if (isMounted) {
+            setSession(null);
+            setIsLoading(false);
+          }
+          return;
+        }
+
+        if (isMounted) {
+          setSession(session);
+          setIsLoading(false);
+        }
+      } catch (err) {
+        console.error('Unexpected error in getSession:', err);
+        if (isMounted) {
+          setSession(null);
+          setIsLoading(false);
+        }
       }
-      setIsLoading(false);
-    });
+    };
 
-    return () => subscription.unsubscribe();
+    // Initialize session first
+    initializeSession();
+
+    // Set up auth state change listener
+    const { data: { subscription: authSubscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        console.log('Auth state change event:', event, 'Session:', !!session);
+        
+        if (isMounted) {
+          if (event === 'SIGNED_OUT') {
+            setSession(null);
+          } else {
+            // For SIGNED_IN, TOKEN_REFRESHED, etc., use the session from the event
+            setSession(session);
+          }
+          setIsLoading(false);
+        }
+      }
+    );
+
+    subscription = authSubscription;
+
+    return () => {
+      isMounted = false;
+      if (subscription) {
+        subscription.unsubscribe();
+      }
+    };
   }, []);
 
   const checkUserRole = async (userId: string): Promise<boolean> => {

@@ -62,7 +62,10 @@ export default function Login() {
       }
 
       await createSession(user.id);
-      navigate('/welcome');
+      
+      // Use React Router navigation to avoid full page reload
+      // This maintains React state and prevents race conditions
+      navigate('/welcome', { replace: true });
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred';
       setError(errorMessage);
@@ -121,7 +124,10 @@ export default function Login() {
 
       await createSession(user.id);
       setShow2FAModal(false);
-      navigate('/welcome');
+      
+      // Use React Router navigation to avoid full page reload
+      // This maintains React state and prevents race conditions
+      navigate('/welcome', { replace: true });
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Verification failed';
       showToast(errorMessage, 'error');
