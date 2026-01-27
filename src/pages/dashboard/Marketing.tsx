@@ -1,11 +1,12 @@
-import { useState, useEffect } from 'react';
-import { Plus, RefreshCw, Mail, TrendingUp, Send, Users, BarChart, Edit2, Trash2, Target, Eye, Save } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { Plus, RefreshCw, Mail, TrendingUp, Send, Users, BarChart, Edit2, Trash2, Target, Eye, Save, Code } from 'lucide-react';
 import { useMarketingCampaigns, useCampaignStats } from '@/hooks/queries/useMarketingCampaigns';
 import { useSegments } from '@/hooks/queries/useSegments';
 import { useRefreshData } from '@/hooks/mutations/useRefreshData';
 import { useToast } from '@/contexts/ToastContext';
 import { supabase } from '@/lib/supabase';
 import { format } from 'date-fns';
+import RichTextEditor from '@/components/RichTextEditor';
 
 export default function Marketing() {
   const { data: campaigns, isLoading, error } = useMarketingCampaigns();
@@ -493,20 +494,107 @@ function CreateCampaignModal({ campaign, onClose, onSuccess }: { campaign?: any;
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSavingDraft, setIsSavingDraft] = useState(false);
   const [estimatedRecipients, setEstimatedRecipients] = useState(0);
+  const [isCalculatingRecipients, setIsCalculatingRecipients] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(campaign?.updated_at ? new Date(campaign.updated_at) : null);
   const [showHtmlPreview, setShowHtmlPreview] = useState(false);
 
-  useEffect(() => {
-    const autoSaveInterval = setInterval(() => {
-      if (formData.title && formData.subject && !isSubmitting && !isSavingDraft) {
-        handleSaveDraft(true);
+  const calculateRecipients = useCallback(async (segmentValue?: string) => {
+    const targetSegment = segmentValue || formData.target_segment;
+    setIsCalculatingRecipients(true);
+    try {
+      if (targetSegment === 'all') {
+        const { count } = await supabase
+          .from('profiles')
+          .select('id', { count: 'exact', head: true });
+        setEstimatedRecipients(count || 0);
+      } else if (targetSegment === 'active_users') {
+        // Users with active payout plans OR transactions in last 30 days
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        
+        const [plansResult, transactionsResult] = await Promise.all([
+          supabase
+            .from('payout_plans')
+            .select('user_id')
+            .eq('status', 'active'),
+          supabase
+            .from('transactions')
+            .select('user_id')
+            .gte('created_at', thirtyDaysAgo.toISOString())
+        ]);
+        
+        const planUserIds = new Set(plansResult.data?.map((p: any) => p.user_id) || []);
+        const transactionUserIds = new Set(transactionsResult.data?.map((t: any) => t.user_id) || []);
+        
+        const allActiveUserIds = new Set([...planUserIds, ...transactionUserIds]);
+        setEstimatedRecipients(allActiveUserIds.size);
+      } else if (targetSegment === 'users_with_balance') {
+        const { count } = await supabase
+          .from('wallets')
+          .select('user_id', { count: 'exact', head: true })
+          .gt('balance', 0);
+        setEstimatedRecipients(count || 0);
+      } else if (targetSegment === 'users_with_plans') {
+        // Get distinct user count
+        const { data } = await supabase
+          .from('payout_plans')
+          .select('user_id')
+          .eq('status', 'active');
+        const uniqueUsers = new Set(data?.map((p: any) => p.user_id) || []);
+        setEstimatedRecipients(uniqueUsers.size);
+      } else if (targetSegment === 'kyc_tier_0') {
+        // Users without any KYC tier completed
+        const { data: allUsers } = await supabase
+          .from('profiles')
+          .select('id');
+        const { data: kycProgress } = await supabase
+          .from('kyc_progress')
+          .select('user_id')
+          .or('tier_1_completed.eq.true,tier_2_completed.eq.true,tier_3_completed.eq.true');
+        
+        const usersWithKyc = new Set(kycProgress?.map((k: any) => k.user_id) || []);
+        const usersWithoutKyc = (allUsers || []).filter((u: any) => !usersWithKyc.has(u.id));
+        setEstimatedRecipients(usersWithoutKyc.length);
+      } else if (targetSegment === 'kyc_tier_1') {
+        const { count } = await supabase
+          .from('kyc_progress')
+          .select('user_id', { count: 'exact', head: true })
+          .eq('tier_1_completed', true);
+        setEstimatedRecipients(count || 0);
+      } else if (targetSegment === 'kyc_tier_2') {
+        const { count } = await supabase
+          .from('kyc_progress')
+          .select('user_id', { count: 'exact', head: true })
+          .eq('tier_2_completed', true);
+        setEstimatedRecipients(count || 0);
+      } else if (targetSegment === 'kyc_tier_3') {
+        const { count } = await supabase
+          .from('kyc_progress')
+          .select('user_id', { count: 'exact', head: true })
+          .eq('tier_3_completed', true);
+        setEstimatedRecipients(count || 0);
+      } else if (targetSegment === 'users_with_zero_balance') {
+        const { count } = await supabase
+          .from('wallets')
+          .select('user_id', { count: 'exact', head: true })
+          .eq('balance', 0);
+        setEstimatedRecipients(count || 0);
+      } else {
+        // Custom segment
+        const segment = segments?.find(s => s.id === targetSegment);
+        if (segment) {
+          setEstimatedRecipients(segment.user_count || 0);
+        }
       }
-    }, 30000);
+    } catch (error) {
+      console.error('Error calculating recipients:', error);
+      setEstimatedRecipients(0);
+    } finally {
+      setIsCalculatingRecipients(false);
+    }
+  }, [formData.target_segment, segments]);
 
-    return () => clearInterval(autoSaveInterval);
-  }, [formData, isSubmitting, isSavingDraft]);
-
-  const handleSaveDraft = async (isAutoSave = false) => {
+  const handleSaveDraft = useCallback(async (isAutoSave = false) => {
     if (!formData.title || !formData.subject) {
       if (!isAutoSave) {
         showToast('Please enter title and subject to save draft', 'error');
@@ -554,25 +642,21 @@ function CreateCampaignModal({ campaign, onClose, onSuccess }: { campaign?: any;
     } finally {
       setIsSavingDraft(false);
     }
-  };
+  }, [formData, campaign, showToast]);
 
-  const calculateRecipients = async () => {
-    try {
-      if (formData.target_segment === 'all') {
-        const { count } = await supabase
-          .from('profiles')
-          .select('id', { count: 'exact', head: true });
-        setEstimatedRecipients(count || 0);
-      } else {
-        const segment = segments?.find(s => s.id === formData.target_segment);
-        if (segment) {
-          setEstimatedRecipients(segment.user_count || 0);
-        }
+  useEffect(() => {
+    const autoSaveInterval = setInterval(() => {
+      if (formData.title && formData.subject && !isSubmitting && !isSavingDraft) {
+        handleSaveDraft(true);
       }
-    } catch (error) {
-      console.error('Error calculating recipients:', error);
-    }
-  };
+    }, 30000);
+
+    return () => clearInterval(autoSaveInterval);
+  }, [formData, isSubmitting, isSavingDraft, handleSaveDraft]);
+
+  useEffect(() => {
+    calculateRecipients();
+  }, [calculateRecipients]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -689,12 +773,25 @@ function CreateCampaignModal({ campaign, onClose, onSuccess }: { campaign?: any;
               <select
                 value={formData.target_segment}
                 onChange={(e) => {
-                  setFormData({ ...formData, target_segment: e.target.value });
-                  setTimeout(calculateRecipients, 100);
+                  const newSegment = e.target.value;
+                  setFormData({ ...formData, target_segment: newSegment });
+                  // Reset count and calculate recipients immediately with the new value
+                  setEstimatedRecipients(0);
+                  calculateRecipients(newSegment);
                 }}
                 className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-accent focus:border-transparent"
               >
-                <option value="all">All Users</option>
+                <optgroup label="Predefined Segments">
+                  <option value="all">All Users</option>
+                  <option value="active_users">Active Users</option>
+                  <option value="users_with_balance">Users with Balance</option>
+                  <option value="users_with_plans">Users with Plans</option>
+                  <option value="kyc_tier_0">Users with KYC Tier 0</option>
+                  <option value="kyc_tier_1">Users with KYC Tier 1</option>
+                  <option value="kyc_tier_2">Users with KYC Tier 2</option>
+                  <option value="kyc_tier_3">Users with KYC Tier 3</option>
+                  <option value="users_with_zero_balance">Users with 0 Balance</option>
+                </optgroup>
                 {segments && segments.length > 0 && (
                   <optgroup label="Custom Segments">
                     {segments.map((segment) => (
@@ -708,14 +805,24 @@ function CreateCampaignModal({ campaign, onClose, onSuccess }: { campaign?: any;
             </div>
           </div>
 
-          {estimatedRecipients > 0 && (
+          {(estimatedRecipients > 0 || isCalculatingRecipients) && (
             <div className="bg-blue-50 rounded-xl p-4 border border-blue-100">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-900">Estimated Recipients</p>
                   <p className="text-xs text-gray-500">Based on selected audience</p>
                 </div>
-                <p className="text-2xl font-bold text-blue-600">{estimatedRecipients}</p>
+                {isCalculatingRecipients ? (
+                  <div className="flex items-center space-x-2">
+                    <svg className="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span className="text-sm text-blue-600">Calculating...</span>
+                  </div>
+                ) : (
+                  <p className="text-2xl font-bold text-blue-600">{estimatedRecipients}</p>
+                )}
               </div>
             </div>
           )}
@@ -723,45 +830,46 @@ function CreateCampaignModal({ campaign, onClose, onSuccess }: { campaign?: any;
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className="block text-sm font-medium text-gray-700">
-                Email Content (HTML)
+                Email Content
               </label>
               <button
                 type="button"
                 onClick={() => setShowHtmlPreview(!showHtmlPreview)}
                 className="flex items-center space-x-2 px-3 py-1.5 text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
               >
-                <Eye className="w-4 h-4" />
-                <span>{showHtmlPreview ? 'Show Code' : 'Show Preview'}</span>
+                {showHtmlPreview ? (
+                  <>
+                    <Eye className="w-4 h-4" />
+                    <span>Show Editor</span>
+                  </>
+                ) : (
+                  <>
+                    <Code className="w-4 h-4" />
+                    <span>View HTML</span>
+                  </>
+                )}
               </button>
             </div>
             {!showHtmlPreview ? (
-              <textarea
-                rows={12}
-                required
-                placeholder="Enter HTML content..."
-                value={formData.html_content}
-                onChange={(e) => setFormData({ ...formData, html_content: e.target.value })}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-accent focus:border-transparent resize-none font-mono text-sm"
-              />
+              <div className="min-h-[400px]">
+                <RichTextEditor
+                  value={formData.html_content}
+                  onChange={(value) => setFormData({ ...formData, html_content: value })}
+                  placeholder="Compose your email content here..."
+                />
+              </div>
             ) : (
-              <div className="border border-gray-200 rounded-xl overflow-hidden bg-white min-h-[300px]">
-                {formData.html_content ? (
-                  <>
-                    <div className="p-3 bg-gray-100 border-b border-gray-200">
-                      <p className="text-xs text-gray-600">Preview</p>
-                    </div>
-                    <div className="p-6 max-h-96 overflow-y-auto">
-                      <div dangerouslySetInnerHTML={{ __html: formData.html_content }} />
-                    </div>
-                  </>
-                ) : (
-                  <div className="flex items-center justify-center h-64 text-gray-400">
-                    <div className="text-center">
-                      <Eye className="w-12 h-12 mx-auto mb-2 opacity-30" />
-                      <p className="text-sm">Enter HTML content to see preview</p>
-                    </div>
-                  </div>
-                )}
+              <div className="border border-gray-200 rounded-xl overflow-hidden bg-white">
+                <div className="p-3 bg-gray-100 border-b border-gray-200">
+                  <p className="text-xs text-gray-600 font-medium">HTML Code</p>
+                  <p className="text-xs text-gray-500 mt-1">Generated HTML from the editor</p>
+                </div>
+                <textarea
+                  readOnly
+                  value={formData.html_content || ''}
+                  className="w-full px-4 py-3 border-0 focus:ring-0 resize-none font-mono text-sm min-h-[400px] bg-gray-50"
+                  placeholder="HTML will appear here as you compose..."
+                />
               </div>
             )}
           </div>
@@ -884,7 +992,17 @@ function SendCampaignModal({
               onChange={(e) => setSegmentId(e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-accent focus:border-transparent"
             >
-              <option value="all">All Users</option>
+              <optgroup label="Predefined Segments">
+                <option value="all">All Users</option>
+                <option value="active_users">Active Users</option>
+                <option value="users_with_balance">Users with Balance</option>
+                <option value="users_with_plans">Users with Plans</option>
+                <option value="kyc_tier_0">Users with KYC Tier 0</option>
+                <option value="kyc_tier_1">Users with KYC Tier 1</option>
+                <option value="kyc_tier_2">Users with KYC Tier 2</option>
+                <option value="kyc_tier_3">Users with KYC Tier 3</option>
+                <option value="users_with_zero_balance">Users with 0 Balance</option>
+              </optgroup>
               {segments && segments.length > 0 && (
                 <optgroup label="Custom Segments">
                   {segments.map((segment) => (

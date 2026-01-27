@@ -269,12 +269,149 @@ Deno.serve(async (req: Request) => {
         if (campaignError) throw campaignError;
 
         let recipients: any[] = [];
+        const segmentId = recipient_filters.segment_id || recipient_filters.segment;
 
-        if (recipient_filters.segment_id && recipient_filters.segment_id !== 'all') {
+        // Handle predefined segments
+        if (segmentId === 'all') {
+          const { data } = await supabase
+            .from('profiles')
+            .select('id, email, first_name, last_name');
+          recipients = data || [];
+        } else if (segmentId === 'active_users') {
+          // Users with active payout plans OR transactions in last 30 days
+          const thirtyDaysAgo = new Date();
+          thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+          const [activePlans, recentTransactions] = await Promise.all([
+            supabase
+              .from('payout_plans')
+              .select('user_id')
+              .eq('status', 'active'),
+            supabase
+              .from('transactions')
+              .select('user_id')
+              .gte('created_at', thirtyDaysAgo.toISOString())
+          ]);
+
+          const activeUserIds = new Set();
+          activePlans.data?.forEach((p: any) => activeUserIds.add(p.user_id));
+          recentTransactions.data?.forEach((t: any) => activeUserIds.add(t.user_id));
+
+          if (activeUserIds.size > 0) {
+            const { data } = await supabase
+              .from('profiles')
+              .select('id, email, first_name, last_name')
+              .in('id', Array.from(activeUserIds));
+            recipients = data || [];
+          }
+        } else if (segmentId === 'users_with_balance') {
+          // Users with wallet balance > 0
+          const { data: wallets } = await supabase
+            .from('wallets')
+            .select('user_id')
+            .gt('balance', 0);
+
+          const userIds = wallets?.map((w: any) => w.user_id) || [];
+          if (userIds.length > 0) {
+            const { data } = await supabase
+              .from('profiles')
+              .select('id, email, first_name, last_name')
+              .in('id', userIds);
+            recipients = data || [];
+          }
+        } else if (segmentId === 'users_with_plans') {
+          // Users with active payout plans
+          const { data: activePlans } = await supabase
+            .from('payout_plans')
+            .select('user_id')
+            .eq('status', 'active');
+
+          const userIds = [...new Set(activePlans?.map((p: any) => p.user_id) || [])];
+          if (userIds.length > 0) {
+            const { data } = await supabase
+              .from('profiles')
+              .select('id, email, first_name, last_name')
+              .in('id', userIds);
+            recipients = data || [];
+          }
+        } else if (segmentId === 'kyc_tier_0') {
+          // Users without any KYC tier completed
+          const { data: allUsers } = await supabase
+            .from('profiles')
+            .select('id, email, first_name, last_name');
+          const { data: kycProgress } = await supabase
+            .from('kyc_progress')
+            .select('user_id')
+            .or('tier_1_completed.eq.true,tier_2_completed.eq.true,tier_3_completed.eq.true');
+
+          const usersWithKyc = new Set(kycProgress?.map((k: any) => k.user_id) || []);
+          recipients = (allUsers || []).filter((u: any) => !usersWithKyc.has(u.id));
+        } else if (segmentId === 'kyc_tier_1') {
+          // Users with tier 1 completed
+          const { data: kycProgress } = await supabase
+            .from('kyc_progress')
+            .select('user_id')
+            .eq('tier_1_completed', true);
+
+          const userIds = kycProgress?.map((k: any) => k.user_id) || [];
+          if (userIds.length > 0) {
+            const { data } = await supabase
+              .from('profiles')
+              .select('id, email, first_name, last_name')
+              .in('id', userIds);
+            recipients = data || [];
+          }
+        } else if (segmentId === 'kyc_tier_2') {
+          // Users with tier 2 completed
+          const { data: kycProgress } = await supabase
+            .from('kyc_progress')
+            .select('user_id')
+            .eq('tier_2_completed', true);
+
+          const userIds = kycProgress?.map((k: any) => k.user_id) || [];
+          if (userIds.length > 0) {
+            const { data } = await supabase
+              .from('profiles')
+              .select('id, email, first_name, last_name')
+              .in('id', userIds);
+            recipients = data || [];
+          }
+        } else if (segmentId === 'kyc_tier_3') {
+          // Users with tier 3 completed
+          const { data: kycProgress } = await supabase
+            .from('kyc_progress')
+            .select('user_id')
+            .eq('tier_3_completed', true);
+
+          const userIds = kycProgress?.map((k: any) => k.user_id) || [];
+          if (userIds.length > 0) {
+            const { data } = await supabase
+              .from('profiles')
+              .select('id, email, first_name, last_name')
+              .in('id', userIds);
+            recipients = data || [];
+          }
+        } else if (segmentId === 'users_with_zero_balance') {
+          // Users with wallet balance = 0
+          const { data: wallets } = await supabase
+            .from('wallets')
+            .select('user_id')
+            .eq('balance', 0);
+
+          const userIds = wallets?.map((w: any) => w.user_id) || [];
+          if (userIds.length > 0) {
+            const { data } = await supabase
+              .from('profiles')
+              .select('id, email, first_name, last_name')
+              .in('id', userIds);
+            recipients = data || [];
+          }
+        } else if (segmentId && segmentId !== 'all') {
+          // Custom segment from campaign_segments table
           const { data: segment } = await supabase
             .from('campaign_segments')
             .select('filters')
-            .eq('id', recipient_filters.segment_id)
+            .eq('id', segmentId)
             .single();
 
           if (segment) {
@@ -299,30 +436,27 @@ Deno.serve(async (req: Request) => {
             const { data } = await query;
             recipients = data || [];
           }
-        } else if (recipient_filters.segment === 'all_active' || recipient_filters.segment_id === 'all') {
-          const { data } = await supabase
-            .from('profiles')
-            .select('id, email, first_name, last_name');
-          recipients = data || [];
-        } else if (recipient_filters.segment === 'kyc_verified') {
-          const { data } = await supabase
-            .from('profiles')
-            .select('id, email, first_name, last_name')
-            .not('kyc_status', 'is', null);
-          recipients = data || [];
-        } else if (recipient_filters.active_payout_plans) {
-          const { data: activePlans } = await supabase
-            .from('payout_plans')
-            .select('user_id')
-            .eq('status', 'active');
-
-          const userIds = activePlans?.map((p) => p.user_id) || [];
-          if (userIds.length > 0) {
+        } else {
+          // Legacy support for old format
+          if (recipient_filters.segment === 'all_active' || recipient_filters.segment === 'kyc_verified') {
             const { data } = await supabase
               .from('profiles')
-              .select('id, email, first_name, last_name')
-              .in('id', userIds);
+              .select('id, email, first_name, last_name');
             recipients = data || [];
+          } else if (recipient_filters.active_payout_plans) {
+            const { data: activePlans } = await supabase
+              .from('payout_plans')
+              .select('user_id')
+              .eq('status', 'active');
+
+            const userIds = activePlans?.map((p) => p.user_id) || [];
+            if (userIds.length > 0) {
+              const { data } = await supabase
+                .from('profiles')
+                .select('id, email, first_name, last_name')
+                .in('id', userIds);
+              recipients = data || [];
+            }
           }
         }
 
