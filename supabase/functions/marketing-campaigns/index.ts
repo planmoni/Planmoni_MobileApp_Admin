@@ -53,9 +53,13 @@ async function sendEmailViaResend(
   to: string,
   subject: string,
   htmlContent: string,
-  resendApiKey: string
+  resendApiKey: string,
+  fromEmail?: string
 ): Promise<{ success: boolean; id?: string; error?: string }> {
   try {
+    // Default to the hardcoded email if fromEmail is not provided (backward compatibility)
+    const fromAddress = fromEmail || 'Martins Osodi - Planmoni CEO <hello@planmoni.com>';
+    
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
@@ -63,7 +67,7 @@ async function sendEmailViaResend(
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'Martins Osodi - Planmoni CEO <hello@planmoni.com>',
+        from: fromAddress,
         to,
         subject,
         html: htmlContent,
@@ -202,6 +206,7 @@ Deno.serve(async (req: Request) => {
               html_content: body.html_content,
               plain_text_content: body.plain_text_content || '',
               category: body.category,
+              from_email_id: body.from_email_id || null,
               metadata: body.metadata || {},
               created_by: user.id,
             },
@@ -233,6 +238,7 @@ Deno.serve(async (req: Request) => {
             html_content: updateData.html_content,
             plain_text_content: updateData.plain_text_content || '',
             category: updateData.category,
+            from_email_id: updateData.from_email_id || null,
             metadata: updateData.metadata || {},
             updated_at: new Date().toISOString(),
           })
@@ -267,6 +273,32 @@ Deno.serve(async (req: Request) => {
           .single();
 
         if (campaignError) throw campaignError;
+
+        // Fetch the sender email address
+        let fromEmailAddress = 'Martins Osodi - Planmoni CEO <hello@planmoni.com>'; // Default fallback
+        if (campaign.from_email_id) {
+          const { data: senderEmail } = await supabase
+            .from('sender_email_addresses')
+            .select('email, display_name, is_active')
+            .eq('id', campaign.from_email_id)
+            .single();
+
+          if (senderEmail && senderEmail.is_active) {
+            fromEmailAddress = `${senderEmail.display_name} <${senderEmail.email}>`;
+          }
+        } else {
+          // Fallback to default email if no from_email_id is set
+          const { data: defaultEmail } = await supabase
+            .from('sender_email_addresses')
+            .select('email, display_name')
+            .eq('is_default', true)
+            .eq('is_active', true)
+            .single();
+
+          if (defaultEmail) {
+            fromEmailAddress = `${defaultEmail.display_name} <${defaultEmail.email}>`;
+          }
+        }
 
         let recipients: any[] = [];
         const segmentId = recipient_filters.segment_id || recipient_filters.segment;
@@ -492,7 +524,8 @@ Deno.serve(async (req: Request) => {
               recipient.email,
               campaign.subject,
               campaign.html_content,
-              resendApiKey
+              resendApiKey,
+              fromEmailAddress
             );
 
             if (result.success) {

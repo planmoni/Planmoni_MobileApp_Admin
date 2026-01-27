@@ -15,7 +15,10 @@ import {
   Edit,
   ChevronDown,
   ChevronUp,
-  Lock
+  Lock,
+  Mail,
+  CheckCircle,
+  XCircle
 } from 'lucide-react';
 import { useSuperAdminData } from '@/hooks/queries/useSuperAdminData';
 import { useRefreshData } from '@/hooks/mutations/useRefreshData';
@@ -25,6 +28,8 @@ import { AssignRoleModal } from '@/components/AssignRoleModal';
 import { EditRoleModal } from '@/components/EditRoleModal';
 import { TwoFactorSetup } from '@/components/TwoFactorSetup';
 import { ActiveSessionsManager } from '@/components/ActiveSessionsManager';
+import { useSenderEmails, type SenderEmail } from '@/hooks/queries/useSenderEmails';
+import { useToast } from '@/contexts/ToastContext';
 import { supabase } from '@/lib/supabase';
 
 const formatPermissionName = (name: string): string => {
@@ -35,7 +40,7 @@ const formatPermissionName = (name: string): string => {
 };
 
 export default function SuperAdmin() {
-  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'roles' | 'security'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'roles' | 'security' | 'emails'>('overview');
   const [searchQuery, setSearchQuery] = useState('');
   const [isCreateRoleModalOpen, setIsCreateRoleModalOpen] = useState(false);
   const [isAssignRoleModalOpen, setIsAssignRoleModalOpen] = useState(false);
@@ -43,8 +48,12 @@ export default function SuperAdmin() {
   const [selectedRole, setSelectedRole] = useState<any>(null);
   const [expandedRoleId, setExpandedRoleId] = useState<string | null>(null);
   const [is2FAEnabled, setIs2FAEnabled] = useState(false);
+  const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
+  const [selectedEmail, setSelectedEmail] = useState<SenderEmail | null>(null);
+  const { showToast } = useToast();
 
   const { data: superAdminData, isLoading, error } = useSuperAdminData();
+  const { data: senderEmails, isLoading: emailsLoading, refetch: refetchEmails } = useSenderEmails(true);
   const refreshData = useRefreshData();
   const createRole = useCreateRole();
   const assignRoles = useAssignRoles();
@@ -187,6 +196,7 @@ export default function SuperAdmin() {
           { id: 'overview', label: 'Overview', icon: BarChart3 },
           { id: 'users', label: 'Users', icon: Users },
           { id: 'roles', label: 'Roles', icon: Key },
+          { id: 'emails', label: 'Email Settings', icon: Mail },
           { id: 'security', label: 'Security', icon: Lock },
         ].map((tab) => (
           <button
@@ -515,6 +525,117 @@ export default function SuperAdmin() {
         </div>
       )}
 
+      {activeTab === 'emails' && (
+        <div className="space-y-6">
+          <div className="flex justify-between items-center">
+            <h2 className="text-2xl font-bold text-gray-900">Sender Email Addresses</h2>
+            <button
+              onClick={() => {
+                setSelectedEmail(null);
+                setIsEmailModalOpen(true);
+              }}
+              className="px-6 py-3 bg-gray-900 text-white rounded-xl hover:bg-gray-800 transition-colors flex items-center gap-2 font-semibold"
+            >
+              <Plus className="h-4 w-4" />
+              Add Email Address
+            </button>
+          </div>
+
+          {emailsLoading ? (
+            <div className="flex justify-center items-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-gray-900"></div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {senderEmails?.map((email) => (
+                <div
+                  key={email.id}
+                  className="bg-white rounded-2xl p-6 shadow-soft border border-gray-100 hover:shadow-lg transition-all"
+                >
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Mail className="h-5 w-5 text-gray-400" />
+                        <h3 className="font-bold text-gray-900">{email.display_name}</h3>
+                      </div>
+                      <p className="text-sm text-gray-600 mb-3">{email.email}</p>
+                      {email.description && (
+                        <p className="text-xs text-gray-500 mb-3">{email.description}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 mb-4">
+                    {email.is_default && (
+                      <span className="px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded-lg font-semibold">
+                        Default
+                      </span>
+                    )}
+                    {email.is_active ? (
+                      <span className="px-2 py-1 bg-green-50 text-green-700 text-xs rounded-lg font-semibold flex items-center gap-1">
+                        <CheckCircle className="h-3 w-3" />
+                        Active
+                      </span>
+                    ) : (
+                      <span className="px-2 py-1 bg-gray-50 text-gray-700 text-xs rounded-lg font-semibold flex items-center gap-1">
+                        <XCircle className="h-3 w-3" />
+                        Inactive
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <button
+                      onClick={() => {
+                        setSelectedEmail(email);
+                        setIsEmailModalOpen(true);
+                      }}
+                      className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 font-semibold text-sm"
+                    >
+                      <Edit className="h-3.5 w-3.5" />
+                      Edit
+                    </button>
+                    {!email.is_default && (
+                      <button
+                        onClick={async () => {
+                          if (window.confirm('Are you sure you want to delete this email address?')) {
+                            try {
+                              const { error } = await supabase
+                                .from('sender_email_addresses')
+                                .delete()
+                                .eq('id', email.id);
+                              
+                              if (error) throw error;
+                              showToast('Email address deleted successfully', 'success');
+                              refetchEmails();
+                            } catch (error) {
+                              console.error('Error deleting email:', error);
+                              showToast('Failed to delete email address', 'error');
+                            }
+                          }
+                        }}
+                        className="w-full px-4 py-2 text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors flex items-center justify-center gap-2 font-semibold text-sm"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                        Delete
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {senderEmails && senderEmails.length === 0 && (
+            <div className="text-center py-16 bg-white rounded-2xl border border-gray-100">
+              <Mail className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+              <p className="text-gray-500 font-medium mb-2">No email addresses found</p>
+              <p className="text-gray-400 text-sm">Add your first sender email address to get started</p>
+            </div>
+          )}
+        </div>
+      )}
+
       {activeTab === 'security' && (
         <div className="space-y-6">
           <TwoFactorSetup
@@ -550,6 +671,220 @@ export default function SuperAdmin() {
         role={selectedRole}
         permissions={permissions}
       />
+
+      {isEmailModalOpen && (
+        <SenderEmailModal
+          email={selectedEmail}
+          onClose={() => {
+            setIsEmailModalOpen(false);
+            setSelectedEmail(null);
+          }}
+          onSuccess={() => {
+            setIsEmailModalOpen(false);
+            setSelectedEmail(null);
+            refetchEmails();
+            refreshData.mutate(['sender-emails']);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+function SenderEmailModal({
+  email,
+  onClose,
+  onSuccess,
+}: {
+  email: SenderEmail | null;
+  onClose: () => void;
+  onSuccess: () => void;
+}) {
+  const { showToast } = useToast();
+  const [formData, setFormData] = useState({
+    email: email?.email || '',
+    display_name: email?.display_name || '',
+    description: email?.description || '',
+    is_active: email?.is_active ?? true,
+    is_default: email?.is_default ?? false,
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('No active session');
+      }
+
+      if (email) {
+        // Update existing email - don't update created_by or email address
+        const payload = {
+          display_name: formData.display_name.trim(),
+          description: formData.description?.trim() || null,
+          is_active: formData.is_active,
+          is_default: formData.is_default,
+          updated_at: new Date().toISOString(),
+        };
+
+        const { error } = await supabase
+          .from('sender_email_addresses')
+          .update(payload)
+          .eq('id', email.id);
+
+        if (error) {
+          console.error('Update error:', error);
+          throw new Error(error.message || 'Failed to update email address');
+        }
+        showToast('Email address updated successfully', 'success');
+      } else {
+        // Create new email
+        const payload = {
+          email: formData.email.trim(),
+          display_name: formData.display_name.trim(),
+          description: formData.description?.trim() || null,
+          is_active: formData.is_active,
+          is_default: formData.is_default,
+          created_by: session.user.id,
+        };
+
+        const { error, data } = await supabase
+          .from('sender_email_addresses')
+          .insert([payload])
+          .select();
+
+        if (error) {
+          console.error('Insert error:', error);
+          // Provide more specific error messages
+          if (error.code === '23505') {
+            throw new Error('This email address already exists');
+          } else if (error.code === '42501') {
+            throw new Error('You do not have permission to create email addresses');
+          } else if (error.code === '23503') {
+            throw new Error('Invalid user reference. Please refresh and try again.');
+          }
+          throw new Error(error.message || 'Failed to create email address');
+        }
+        
+        console.log('Email created successfully:', data);
+        showToast('Email address created successfully', 'success');
+      }
+
+      onSuccess();
+    } catch (error: any) {
+      console.error('Error saving email address:', error);
+      showToast(error.message || 'Failed to save email address', 'error');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl max-w-lg w-full">
+        <div className="p-6 border-b border-gray-100">
+          <h2 className="text-2xl font-bold text-gray-900">
+            {email ? 'Edit Email Address' : 'Add Email Address'}
+          </h2>
+          <p className="text-sm text-gray-500 mt-1">
+            {email ? 'Update sender email address details' : 'Add a new sender email address for marketing campaigns'}
+          </p>
+        </div>
+        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Email Address *
+            </label>
+            <input
+              type="email"
+              required
+              disabled={!!email}
+              placeholder="hello@planmoni.com"
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-gray-900 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
+            />
+            {email && (
+              <p className="text-xs text-gray-500 mt-1">Email address cannot be changed after creation</p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Display Name *
+            </label>
+            <input
+              type="text"
+              required
+              placeholder="Martins Osodi - Planmoni CEO"
+              value={formData.display_name}
+              onChange={(e) => setFormData({ ...formData, display_name: e.target.value })}
+              className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+            />
+            <p className="text-xs text-gray-500 mt-1">This will appear as the sender name in emails</p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Description
+            </label>
+            <textarea
+              rows={2}
+              placeholder="Optional description of this email address..."
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-gray-900 focus:border-transparent resize-none"
+            />
+          </div>
+
+          <div className="space-y-3">
+            <label className="flex items-center space-x-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={formData.is_active}
+                onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
+                className="w-4 h-4 text-gray-900 rounded focus:ring-2 focus:ring-gray-900"
+              />
+              <span className="text-sm text-gray-700">Active (can be used in campaigns)</span>
+            </label>
+
+            <label className="flex items-center space-x-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={formData.is_default}
+                onChange={(e) => setFormData({ ...formData, is_default: e.target.checked })}
+                className="w-4 h-4 text-gray-900 rounded focus:ring-2 focus:ring-gray-900"
+              />
+              <span className="text-sm text-gray-700">Set as default sender</span>
+            </label>
+            {formData.is_default && (
+              <p className="text-xs text-gray-500 ml-6">
+                This will become the default email for new campaigns. Only one email can be default at a time.
+              </p>
+            )}
+          </div>
+
+          <div className="flex space-x-4 pt-4">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="flex-1 px-4 py-2 bg-gray-900 text-white rounded-xl hover:bg-gray-800 transition-colors disabled:opacity-50"
+            >
+              {isSubmitting ? 'Saving...' : email ? 'Update Email' : 'Create Email'}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Plus, RefreshCw, Mail, TrendingUp, Send, Users, BarChart, Edit2, Trash2, Target, Eye, Save, Code } from 'lucide-react';
 import { useMarketingCampaigns, useCampaignStats } from '@/hooks/queries/useMarketingCampaigns';
 import { useSegments } from '@/hooks/queries/useSegments';
+import { useSenderEmails } from '@/hooks/queries/useSenderEmails';
 import { useRefreshData } from '@/hooks/mutations/useRefreshData';
 import { useToast } from '@/contexts/ToastContext';
 import { supabase } from '@/lib/supabase';
@@ -161,77 +162,6 @@ export default function Marketing() {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-100 shadow-sm">
-        <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
-          <h2 className="text-lg font-semibold text-gray-900">User Segments</h2>
-          <button
-            onClick={() => {
-              setSelectedSegment(null);
-              setShowSegmentModal(true);
-            }}
-            className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors text-sm"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Create Segment</span>
-          </button>
-        </div>
-        <div className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {segments?.map((segment) => (
-              <div
-                key={segment.id}
-                className="border border-gray-200 rounded-xl p-4 hover:border-blue-300 hover:shadow-sm transition-all"
-              >
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-center space-x-2">
-                    <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center">
-                      <Target className="w-5 h-5 text-blue-600" />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-gray-900">{segment.name}</h3>
-                      <p className="text-xs text-gray-500">{segment.user_count} users</p>
-                    </div>
-                  </div>
-                  <div className="flex space-x-2">
-                    <button
-                      onClick={() => {
-                        setSelectedSegment(segment);
-                        setShowSegmentModal(true);
-                      }}
-                      className="text-gray-400 hover:text-blue-600 transition-colors"
-                    >
-                      <Edit2 className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => handleDeleteSegment(segment.id)}
-                      className="text-gray-400 hover:text-red-600 transition-colors"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-                {segment.description && (
-                  <p className="text-sm text-gray-600 mb-3">{segment.description}</p>
-                )}
-                <div className="space-y-1">
-                  {Object.entries(segment.filters).map(([key, value]) => (
-                    <div key={key} className="text-xs text-gray-500">
-                      <span className="font-medium">{key.replace('_', ' ')}:</span> {String(value)}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-            {(!segments || segments.length === 0) && (
-              <div className="col-span-full text-center py-12 text-gray-500">
-                <Target className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-                <p>No segments created yet</p>
-                <p className="text-sm">Create custom audience segments to target your campaigns</p>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
 
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm">
         <div className="px-6 py-4 border-b border-gray-100">
@@ -403,6 +333,30 @@ export default function Marketing() {
 }
 
 function PreviewModal({ campaign, onClose }: { campaign: any; onClose: () => void }) {
+  const { data: senderEmails } = useSenderEmails();
+  const [senderEmail, setSenderEmail] = useState<{ display_name: string; email: string } | null>(null);
+
+  useEffect(() => {
+    const fetchSenderEmail = async () => {
+      if (campaign.from_email_id && senderEmails) {
+        const email = senderEmails.find(e => e.id === campaign.from_email_id);
+        if (email) {
+          setSenderEmail({ display_name: email.display_name, email: email.email });
+          return;
+        }
+      }
+      // Fallback to default or hardcoded
+      const defaultEmail = senderEmails?.find(e => e.is_default) || senderEmails?.[0];
+      if (defaultEmail) {
+        setSenderEmail({ display_name: defaultEmail.display_name, email: defaultEmail.email });
+      } else {
+        setSenderEmail({ display_name: 'Martins Osodi - Planmoni CEO', email: 'hello@planmoni.com' });
+      }
+    };
+
+    fetchSenderEmail();
+  }, [campaign.from_email_id, senderEmails]);
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
@@ -447,7 +401,9 @@ function PreviewModal({ campaign, onClose }: { campaign: any; onClose: () => voi
             </div>
             <div className="border border-gray-200 rounded-xl overflow-hidden bg-white">
               <div className="p-4 bg-gray-100 border-b border-gray-200">
-                <p className="text-xs text-gray-600">From: Martins Osodi - Planmoni CEO &lt;hello@planmoni.com&gt;</p>
+                <p className="text-xs text-gray-600">
+                  From: {senderEmail ? `${senderEmail.display_name} <${senderEmail.email}>` : 'Loading...'}
+                </p>
                 <p className="text-xs text-gray-600 mt-1">Subject: {campaign.subject}</p>
               </div>
               <div className="p-6 max-h-96 overflow-y-auto">
@@ -483,6 +439,7 @@ function PreviewModal({ campaign, onClose }: { campaign: any; onClose: () => voi
 function CreateCampaignModal({ campaign, onClose, onSuccess }: { campaign?: any; onClose: () => void; onSuccess: () => void }) {
   const { showToast } = useToast();
   const { data: segments } = useSegments();
+  const { data: senderEmails } = useSenderEmails();
   const [formData, setFormData] = useState({
     title: campaign?.title || '',
     subject: campaign?.subject || '',
@@ -490,6 +447,7 @@ function CreateCampaignModal({ campaign, onClose, onSuccess }: { campaign?: any;
     plain_text_content: campaign?.plain_text_content || '',
     category: campaign?.category || 'promotional',
     target_segment: 'all',
+    from_email_id: campaign?.from_email_id || (senderEmails?.find(e => e.is_default)?.id || ''),
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSavingDraft, setIsSavingDraft] = useState(false);
@@ -658,6 +616,16 @@ function CreateCampaignModal({ campaign, onClose, onSuccess }: { campaign?: any;
     calculateRecipients();
   }, [calculateRecipients]);
 
+  // Set default from_email_id when senderEmails loads
+  useEffect(() => {
+    if (senderEmails && senderEmails.length > 0 && !formData.from_email_id) {
+      const defaultEmail = senderEmails.find(e => e.is_default) || senderEmails[0];
+      if (defaultEmail) {
+        setFormData(prev => ({ ...prev, from_email_id: defaultEmail.id }));
+      }
+    }
+  }, [senderEmails]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -803,6 +771,29 @@ function CreateCampaignModal({ campaign, onClose, onSuccess }: { campaign?: any;
                 )}
               </select>
             </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              From Email Address
+            </label>
+            <select
+              value={formData.from_email_id}
+              onChange={(e) => setFormData({ ...formData, from_email_id: e.target.value })}
+              className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-accent focus:border-transparent"
+              required
+            >
+              {senderEmails && senderEmails.length > 0 ? (
+                senderEmails.map((email) => (
+                  <option key={email.id} value={email.id}>
+                    {email.display_name} &lt;{email.email}&gt;{email.is_default ? ' (Default)' : ''}
+                  </option>
+                ))
+              ) : (
+                <option value="">Loading email addresses...</option>
+              )}
+            </select>
+            <p className="text-xs text-gray-500 mt-1">Select the email address to send campaigns from</p>
           </div>
 
           {(estimatedRecipients > 0 || isCalculatingRecipients) && (
