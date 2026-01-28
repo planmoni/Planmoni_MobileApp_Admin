@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Plus, RefreshCw, Mail, TrendingUp, Send, Users, BarChart, Edit2, Eye, Save, CheckCircle, XCircle, Clock, Search, RotateCcw } from 'lucide-react';
+import { Plus, RefreshCw, Mail, TrendingUp, Send, Users, BarChart, Edit2, Eye, Save, CheckCircle, XCircle, Clock, Search, RotateCcw, Trash2, Filter, X } from 'lucide-react';
 import { useMarketingCampaigns, useCampaignStats } from '@/hooks/queries/useMarketingCampaigns';
 import { useSegments } from '@/hooks/queries/useSegments';
 import { useSenderEmails } from '@/hooks/queries/useSenderEmails';
@@ -22,10 +22,109 @@ export default function Marketing() {
   const [selectedCampaign, setSelectedCampaign] = useState<any>(null);
   const [selectedSegment, setSelectedSegment] = useState<any>(null);
   const [editingCampaign, setEditingCampaign] = useState<any>(null);
+  const [selectedCampaignIds, setSelectedCampaignIds] = useState<Set<string>>(new Set());
+  const [showFilters, setShowFilters] = useState(false);
+  const [filters, setFilters] = useState({
+    status: 'all',
+    category: 'all',
+    dateFrom: '',
+    dateTo: '',
+  });
+  const [deleting, setDeleting] = useState(false);
+
+  const { showToast } = useToast();
 
   const handleRefresh = () => {
     refreshData.mutate(['marketing-campaigns', 'campaign-stats', 'campaign-segments']);
   };
+
+  const handleSelectCampaign = (campaignId: string) => {
+    setSelectedCampaignIds((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(campaignId)) {
+        newSet.delete(campaignId);
+      } else {
+        newSet.add(campaignId);
+      }
+      return newSet;
+    });
+  };
+
+  const handleSelectAll = () => {
+    if (selectedCampaignIds.size === filteredCampaigns.length) {
+      setSelectedCampaignIds(new Set());
+    } else {
+      setSelectedCampaignIds(new Set(filteredCampaigns.map((c: any) => c.id)));
+    }
+  };
+
+  const handleDeleteCampaigns = async () => {
+    if (selectedCampaignIds.size === 0) return;
+
+    if (!confirm(`Are you sure you want to delete ${selectedCampaignIds.size} campaign(s)? This action cannot be undone.`)) {
+      return;
+    }
+
+    setDeleting(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('Not authenticated');
+      }
+
+      const campaignIdsArray = Array.from(selectedCampaignIds);
+
+      // Delete campaigns via edge function
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/marketing-campaigns`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          action: 'delete_campaigns',
+          campaign_ids: campaignIdsArray,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || result.message || 'Failed to delete campaigns');
+      }
+
+      if (!result.success) {
+        throw new Error(result.message || 'Failed to delete campaigns');
+      }
+
+      showToast(`Successfully deleted ${campaignIdsArray.length} campaign(s)`, 'success');
+      setSelectedCampaignIds(new Set());
+      handleRefresh();
+    } catch (error) {
+      console.error('Error deleting campaigns:', error);
+      showToast(error instanceof Error ? error.message : 'Failed to delete campaigns', 'error');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  // Filter campaigns based on filters
+  const filteredCampaigns = campaigns?.filter((campaign: any) => {
+    if (filters.status !== 'all' && campaign.status !== filters.status) return false;
+    if (filters.category !== 'all' && campaign.category !== filters.category) return false;
+    if (filters.dateFrom) {
+      const campaignDate = new Date(campaign.created_at);
+      const fromDate = new Date(filters.dateFrom);
+      if (campaignDate < fromDate) return false;
+    }
+    if (filters.dateTo) {
+      const campaignDate = new Date(campaign.created_at);
+      const toDate = new Date(filters.dateTo);
+      toDate.setHours(23, 59, 59, 999); // Include the entire day
+      if (campaignDate > toDate) return false;
+    }
+    return true;
+  }) || [];
 
   const getCategoryBadgeColor = (category: string) => {
     const colors: Record<string, string> = {
@@ -149,12 +248,120 @@ export default function Marketing() {
 
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm">
         <div className="px-6 py-4 border-b border-gray-100">
-          <h2 className="text-lg font-semibold text-gray-900">All Campaigns</h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-gray-900">All Campaigns</h2>
+            <div className="flex items-center space-x-2">
+              {selectedCampaignIds.size > 0 && (
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm text-gray-600">
+                    {selectedCampaignIds.size} selected
+                  </span>
+                  <button
+                    onClick={handleDeleteCampaigns}
+                    disabled={deleting}
+                    className="px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    <span>{deleting ? 'Deleting...' : 'Delete Selected'}</span>
+                  </button>
+                </div>
+              )}
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                className={`px-4 py-2 text-sm border rounded-lg transition-colors flex items-center space-x-2 ${
+                  showFilters || filters.status !== 'all' || filters.category !== 'all' || filters.dateFrom || filters.dateTo
+                    ? 'bg-blue-50 border-blue-300 text-blue-700'
+                    : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                <Filter className="w-4 h-4" />
+                <span>Filters</span>
+                {(filters.status !== 'all' || filters.category !== 'all' || filters.dateFrom || filters.dateTo) && (
+                  <span className="ml-1 px-1.5 py-0.5 bg-blue-600 text-white text-xs rounded-full">
+                    {[filters.status !== 'all', filters.category !== 'all', filters.dateFrom, filters.dateTo].filter(Boolean).length}
+                  </span>
+                )}
+              </button>
+            </div>
+          </div>
+          {showFilters && (
+            <div className="mt-4 pt-4 border-t border-gray-200">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                  <select
+                    value={filters.status}
+                    onChange={(e) => setFilters({ ...filters, status: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                  >
+                    <option value="all">All Status</option>
+                    <option value="draft">Draft</option>
+                    <option value="scheduled">Scheduled</option>
+                    <option value="sending">Sending</option>
+                    <option value="sent">Sent</option>
+                    <option value="cancelled">Cancelled</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                  <select
+                    value={filters.category}
+                    onChange={(e) => setFilters({ ...filters, category: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                  >
+                    <option value="all">All Categories</option>
+                    <option value="promotional">Promotional</option>
+                    <option value="product_update">Product Update</option>
+                    <option value="educational">Educational</option>
+                    <option value="announcement">Announcement</option>
+                    <option value="retention">Retention</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">From Date</label>
+                  <input
+                    type="date"
+                    value={filters.dateFrom}
+                    onChange={(e) => setFilters({ ...filters, dateFrom: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">To Date</label>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="date"
+                      value={filters.dateTo}
+                      onChange={(e) => setFilters({ ...filters, dateTo: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                    />
+                    {(filters.status !== 'all' || filters.category !== 'all' || filters.dateFrom || filters.dateTo) && (
+                      <button
+                        onClick={() => setFilters({ status: 'all', category: 'all', dateFrom: '', dateTo: '' })}
+                        className="p-2 text-gray-500 hover:text-gray-700 transition-colors"
+                        title="Clear filters"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-100">
             <thead className="bg-gray-50">
               <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">
+                  <input
+                    type="checkbox"
+                    checked={selectedCampaignIds.size === filteredCampaigns.length && filteredCampaigns.length > 0}
+                    onChange={handleSelectAll}
+                    className="rounded border-gray-300 text-gray-900 focus:ring-gray-900"
+                  />
+                </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Campaign
                 </th>
@@ -179,8 +386,16 @@ export default function Marketing() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-100">
-              {campaigns?.map((campaign) => (
+              {filteredCampaigns.map((campaign: any) => (
                 <tr key={campaign.id} className="hover:bg-gray-50 transition-colors">
+                  <td className="px-6 py-4">
+                    <input
+                      type="checkbox"
+                      checked={selectedCampaignIds.has(campaign.id)}
+                      onChange={() => handleSelectCampaign(campaign.id)}
+                      className="rounded border-gray-300 text-gray-900 focus:ring-gray-900"
+                    />
+                  </td>
                   <td className="px-6 py-4">
                     <div>
                       <p className="text-sm font-medium text-gray-900">{campaign.title}</p>

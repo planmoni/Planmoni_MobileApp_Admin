@@ -1,4 +1,4 @@
-import React from 'react'
+import { StrictMode } from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App.tsx'
 import './index.css'
@@ -12,7 +12,7 @@ import { PermissionsProvider } from './contexts/PermissionsContext.tsx'
 import { queryClient } from './lib/queryClient.ts'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
+  <StrictMode>
     <BrowserRouter>
       <QueryClientProvider client={queryClient}>
         <ThemeProvider>
@@ -27,5 +27,5 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         <ReactQueryDevtools initialIsOpen={false} />
       </QueryClientProvider>
     </BrowserRouter>
-  </React.StrictMode>,
+  </StrictMode>,
 )

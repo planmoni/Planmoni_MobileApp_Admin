@@ -53,7 +53,12 @@ interface RetryCampaignRequest {
   recipient_ids?: string[]; // Optional: retry specific recipients, or all failed/pending if not provided
 }
 
-type RequestBody = CreateCampaignRequest | UpdateCampaignRequest | SendCampaignRequest | ScheduleCampaignRequest | RetryCampaignRequest;
+interface DeleteCampaignsRequest {
+  action: 'delete_campaigns';
+  campaign_ids: string[];
+}
+
+type RequestBody = CreateCampaignRequest | UpdateCampaignRequest | SendCampaignRequest | ScheduleCampaignRequest | RetryCampaignRequest | DeleteCampaignsRequest;
 
 async function sendEmailViaResend(
   to: string,
@@ -1085,6 +1090,50 @@ Deno.serve(async (req: Request) => {
           console.error(`Error retrying campaign ${campaign_id}:`, error);
           throw new Error(`Failed to retry emails: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
+      }
+
+      if (body.action === 'delete_campaigns') {
+        const { campaign_ids } = body;
+
+        if (!campaign_ids || campaign_ids.length === 0) {
+          throw new Error('No campaign IDs provided');
+        }
+
+        // Delete campaign recipients first (cascade should handle this, but being explicit)
+        const { error: recipientsError } = await supabase
+          .from('campaign_recipients')
+          .delete()
+          .in('campaign_id', campaign_ids);
+
+        if (recipientsError) {
+          console.error('Error deleting campaign recipients:', recipientsError);
+          throw new Error(`Failed to delete campaign recipients: ${recipientsError.message}`);
+        }
+
+        // Delete campaigns
+        const { error: deleteError } = await supabase
+          .from('marketing_campaigns')
+          .delete()
+          .in('id', campaign_ids);
+
+        if (deleteError) {
+          console.error('Error deleting campaigns:', deleteError);
+          throw new Error(`Failed to delete campaigns: ${deleteError.message}`);
+        }
+
+        return new Response(
+          JSON.stringify({
+            success: true,
+            message: `Successfully deleted ${campaign_ids.length} campaign(s)`,
+            deleted_count: campaign_ids.length,
+          }),
+          {
+            headers: {
+              ...corsHeaders,
+              'Content-Type': 'application/json',
+            },
+          }
+        );
       }
 
       console.error('Invalid action received:', body.action);

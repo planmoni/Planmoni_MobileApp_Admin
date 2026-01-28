@@ -11,6 +11,10 @@ export default defineConfig({
     },
   },
   publicDir: 'public',
+  server: {
+    port: 5173,
+    host: 'localhost',
+  },
   build: {
     outDir: 'dist',
     // Ensure _redirects file is copied to build output
