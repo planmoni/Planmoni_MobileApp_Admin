@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Plus, RefreshCw, Mail, TrendingUp, Send, Users, BarChart, Edit2, Trash2, Target, Eye, Save, Code, CheckCircle, XCircle, Clock, Search } from 'lucide-react';
+import { Plus, RefreshCw, Mail, TrendingUp, Send, Users, BarChart, Edit2, Eye, Save, Code, CheckCircle, XCircle, Clock, Search } from 'lucide-react';
 import { useMarketingCampaigns, useCampaignStats } from '@/hooks/queries/useMarketingCampaigns';
 import { useSegments } from '@/hooks/queries/useSegments';
 import { useSenderEmails } from '@/hooks/queries/useSenderEmails';
@@ -13,7 +13,6 @@ import { useQuery } from '@tanstack/react-query';
 export default function Marketing() {
   const { data: campaigns, isLoading, error } = useMarketingCampaigns();
   const { data: stats } = useCampaignStats();
-  const { data: segments } = useSegments();
   const refreshData = useRefreshData();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showSendModal, setShowSendModal] = useState(false);
@@ -26,23 +25,6 @@ export default function Marketing() {
 
   const handleRefresh = () => {
     refreshData.mutate(['marketing-campaigns', 'campaign-stats', 'campaign-segments']);
-  };
-
-  const handleDeleteSegment = async (segmentId: string) => {
-    if (!confirm('Are you sure you want to delete this segment?')) return;
-
-    try {
-      const { error } = await supabase
-        .from('campaign_segments')
-        .delete()
-        .eq('id', segmentId);
-
-      if (error) throw error;
-
-      refreshData.mutate(['campaign-segments']);
-    } catch (error) {
-      console.error('Error deleting segment:', error);
-    }
   };
 
   const getCategoryBadgeColor = (category: string) => {
