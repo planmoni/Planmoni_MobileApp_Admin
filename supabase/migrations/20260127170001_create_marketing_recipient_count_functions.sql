@@ -138,10 +138,12 @@ BEGIN
     RAISE EXCEPTION 'Permission denied: Marketing access required';
   END IF;
   
+  -- Include users without wallets (balance IS NULL) OR users with balance = 0
   RETURN (
-    SELECT COUNT(DISTINCT user_id)
-    FROM wallets
-    WHERE balance = 0
+    SELECT COUNT(*)
+    FROM profiles p
+    LEFT JOIN wallets w ON w.user_id = p.id
+    WHERE w.balance = 0 OR w.balance IS NULL
   );
 END;
 $$;

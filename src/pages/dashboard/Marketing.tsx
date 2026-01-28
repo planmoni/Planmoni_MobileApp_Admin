@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Plus, RefreshCw, Mail, TrendingUp, Send, Users, BarChart, Edit2, Eye, Save, Code, CheckCircle, XCircle, Clock, Search } from 'lucide-react';
+import { Plus, RefreshCw, Mail, TrendingUp, Send, Users, BarChart, Edit2, Eye, Save, CheckCircle, XCircle, Clock, Search, RotateCcw } from 'lucide-react';
 import { useMarketingCampaigns, useCampaignStats } from '@/hooks/queries/useMarketingCampaigns';
 import { useSegments } from '@/hooks/queries/useSegments';
 import { useSenderEmails } from '@/hooks/queries/useSenderEmails';
@@ -341,6 +341,8 @@ export default function Marketing() {
 function RecipientsModal({ campaign, onClose }: { campaign: any; onClose: () => void }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [retrying, setRetrying] = useState(false);
+  const { showToast } = useToast();
 
   const { data: recipients, isLoading, refetch } = useQuery({
     queryKey: ['campaign-recipients', campaign.id],
@@ -356,6 +358,47 @@ function RecipientsModal({ campaign, onClose }: { campaign: any; onClose: () => 
     },
     enabled: !!campaign.id,
   });
+
+  const handleRetry = async (recipientIds?: string[]) => {
+    setRetrying(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('Not authenticated');
+      }
+
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/marketing-campaigns`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          action: 'retry_campaign',
+          campaign_id: campaign.id,
+          recipient_ids: recipientIds,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || result.message || 'Failed to retry campaign');
+      }
+
+      if (!result.success) {
+        throw new Error(result.message || 'Failed to retry campaign');
+      }
+
+      showToast(result.message || 'Campaign retry initiated successfully', 'success');
+      refetch();
+    } catch (error) {
+      console.error('Error retrying campaign:', error);
+      showToast(error instanceof Error ? error.message : 'Failed to retry campaign', 'error');
+    } finally {
+      setRetrying(false);
+    }
+  };
 
   const filteredRecipients = recipients?.filter((r: any) => {
     const matchesSearch = !searchQuery || 
@@ -441,13 +484,25 @@ function RecipientsModal({ campaign, onClose }: { campaign: any; onClose: () => 
                 <span className="text-sm text-gray-600">Pending: {statusCounts.pending || 0}</span>
               </div>
             </div>
-            <button
-              onClick={() => refetch()}
-              className="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center space-x-2"
-            >
-              <RefreshCw className="w-4 h-4" />
-              <span>Refresh</span>
-            </button>
+            <div className="flex items-center space-x-2">
+              {(statusCounts.failed > 0 || statusCounts.pending > 0) && (
+                <button
+                  onClick={() => handleRetry()}
+                  disabled={retrying}
+                  className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <RotateCcw className={`w-4 h-4 ${retrying ? 'animate-spin' : ''}`} />
+                  <span>{retrying ? 'Retrying...' : `Retry All (${(statusCounts.failed || 0) + (statusCounts.pending || 0)})`}</span>
+                </button>
+              )}
+              <button
+                onClick={() => refetch()}
+                className="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center space-x-2"
+              >
+                <RefreshCw className="w-4 h-4" />
+                <span>Refresh</span>
+              </button>
+            </div>
           </div>
 
           <div className="flex items-center space-x-4">
@@ -488,43 +543,76 @@ function RecipientsModal({ campaign, onClose }: { campaign: any; onClose: () => 
             </div>
           ) : (
             <div className="space-y-2">
-              {filteredRecipients.map((recipient: any) => (
-                <div
-                  key={recipient.id}
-                  className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-sm transition-shadow"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-3 mb-2">
-                        {getStatusIcon(recipient.status)}
-                        <span className="font-medium text-gray-900">{recipient.email}</span>
-                        <span className={`px-2 py-1 rounded text-xs font-medium border ${getStatusColor(recipient.status)}`}>
-                          {recipient.status}
-                        </span>
+              {filteredRecipients.map((recipient: any) => {
+                const isPending = recipient.status === 'pending';
+                const isFailed = recipient.status === 'failed';
+                const isPendingTimeout = isPending && recipient.created_at && 
+                  (Date.now() - new Date(recipient.created_at).getTime()) > 5 * 60 * 1000; // 5 minutes timeout
+
+                return (
+                  <div
+                    key={recipient.id}
+                    className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-sm transition-shadow"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-3 mb-2">
+                          {getStatusIcon(recipient.status)}
+                          <span className="font-medium text-gray-900">{recipient.email}</span>
+                          <span className={`px-2 py-1 rounded text-xs font-medium border ${getStatusColor(recipient.status)}`}>
+                            {recipient.status}
+                          </span>
+                          {isPendingTimeout && (
+                            <span className="px-2 py-1 rounded text-xs font-medium bg-orange-50 text-orange-700 border border-orange-200">
+                              Timeout
+                            </span>
+                          )}
+                        </div>
+                        {recipient.error_message && (
+                          <p className="text-sm text-red-600 ml-7 mt-1">
+                            Error: {recipient.error_message}
+                          </p>
+                        )}
+                        {isPendingTimeout && (
+                          <p className="text-sm text-orange-600 ml-7 mt-1">
+                            This email has been pending for more than 5 minutes. Consider retrying.
+                          </p>
+                        )}
+                        <div className="flex items-center space-x-4 ml-7 mt-2 text-xs text-gray-500">
+                          {recipient.sent_at && (
+                            <span>Sent: {format(new Date(recipient.sent_at), 'MMM dd, yyyy HH:mm')}</span>
+                          )}
+                          {recipient.delivered_at && (
+                            <span>Delivered: {format(new Date(recipient.delivered_at), 'MMM dd, yyyy HH:mm')}</span>
+                          )}
+                          {recipient.opened_at && (
+                            <span className="text-green-600">Opened: {format(new Date(recipient.opened_at), 'MMM dd, yyyy HH:mm')}</span>
+                          )}
+                          {recipient.clicked_at && (
+                            <span className="text-blue-600">Clicked: {format(new Date(recipient.clicked_at), 'MMM dd, yyyy HH:mm')}</span>
+                          )}
+                          {isPending && recipient.created_at && (
+                            <span className="text-gray-400">
+                              Pending for: {Math.floor((Date.now() - new Date(recipient.created_at).getTime()) / 60000)}m
+                            </span>
+                          )}
+                        </div>
                       </div>
-                      {recipient.error_message && (
-                        <p className="text-sm text-red-600 ml-7 mt-1">
-                          Error: {recipient.error_message}
-                        </p>
+                      {(isFailed || isPendingTimeout) && (
+                        <button
+                          onClick={() => handleRetry([recipient.id])}
+                          disabled={retrying}
+                          className="ml-4 px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                          title="Retry this email"
+                        >
+                          <RotateCcw className={`w-3 h-3 ${retrying ? 'animate-spin' : ''}`} />
+                          <span>Retry</span>
+                        </button>
                       )}
-                      <div className="flex items-center space-x-4 ml-7 mt-2 text-xs text-gray-500">
-                        {recipient.sent_at && (
-                          <span>Sent: {format(new Date(recipient.sent_at), 'MMM dd, yyyy HH:mm')}</span>
-                        )}
-                        {recipient.delivered_at && (
-                          <span>Delivered: {format(new Date(recipient.delivered_at), 'MMM dd, yyyy HH:mm')}</span>
-                        )}
-                        {recipient.opened_at && (
-                          <span className="text-green-600">Opened: {format(new Date(recipient.opened_at), 'MMM dd, yyyy HH:mm')}</span>
-                        )}
-                        {recipient.clicked_at && (
-                          <span className="text-blue-600">Clicked: {format(new Date(recipient.clicked_at), 'MMM dd, yyyy HH:mm')}</span>
-                        )}
-                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
@@ -664,7 +752,7 @@ function CreateCampaignModal({ campaign, onClose, onSuccess }: { campaign?: any;
   const [estimatedRecipients, setEstimatedRecipients] = useState(0);
   const [isCalculatingRecipients, setIsCalculatingRecipients] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(campaign?.updated_at ? new Date(campaign.updated_at) : null);
-  const [showHtmlPreview, setShowHtmlPreview] = useState(false);
+  const [editorMode, setEditorMode] = useState<'rich' | 'html' | 'preview'>('rich');
 
   const calculateRecipients = useCallback(async (segmentValue?: string) => {
     const targetSegment = segmentValue || formData.target_segment;
@@ -992,44 +1080,88 @@ function CreateCampaignModal({ campaign, onClose, onSuccess }: { campaign?: any;
               <label className="block text-sm font-medium text-gray-700">
                 Email Content
               </label>
-              <button
-                type="button"
-                onClick={() => setShowHtmlPreview(!showHtmlPreview)}
-                className="flex items-center space-x-2 px-3 py-1.5 text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                {showHtmlPreview ? (
-                  <>
-                    <Eye className="w-4 h-4" />
-                    <span>Show Editor</span>
-                  </>
-                ) : (
-                  <>
-                    <Code className="w-4 h-4" />
-                    <span>View HTML</span>
-                  </>
-                )}
-              </button>
+              <div className="flex items-center space-x-2">
+                <div className="flex items-center bg-gray-100 rounded-lg p-1">
+                  <button
+                    type="button"
+                    onClick={() => setEditorMode('rich')}
+                    className={`px-3 py-1.5 text-xs font-medium rounded transition-colors ${
+                      editorMode === 'rich'
+                        ? 'bg-white text-gray-900 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    Rich Editor
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditorMode('html')}
+                    className={`px-3 py-1.5 text-xs font-medium rounded transition-colors ${
+                      editorMode === 'html'
+                        ? 'bg-white text-gray-900 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    HTML Editor
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditorMode('preview')}
+                    className={`px-3 py-1.5 text-xs font-medium rounded transition-colors ${
+                      editorMode === 'preview'
+                        ? 'bg-white text-gray-900 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    <Eye className="w-3.5 h-3.5 inline mr-1" />
+                    Preview
+                  </button>
+                </div>
+              </div>
             </div>
-            {!showHtmlPreview ? (
-              <div className="min-h-[400px]">
+            
+            {editorMode === 'rich' && (
+              <div className="min-h-[400px] border border-gray-200 rounded-xl overflow-hidden">
                 <RichTextEditor
                   value={formData.html_content}
                   onChange={(value) => setFormData({ ...formData, html_content: value })}
                   placeholder="Compose your email content here..."
                 />
               </div>
-            ) : (
+            )}
+            
+            {editorMode === 'html' && (
               <div className="border border-gray-200 rounded-xl overflow-hidden bg-white">
                 <div className="p-3 bg-gray-100 border-b border-gray-200">
-                  <p className="text-xs text-gray-600 font-medium">HTML Code</p>
-                  <p className="text-xs text-gray-500 mt-1">Generated HTML from the editor</p>
+                  <p className="text-xs text-gray-600 font-medium">HTML Editor</p>
+                  <p className="text-xs text-gray-500 mt-1">Paste or edit HTML content directly</p>
                 </div>
                 <textarea
-                  readOnly
                   value={formData.html_content || ''}
-                  className="w-full px-4 py-3 border-0 focus:ring-0 resize-none font-mono text-sm min-h-[400px] bg-gray-50"
-                  placeholder="HTML will appear here as you compose..."
+                  onChange={(e) => setFormData({ ...formData, html_content: e.target.value })}
+                  className="w-full px-4 py-3 border-0 focus:ring-2 focus:ring-gray-900 focus:outline-none resize-none font-mono text-sm min-h-[400px] bg-white"
+                  placeholder="<!DOCTYPE html>&#10;<html>&#10;  <head>...</head>&#10;  <body>...</body>&#10;</html>"
+                  spellCheck={false}
                 />
+              </div>
+            )}
+            
+            {editorMode === 'preview' && (
+              <div className="border border-gray-200 rounded-xl overflow-hidden bg-white">
+                <div className="p-3 bg-gray-100 border-b border-gray-200">
+                  <p className="text-xs text-gray-600 font-medium">Email Preview</p>
+                  <p className="text-xs text-gray-500 mt-1">How your email will appear to recipients</p>
+                </div>
+                <div className="p-6 max-h-[400px] overflow-y-auto bg-gray-50">
+                  {formData.html_content ? (
+                    <div dangerouslySetInnerHTML={{ __html: formData.html_content }} />
+                  ) : (
+                    <div className="text-center py-20 text-gray-400">
+                      <Eye className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                      <p>No content to preview. Add content using Rich Editor or HTML Editor.</p>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>
@@ -1098,17 +1230,25 @@ function SendCampaignModal({
 
       const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/marketing-campaigns`;
 
+      // Determine if segmentId is a predefined segment (string) or custom segment (UUID)
+      const isPredefinedSegment = ['all', 'active_users', 'users_with_balance', 'users_with_plans', 
+        'kyc_tier_0', 'kyc_tier_1', 'kyc_tier_2', 'kyc_tier_3', 'users_with_zero_balance'].includes(segmentId);
+      
+      const recipientFilters = isPredefinedSegment 
+        ? { segment: segmentId }
+        : { segment_id: segmentId };
+
       const body = isScheduled
         ? {
             action: 'schedule_campaign',
             campaign_id: campaign.id,
             scheduled_at: scheduledDate,
-            recipient_filters: { segment_id: segmentId },
+            recipient_filters: recipientFilters,
           }
         : {
             action: 'send_campaign',
             campaign_id: campaign.id,
-            recipient_filters: { segment_id: segmentId },
+            recipient_filters: recipientFilters,
           };
 
       const response = await fetch(apiUrl, {
@@ -1120,16 +1260,22 @@ function SendCampaignModal({
         body: JSON.stringify(body),
       });
 
+      const result = await response.json();
+      
       if (!response.ok) {
-        throw new Error('Failed to send campaign');
+        throw new Error(result.message || result.error || 'Failed to send campaign');
       }
 
-      const result = await response.json();
+      if (!result.success) {
+        throw new Error(result.message || 'Failed to send campaign');
+      }
+
       showToast(result.message || 'Campaign sent successfully', 'success');
       onSuccess();
     } catch (error) {
       console.error('Error sending campaign:', error);
-      showToast('Failed to send campaign', 'error');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to send campaign';
+      showToast(errorMessage, 'error');
     } finally {
       setIsSubmitting(false);
     }
