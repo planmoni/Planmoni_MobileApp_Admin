@@ -9,6 +9,7 @@ import { supabase } from '@/lib/supabase';
 import { format } from 'date-fns';
 import RichTextEditor from '@/components/RichTextEditor';
 import { useQuery } from '@tanstack/react-query';
+import { EMAIL_TEMPLATES } from '@/lib/emailTemplates';
 
 export default function Marketing() {
   const { data: campaigns, isLoading, error } = useMarketingCampaigns();
@@ -949,6 +950,158 @@ function PreviewModal({ campaign, onClose }: { campaign: any; onClose: () => voi
   );
 }
 
+/** Wraps fragment (e.g. from Rich Editor) in a full document with styles so preview isn't broken */
+const PREVIEW_FRAGMENT_STYLES = `
+  body { margin: 0; padding: 24px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: 16px; line-height: 1.6; color: #333; background: #f9fafb; }
+  a { color: #2563eb; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  p { margin: 0 0 1em; }
+  h1, h2, h3, h4, h5, h6 { margin: 0 0 0.5em; font-weight: 600; line-height: 1.3; }
+  ul, ol { margin: 0 0 1em; padding-left: 1.5em; }
+  blockquote { margin: 0 0 1em; padding-left: 1em; border-left: 4px solid #e5e7eb; color: #6b7280; }
+  img { max-width: 100%; height: auto; }
+  .ql-align-center { text-align: center; }
+  .ql-align-right { text-align: right; }
+  .ql-align-justify { text-align: justify; }
+  .ql-size-small { font-size: 0.875em; }
+  .ql-size-large { font-size: 1.25em; }
+  .ql-size-huge { font-size: 1.5em; }
+`;
+
+/** Parse full HTML document and return { bodyHTML, styles } for use in Rich Editor */
+function parseFullHtmlDocument(html: string): { bodyHTML: string; styles: string } | null {
+  const trimmed = html.trim();
+  if (!/^\s*<!DOCTYPE|^\s*<html/i.test(trimmed)) return null;
+  try {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+    const bodyHTML = doc.body?.innerHTML ?? '';
+    const styleEls = doc.querySelectorAll('style');
+    const styles = Array.from(styleEls)
+      .map((el) => el.textContent || '')
+      .filter(Boolean)
+      .join('\n');
+    return { bodyHTML, styles };
+  } catch {
+    return null;
+  }
+}
+
+/** Scope CSS so it only applies inside .ql-editor (for Rich Text Editor). Handles @media and other at-rules. */
+function scopeCssToQuillEditor(css: string): string {
+  if (!css.trim()) return css;
+  const scope = '.ql-editor';
+
+  function scopeSelectors(selectorBlock: string): string {
+    return selectorBlock
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .map((sel) => (sel.startsWith('body') ? scope : `${scope} ${sel}`))
+      .join(', ');
+  }
+
+  function scopeBlock(block: string): string {
+    const trimmed = block.trim();
+    if (!trimmed) return block;
+    // At-rule (e.g. @media, @supports): keep header, scope inner body
+    const atRuleMatch = trimmed.match(/^(@[\w-]+[^{]*)\{/);
+    if (atRuleMatch) {
+      const atRuleHeader = atRuleMatch[1];
+      const innerStart = atRuleMatch[0].length;
+      let depth = 1;
+      let i = innerStart;
+      while (i < block.length && depth > 0) {
+        const c = block[i];
+        if (c === '{') depth++;
+        else if (c === '}') depth--;
+        i++;
+      }
+      const innerBody = block.slice(innerStart, i - 1);
+      const scopedInner = scopeCssByBraceDepth(innerBody);
+      return `${atRuleHeader}{ ${scopedInner} }`;
+    }
+    // Ordinary rule: scope selectors
+    const idx = trimmed.indexOf('{');
+    if (idx === -1) return block;
+    const before = trimmed.slice(0, idx).trim();
+    const rest = trimmed.slice(idx);
+    const selectors = scopeSelectors(before);
+    return selectors ? `${selectors} ${rest}` : block;
+  }
+
+  function scopeCssByBraceDepth(text: string): string {
+    const result: string[] = [];
+    let i = 0;
+    while (i < text.length) {
+      const ch = text[i];
+      if (ch === '}' || ch === '{') {
+        i++;
+        continue;
+      }
+      const start = i;
+      let depth = 0;
+      while (i < text.length) {
+        const c = text[i];
+        if (c === '{') {
+          depth++;
+          i++;
+        } else if (c === '}') {
+          depth--;
+          i++;
+          if (depth === 0) break;
+        } else {
+          i++;
+        }
+      }
+      const block = text.slice(start, i).trim();
+      if (block) result.push(scopeBlock(block));
+    }
+    return result.join(' ');
+  }
+
+  const blocks: string[] = [];
+  let i = 0;
+  while (i < css.length) {
+    const start = i;
+    let depth = 0;
+    while (i < css.length) {
+      const c = css[i];
+      if (c === '{') {
+        depth++;
+        i++;
+      } else if (c === '}') {
+        depth--;
+        i++;
+        if (depth === 0) break;
+      } else {
+        i++;
+      }
+    }
+    const block = css.slice(start, i).trim();
+    if (block) blocks.push(scopeBlock(block));
+  }
+  return blocks.join('\n');
+}
+
+function EmailPreviewIframe({ htmlContent, optionalStyles }: { htmlContent: string; optionalStyles?: string | null }) {
+  const isFullDocument = /^\s*<!DOCTYPE|^\s*<html/i.test(htmlContent.trim());
+  const fragmentStyles = optionalStyles || PREVIEW_FRAGMENT_STYLES;
+  const srcDoc = isFullDocument
+    ? htmlContent
+    : `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><style>${fragmentStyles}</style></head><body>${htmlContent}</body></html>`;
+
+  return (
+    <iframe
+      title="Email preview"
+      srcDoc={srcDoc}
+      className="w-full border-0 rounded-b-xl"
+      style={{ height: '500px', display: 'block' }}
+      sandbox="allow-same-origin"
+    />
+  );
+}
+
 function CreateCampaignModal({ campaign, onClose, onSuccess }: { campaign?: any; onClose: () => void; onSuccess: () => void }) {
   const { showToast } = useToast();
   const { data: segments } = useSegments();
@@ -968,6 +1121,7 @@ function CreateCampaignModal({ campaign, onClose, onSuccess }: { campaign?: any;
   const [isCalculatingRecipients, setIsCalculatingRecipients] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(campaign?.updated_at ? new Date(campaign.updated_at) : null);
   const [editorMode, setEditorMode] = useState<'rich' | 'html' | 'preview'>('rich');
+  const [extractedStylesForEditor, setExtractedStylesForEditor] = useState<string | null>(null);
 
   const calculateRecipients = useCallback(async (segmentValue?: string) => {
     const targetSegment = segmentValue || formData.target_segment;
@@ -1097,6 +1251,18 @@ function CreateCampaignModal({ campaign, onClose, onSuccess }: { campaign?: any;
       }
     }
   }, [senderEmails]);
+
+  // When switching to Rich Editor, import styles from full HTML so the editor shows template styling
+  useEffect(() => {
+    if (editorMode !== 'rich') return;
+    const html = formData.html_content || '';
+    if (!/^\s*<!DOCTYPE|^\s*<html/i.test(html.trim())) return;
+    const parsed = parseFullHtmlDocument(html);
+    if (parsed) {
+      setFormData((prev) => ({ ...prev, html_content: parsed.bodyHTML }));
+      setExtractedStylesForEditor(parsed.styles || null);
+    }
+  }, [editorMode]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1291,6 +1457,34 @@ function CreateCampaignModal({ campaign, onClose, onSuccess }: { campaign?: any;
           )}
 
           <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Choose a Template (Optional)
+            </label>
+            <p className="text-xs text-gray-500 mb-3">Start from a template or write from scratch</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+              {EMAIL_TEMPLATES.map((template) => (
+                <button
+                  key={template.id}
+                  type="button"
+                  onClick={() => {
+                    setFormData((prev) => ({
+                      ...prev,
+                      subject: template.subject,
+                      html_content: template.html_content,
+                    }));
+                    setEditorMode('preview');
+                  }}
+                  className="text-left p-4 rounded-xl border-2 border-gray-200 hover:border-blue-500 hover:bg-blue-50/50 transition-colors"
+                >
+                  <Mail className="w-6 h-6 text-blue-600 mb-2" />
+                  <p className="font-medium text-gray-900 text-sm">{template.name}</p>
+                  <p className="text-xs text-gray-500 mt-1 line-clamp-2">{template.description}</p>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
             <div className="flex items-center justify-between mb-2">
               <label className="block text-sm font-medium text-gray-700">
                 Email Content
@@ -1299,7 +1493,17 @@ function CreateCampaignModal({ campaign, onClose, onSuccess }: { campaign?: any;
                 <div className="flex items-center bg-gray-100 rounded-lg p-1">
                   <button
                     type="button"
-                    onClick={() => setEditorMode('rich')}
+                    onClick={() => {
+                      const html = formData.html_content || '';
+                      if (/^\s*<!DOCTYPE|^\s*<html/i.test(html.trim())) {
+                        const parsed = parseFullHtmlDocument(html);
+                        if (parsed) {
+                          setFormData((prev) => ({ ...prev, html_content: parsed.bodyHTML }));
+                          setExtractedStylesForEditor(parsed.styles || null);
+                        }
+                      }
+                      setEditorMode('rich');
+                    }}
                     className={`px-3 py-1.5 text-xs font-medium rounded transition-colors ${
                       editorMode === 'rich'
                         ? 'bg-white text-gray-900 shadow-sm'
@@ -1336,7 +1540,10 @@ function CreateCampaignModal({ campaign, onClose, onSuccess }: { campaign?: any;
             </div>
             
             {editorMode === 'rich' && (
-              <div className="min-h-[400px] border border-gray-200 rounded-xl overflow-hidden">
+              <div className="min-h-[400px] border border-gray-200 rounded-xl overflow-hidden relative">
+                {extractedStylesForEditor && (
+                  <style dangerouslySetInnerHTML={{ __html: scopeCssToQuillEditor(extractedStylesForEditor) }} />
+                )}
                 <RichTextEditor
                   value={formData.html_content}
                   onChange={(value) => setFormData({ ...formData, html_content: value })}
@@ -1367,13 +1574,13 @@ function CreateCampaignModal({ campaign, onClose, onSuccess }: { campaign?: any;
                   <p className="text-xs text-gray-600 font-medium">Email Preview</p>
                   <p className="text-xs text-gray-500 mt-1">How your email will appear to recipients</p>
                 </div>
-                <div className="p-6 max-h-[400px] overflow-y-auto bg-gray-50">
+                <div className="bg-gray-50" style={{ minHeight: '400px' }}>
                   {formData.html_content ? (
-                    <div dangerouslySetInnerHTML={{ __html: formData.html_content }} />
+                    <EmailPreviewIframe htmlContent={formData.html_content} optionalStyles={extractedStylesForEditor} />
                   ) : (
                     <div className="text-center py-20 text-gray-400">
                       <Eye className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                      <p>No content to preview. Add content using Rich Editor or HTML Editor.</p>
+                      <p>No content to preview. Add content using Rich Editor, Drag & Drop Editor, or HTML Editor.</p>
                     </div>
                   )}
                 </div>
