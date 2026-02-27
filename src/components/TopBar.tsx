@@ -9,6 +9,14 @@ interface TopBarProps {
   toggleMobileMenu: () => void;
 }
 
+interface UserSuggestion {
+  id: string;
+  first_name: string | null;
+  last_name: string | null;
+  email: string;
+  phone: string | null;
+}
+
 export default function TopBar({ isMobileMenuOpen, toggleMobileMenu }: TopBarProps) {
   const { signOut, session } = useAuth();
   const navigate = useNavigate();
@@ -21,7 +29,11 @@ export default function TopBar({ isMobileMenuOpen, toggleMobileMenu }: TopBarPro
     email: string | null;
     is_admin: boolean;
   } | null>(null);
+  const [suggestions, setSuggestions] = useState<UserSuggestion[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [selectedIndex, setSelectedIndex] = useState(-1);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (session?.user) {
@@ -35,6 +47,9 @@ export default function TopBar({ isMobileMenuOpen, toggleMobileMenu }: TopBarPro
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsDropdownOpen(false);
       }
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        setShowSuggestions(false);
+      }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
@@ -42,6 +57,35 @@ export default function TopBar({ isMobileMenuOpen, toggleMobileMenu }: TopBarPro
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
+
+  useEffect(() => {
+    const searchUsers = async () => {
+      if (searchQuery.trim().length < 2) {
+        setSuggestions([]);
+        setShowSuggestions(false);
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('id, first_name, last_name, email, phone')
+          .or(`first_name.ilike.%${searchQuery}%,last_name.ilike.%${searchQuery}%,email.ilike.%${searchQuery}%,phone.ilike.%${searchQuery}%`)
+          .limit(5);
+
+        if (!error && data) {
+          setSuggestions(data);
+          setShowSuggestions(true);
+          setSelectedIndex(-1);
+        }
+      } catch (error) {
+        console.error('Error searching users:', error);
+      }
+    };
+
+    const debounceTimeout = setTimeout(searchUsers, 300);
+    return () => clearTimeout(debounceTimeout);
+  }, [searchQuery]);
 
   const checkSuperAdminStatus = async () => {
     try {
@@ -101,8 +145,60 @@ export default function TopBar({ isMobileMenuOpen, toggleMobileMenu }: TopBarPro
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
+      setShowSuggestions(false);
       navigate(`/users?search=${encodeURIComponent(searchQuery.trim())}`);
     }
+  };
+
+  const handleSuggestionClick = (userId: string) => {
+    setShowSuggestions(false);
+    setSearchQuery('');
+    navigate(`/users/${userId}`);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (!showSuggestions || suggestions.length === 0) return;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setSelectedIndex(prev =>
+        prev < suggestions.length - 1 ? prev + 1 : prev
+      );
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setSelectedIndex(prev => prev > 0 ? prev - 1 : -1);
+    } else if (e.key === 'Enter' && selectedIndex >= 0) {
+      e.preventDefault();
+      handleSuggestionClick(suggestions[selectedIndex].id);
+    } else if (e.key === 'Escape') {
+      setShowSuggestions(false);
+      setSelectedIndex(-1);
+    }
+  };
+
+  const getUserFullName = (user: UserSuggestion) => {
+    if (user.first_name && user.last_name) {
+      return `${user.first_name} ${user.last_name}`;
+    }
+    if (user.first_name) {
+      return user.first_name;
+    }
+    return user.email.split('@')[0];
+  };
+
+  const highlightMatch = (text: string, query: string) => {
+    if (!query.trim()) return text;
+
+    const regex = new RegExp(`(${query})`, 'gi');
+    const parts = text.split(regex);
+
+    return parts.map((part, index) =>
+      regex.test(part) ? (
+        <span key={index} className="font-semibold text-blue-600">{part}</span>
+      ) : (
+        part
+      )
+    );
   };
 
   const getUserInitials = () => {
@@ -153,7 +249,7 @@ export default function TopBar({ isMobileMenuOpen, toggleMobileMenu }: TopBarPro
           </button>
 
           <form onSubmit={handleSearch} className="flex-1 max-w-2xl">
-            <div className="relative">
+            <div className="relative" ref={searchRef}>
               <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                 <Search className="h-5 w-5 text-gray-400" />
               </div>
@@ -161,9 +257,51 @@ export default function TopBar({ isMobileMenuOpen, toggleMobileMenu }: TopBarPro
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={handleKeyDown}
+                onFocus={() => {
+                  if (suggestions.length > 0) {
+                    setShowSuggestions(true);
+                  }
+                }}
                 placeholder="Search users..."
                 className="block w-full pl-10 pr-4 py-2 text-sm text-gray-900 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                autoComplete="off"
               />
+
+              {showSuggestions && suggestions.length > 0 && (
+                <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50 max-h-80 overflow-y-auto">
+                  {suggestions.map((user, index) => (
+                    <button
+                      key={user.id}
+                      type="button"
+                      onClick={() => handleSuggestionClick(user.id)}
+                      className={`w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors flex items-center gap-3 ${
+                        index === selectedIndex ? 'bg-blue-50' : ''
+                      }`}
+                    >
+                      <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center text-white flex-shrink-0">
+                        <span className="text-sm font-semibold">
+                          {user.first_name?.[0]?.toUpperCase() || user.email[0].toUpperCase()}
+                          {user.last_name?.[0]?.toUpperCase() || ''}
+                        </span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 truncate">
+                          {highlightMatch(getUserFullName(user), searchQuery)}
+                        </p>
+                        <p className="text-xs text-gray-500 truncate">
+                          {highlightMatch(user.email, searchQuery)}
+                        </p>
+                        {user.phone && (
+                          <p className="text-xs text-gray-400 truncate">
+                            {highlightMatch(user.phone, searchQuery)}
+                          </p>
+                        )}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </form>
         </div>
