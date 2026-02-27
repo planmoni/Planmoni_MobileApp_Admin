@@ -206,7 +206,7 @@ export default function Sidebar({ isMobileMenuOpen, closeMobileMenu }: { isMobil
         <img
           src="/assets/images/planmoni_logo_main.png"
           alt="Planmoni Office"
-          className="h-12 w-auto"
+          className="h-auto w-auto"
           onError={(e) => {
             e.currentTarget.style.display = 'none';
             const nextElement = e.currentTarget.nextElementSibling as HTMLElement;
