@@ -326,9 +326,6 @@ export default function Analytics() {
               <p className="text-sm font-medium text-gray-500 mb-1">Retention Rate</p>
               <p className="text-2xl font-bold text-gray-900">{data.retentionRate.value.toFixed(1)}%</p>
             </div>
-            <div className="w-12 h-12 rounded-xl bg-yellow-50 flex items-center justify-center">
-              <Repeat className="h-5 w-5 text-yellow-600" />
-            </div>
           </div>
           <div className="flex items-center gap-2 pt-3 border-t border-gray-100">
             <div className={`flex items-center gap-1 px-2 py-1 rounded-lg ${
@@ -360,9 +357,6 @@ export default function Analytics() {
                  (data.payoutDistribution.custom || 0)}
               </p>
             </div>
-            <div className="w-12 h-12 rounded-xl bg-gray-50 flex items-center justify-center">
-              <Target className="h-5 w-5 text-gray-600" />
-            </div>
           </div>
           <div className="flex items-center gap-2 pt-3 border-t border-gray-100">
             <span className="text-xs text-gray-500">Total payout plans</span>
@@ -377,9 +371,6 @@ export default function Analytics() {
               <p className="text-sm font-medium text-gray-500 mb-1">All Users</p>
               <p className="text-2xl font-bold text-gray-900">{data.totalUsers.toLocaleString()}</p>
             </div>
-            <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center">
-              <Users className="h-5 w-5 text-blue-600" />
-            </div>
           </div>
           <div className="pt-3 border-t border-gray-100">
             <span className="text-xs text-gray-500">Total registered users</span>
@@ -392,9 +383,6 @@ export default function Analytics() {
               <p className="text-sm font-medium text-gray-500 mb-1">Total User's Balance</p>
               <p className="text-2xl font-bold text-gray-900">₦{data.totalUsersBalance.toLocaleString()}</p>
             </div>
-            <div className="w-12 h-12 rounded-xl bg-green-50 flex items-center justify-center">
-              <Wallet className="h-5 w-5 text-green-600" />
-            </div>
           </div>
           <div className="pt-3 border-t border-gray-100">
             <span className="text-xs text-gray-500">Combined user balances</span>
@@ -406,9 +394,6 @@ export default function Analytics() {
             <div className="flex-1">
               <p className="text-sm font-medium text-gray-500 mb-1">Total Amount in Plans</p>
               <p className="text-2xl font-bold text-gray-900">₦{data.totalAmountInPlans.toLocaleString()}</p>
-            </div>
-            <div className="w-12 h-12 rounded-xl bg-yellow-50 flex items-center justify-center">
-              <Target className="h-5 w-5 text-yellow-600" />
             </div>
           </div>
           <div className="pt-3 border-t border-gray-100">
@@ -456,9 +441,6 @@ export default function Analytics() {
                 <p className="text-2xl font-bold text-gray-400">No deposits</p>
               )}
             </div>
-            <div className="w-12 h-12 rounded-xl bg-green-50 flex items-center justify-center">
-              <CreditCard className="h-5 w-5 text-green-600" />
-            </div>
           </div>
           <div className="pt-3 border-t border-gray-100">
             {data.mostRecentDeposit && (
@@ -482,9 +464,6 @@ export default function Analytics() {
               ) : (
                 <p className="text-2xl font-bold text-gray-400">No payouts</p>
               )}
-            </div>
-            <div className="w-12 h-12 rounded-xl bg-red-50 flex items-center justify-center">
-              <DollarSign className="h-5 w-5 text-red-600" />
             </div>
           </div>
           <div className="pt-3 border-t border-gray-100">
