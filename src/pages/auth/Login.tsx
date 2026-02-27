@@ -165,7 +165,7 @@ export default function Login() {
             <img
               src="/assets/images/planmoni_logo_main.png"
               alt="Planmoni"
-              className="h-12 w-auto mx-auto mb-4"
+              className="h-auto w-auto mx-auto mb-4"
             />
           </div>
 
