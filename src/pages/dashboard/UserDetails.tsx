@@ -184,20 +184,6 @@ export default function UserDetails() {
         </div>
       </div>
 
-      {lastPayoutDate && !isNaN(lastPayoutDate.getTime()) && (
-        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 shadow-soft border border-blue-100 mb-6">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center">
-              <Calendar className="h-5 w-5 text-white" />
-            </div>
-            <h3 className="text-lg font-bold text-gray-900">Last Payout Date</h3>
-          </div>
-          <p className="text-gray-600 text-sm mb-3">Final payout date across all plans</p>
-          <p className="text-2xl font-bold text-gray-900">
-            {format(lastPayoutDate, 'MMMM d, yyyy')}
-          </p>
-        </div>
-      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         <div>
