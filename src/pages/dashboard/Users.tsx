@@ -106,9 +106,6 @@ export default function Users() {
                 <p className="text-sm font-medium text-gray-500 mb-1">Total Users</p>
                 <p className="text-2xl md:text-2xl font-bold text-gray-900">{userStats.total_users}</p>
               </div>
-              <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-blue-50 flex items-center justify-center flex-shrink-0">
-                <UsersIcon className="h-4 w-4 md:h-5 md:w-5 text-blue-600" />
-              </div>
             </div>
             <div className="flex items-center gap-2 pt-2 md:pt-3 border-t border-gray-100">
               <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-green-50">
