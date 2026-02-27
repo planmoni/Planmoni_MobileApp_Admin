@@ -246,14 +246,6 @@ export default function Dashboard() {
   return (
     <div className="w-full min-w-0">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 md:mb-8">
-        <div className="flex-1 min-w-0">
-          <h1 className="text-2xl md:text-2xl font-semibold text-gray-900 mb-1">
-            {getGreeting()}, {userProfile?.first_name || 'Admin'}!
-          </h1>
-          <p className="text-sm md:text-base text-gray-500">
-            {userProfile?.is_admin ? 'Super Admin' : 'Admin'} Dashboard - Today's Overview
-          </p>
-        </div>
         <button
           onClick={handleRefresh}
           className="p-2.5 md:p-3 rounded-xl bg-white hover:bg-gray-50 transition-colors shadow-soft border border-gray-100"
