@@ -303,8 +303,6 @@ export default function Analytics() {
               <p className="text-sm font-medium text-gray-500 mb-1">Transaction Volume</p>
               <p className="text-2xl font-bold text-gray-900">₦{data.transactionVolume.this_month.toLocaleString()}</p>
             </div>
-            <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center">
-            </div>
           </div>
           <div className="flex items-center gap-2 pt-3 border-t border-gray-100">
             <div className={`flex items-center gap-1 px-2 py-1 rounded-lg ${
