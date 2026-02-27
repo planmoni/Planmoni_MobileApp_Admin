@@ -78,6 +78,8 @@ export default function Analytics() {
     totalUsersBalance: 0,
     totalAmountInPlans: 0,
     totalCompletedPayouts: 0,
+    totalDeposited: 0,
+    totalPaidOut: 0,
     highestUserBalance: {
       amount: 0,
       user_name: '',
@@ -370,7 +372,7 @@ export default function Analytics() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mb-8">
         <div className="bg-white rounded-2xl p-6 shadow-soft border border-gray-100">
           <div className="flex justify-between items-start mb-4">
             <div className="flex-1">
@@ -380,6 +382,30 @@ export default function Analytics() {
           </div>
           <div className="pt-3 border-t border-gray-100">
             <span className="text-xs text-gray-500">Total registered users</span>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl p-6 shadow-soft border border-gray-100">
+          <div className="flex justify-between items-start mb-4">
+            <div className="flex-1">
+              <p className="text-sm font-medium text-gray-500 mb-1">Total Deposited</p>
+              <p className="text-2xl font-bold text-gray-900">₦{data.totalDeposited.toLocaleString()}</p>
+            </div>
+          </div>
+          <div className="pt-3 border-t border-gray-100">
+            <span className="text-xs text-gray-500">All time deposits</span>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl p-6 shadow-soft border border-gray-100">
+          <div className="flex justify-between items-start mb-4">
+            <div className="flex-1">
+              <p className="text-sm font-medium text-gray-500 mb-1">Total Paid Out</p>
+              <p className="text-2xl font-bold text-gray-900">₦{data.totalPaidOut.toLocaleString()}</p>
+            </div>
+          </div>
+          <div className="pt-3 border-t border-gray-100">
+            <span className="text-xs text-gray-500">All time payouts</span>
           </div>
         </div>
 
@@ -413,7 +439,7 @@ export default function Analytics() {
               <p className="text-sm font-medium text-gray-500 mb-1">Total Completed Payouts</p>
               <p className="text-2xl font-bold text-gray-900">{data.totalCompletedPayouts.toLocaleString()}</p>
             </div>
-            
+
           </div>
           <div className="pt-3 border-t border-gray-100">
             <span className="text-xs text-gray-500">Completed payout plans</span>

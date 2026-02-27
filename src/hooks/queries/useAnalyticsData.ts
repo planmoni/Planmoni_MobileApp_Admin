@@ -37,6 +37,8 @@ type AnalyticsData = {
   totalUsersBalance: number;
   totalAmountInPlans: number;
   totalCompletedPayouts: number;
+  totalDeposited: number;
+  totalPaidOut: number;
   highestUserBalance: {
     amount: number;
     user_name: string;
@@ -107,6 +109,8 @@ const fetchAnalyticsData = async (): Promise<AnalyticsData> => {
         totalUsersBalance: Math.round(parseFloat(data.total_users_balance) || 0),
         totalAmountInPlans: Math.round(parseFloat(data.total_amount_in_plans) || 0),
         totalCompletedPayouts: parseInt(data.total_completed_payouts) || 0,
+        totalDeposited: Math.round(parseFloat(data.total_deposited) || 0),
+        totalPaidOut: Math.round(parseFloat(data.total_paid_out) || 0),
         highestUserBalance: {
           amount: Math.round(parseFloat(data.highest_user_balance?.amount) || 0),
           user_name: data.highest_user_balance?.user_name || '',
@@ -440,6 +444,8 @@ const fetchAnalyticsDataFallback = async (): Promise<AnalyticsData> => {
     totalUsersBalance: Math.round(totalUsersBalance),
     totalAmountInPlans: Math.round(totalAmountInPlans),
     totalCompletedPayouts: completedPayoutsCount || 0,
+    totalDeposited: 0,
+    totalPaidOut: 0,
     highestUserBalance: {
       amount: Math.round(highestUserBalance),
       user_name: '',
