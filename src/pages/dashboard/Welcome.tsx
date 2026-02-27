@@ -240,9 +240,6 @@ export default function Welcome() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="mb-12">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg">
-              <Sparkles className="h-6 w-6 text-white" />
-            </div>
             <div>
               <h1 className="text-2xl font-bold text-gray-900">
                 {getGreeting()}, {getUserDisplayName()}!
