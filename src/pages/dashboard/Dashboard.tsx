@@ -246,13 +246,6 @@ export default function Dashboard() {
   return (
     <div className="w-full min-w-0">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 md:mb-8">
-        <button
-          onClick={handleRefresh}
-          className="p-2.5 md:p-3 rounded-xl bg-white hover:bg-gray-50 transition-colors shadow-soft border border-gray-100"
-          disabled={refreshData.isPending}
-        >
-          <RefreshCw className={`h-5 w-5 text-gray-600 ${refreshData.isPending ? 'animate-spin' : ''}`} />
-        </button>
       </div>
 
       <div className="mb-6 md:mb-8">
