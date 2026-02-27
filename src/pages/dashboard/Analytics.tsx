@@ -255,7 +255,7 @@ export default function Analytics() {
     <div>
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-1">Analytics</h1>
+          <h1 className="text-2xl font-bold text-gray-900 mb-1">Analytics</h1>
           <p className="text-gray-500">Platform performance metrics and insights</p>
         </div>
         <button
@@ -272,10 +272,7 @@ export default function Analytics() {
           <div className="flex justify-between items-start mb-4">
             <div className="flex-1">
               <p className="text-sm font-medium text-gray-500 mb-1">User Growth</p>
-              <p className="text-3xl font-bold text-gray-900">{data.userGrowth.this_month}</p>
-            </div>
-            <div className="w-12 h-12 rounded-xl bg-green-50 flex items-center justify-center">
-              <Users className="h-5 w-5 text-green-600" />
+              <p className="text-2xl font-bold text-gray-900">{data.userGrowth.this_month}</p>
             </div>
           </div>
           <div className="flex items-center gap-2 pt-3 border-t border-gray-100">
@@ -301,7 +298,7 @@ export default function Analytics() {
           <div className="flex justify-between items-start mb-4">
             <div className="flex-1">
               <p className="text-sm font-medium text-gray-500 mb-1">Transaction Volume</p>
-              <p className="text-1xl font-bold text-gray-900">₦{data.transactionVolume.this_month.toLocaleString()}</p>
+              <p className="text-2xl font-bold text-gray-900">₦{data.transactionVolume.this_month.toLocaleString()}</p>
             </div>
           </div>
           <div className="flex items-center gap-2 pt-3 border-t border-gray-100">
@@ -327,7 +324,7 @@ export default function Analytics() {
           <div className="flex justify-between items-start mb-4">
             <div className="flex-1">
               <p className="text-sm font-medium text-gray-500 mb-1">Retention Rate</p>
-              <p className="text-3xl font-bold text-gray-900">{data.retentionRate.value.toFixed(1)}%</p>
+              <p className="text-2xl font-bold text-gray-900">{data.retentionRate.value.toFixed(1)}%</p>
             </div>
             <div className="w-12 h-12 rounded-xl bg-yellow-50 flex items-center justify-center">
               <Repeat className="h-5 w-5 text-yellow-600" />
@@ -356,7 +353,7 @@ export default function Analytics() {
           <div className="flex justify-between items-start mb-4">
             <div className="flex-1">
               <p className="text-sm font-medium text-gray-500 mb-1">Active Plans</p>
-              <p className="text-3xl font-bold text-gray-900">
+              <p className="text-2xl font-bold text-gray-900">
                 {(data.payoutDistribution.daily || 0) + (data.payoutDistribution.weekly || 0) + (data.payoutDistribution.biweekly || 0) +
                  (data.payoutDistribution.specificDays || 0) + (data.payoutDistribution.monthEnd || 0) + (data.payoutDistribution.monthly || 0) +
                  (data.payoutDistribution.quarterly || 0) + (data.payoutDistribution.biAnnually || 0) + (data.payoutDistribution.annually || 0) +
@@ -378,7 +375,7 @@ export default function Analytics() {
           <div className="flex justify-between items-start mb-4">
             <div className="flex-1">
               <p className="text-sm font-medium text-gray-500 mb-1">All Users</p>
-              <p className="text-3xl font-bold text-gray-900">{data.totalUsers.toLocaleString()}</p>
+              <p className="text-2xl font-bold text-gray-900">{data.totalUsers.toLocaleString()}</p>
             </div>
             <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center">
               <Users className="h-5 w-5 text-blue-600" />
@@ -393,7 +390,7 @@ export default function Analytics() {
           <div className="flex justify-between items-start mb-4">
             <div className="flex-1">
               <p className="text-sm font-medium text-gray-500 mb-1">Total User's Balance</p>
-              <p className="text-3xl font-bold text-gray-900">₦{data.totalUsersBalance.toLocaleString()}</p>
+              <p className="text-2xl font-bold text-gray-900">₦{data.totalUsersBalance.toLocaleString()}</p>
             </div>
             <div className="w-12 h-12 rounded-xl bg-green-50 flex items-center justify-center">
               <Wallet className="h-5 w-5 text-green-600" />
@@ -408,7 +405,7 @@ export default function Analytics() {
           <div className="flex justify-between items-start mb-4">
             <div className="flex-1">
               <p className="text-sm font-medium text-gray-500 mb-1">Total Amount in Plans</p>
-              <p className="text-3xl font-bold text-gray-900">₦{data.totalAmountInPlans.toLocaleString()}</p>
+              <p className="text-2xl font-bold text-gray-900">₦{data.totalAmountInPlans.toLocaleString()}</p>
             </div>
             <div className="w-12 h-12 rounded-xl bg-yellow-50 flex items-center justify-center">
               <Target className="h-5 w-5 text-yellow-600" />
@@ -423,11 +420,9 @@ export default function Analytics() {
           <div className="flex justify-between items-start mb-4">
             <div className="flex-1">
               <p className="text-sm font-medium text-gray-500 mb-1">Total Completed Payouts</p>
-              <p className="text-3xl font-bold text-gray-900">{data.totalCompletedPayouts.toLocaleString()}</p>
+              <p className="text-2xl font-bold text-gray-900">{data.totalCompletedPayouts.toLocaleString()}</p>
             </div>
-            <div className="w-12 h-12 rounded-xl bg-green-50 flex items-center justify-center">
-              <CheckCircle2 className="h-5 w-5 text-green-600" />
-            </div>
+            
           </div>
           <div className="pt-3 border-t border-gray-100">
             <span className="text-xs text-gray-500">Completed payout plans</span>
@@ -440,10 +435,7 @@ export default function Analytics() {
           <div className="flex justify-between items-start mb-4">
             <div className="flex-1">
               <p className="text-sm font-medium text-gray-500 mb-1">Highest User Balance</p>
-              <p className="text-3xl font-bold text-gray-900">₦{data.highestUserBalance.toLocaleString()}</p>
-            </div>
-            <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center">
-              <TrendingUp className="h-5 w-5 text-blue-600" />
+              <p className="text-2xl font-bold text-gray-900">₦{data.highestUserBalance.toLocaleString()}</p>
             </div>
           </div>
           <div className="pt-3 border-t border-gray-100">
