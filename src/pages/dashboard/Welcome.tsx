@@ -236,8 +236,13 @@ export default function Welcome() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="mb-12">
-          <h1 class="text-2xl font-bold text-gray-900">getGreeting</h1>
+        <div className="mb-12 text-center">
+          <h1 className="text-4xl font-bold text-gray-900 mb-3">
+            {getGreeting()}, {getUserDisplayName()}!
+          </h1>
+          <p className="text-lg text-gray-600">
+            Welcome to Planmoni Admin Dashboard
+          </p>
         </div>
 
         {availableItems.length === 0 ? (
