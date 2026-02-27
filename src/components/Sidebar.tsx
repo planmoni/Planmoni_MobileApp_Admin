@@ -8,7 +8,6 @@ import {
   Users,
   CreditCard,
   BarChart3,
-  LogOut,
   Shield,
   Image,
   Activity,
@@ -25,21 +24,14 @@ import {
 } from 'lucide-react';
 
 export default function Sidebar({ isMobileMenuOpen, closeMobileMenu }: { isMobileMenuOpen: boolean, closeMobileMenu: () => void }) {
-  const { signOut, session } = useAuth();
+  const { session } = useAuth();
   const { hasPermission } = usePermissions();
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
-  const [userProfile, setUserProfile] = useState<{
-    first_name: string | null;
-    last_name: string | null;
-    email: string | null;
-    is_admin: boolean;
-  } | null>(null);
 
   useEffect(() => {
     if (session?.user) {
       console.log('🔍 Session user found:', session.user.id, session.user.email);
       checkSuperAdminStatus();
-      fetchUserProfile();
     }
   }, [session?.user]);
 
@@ -79,45 +71,6 @@ export default function Sidebar({ isMobileMenuOpen, closeMobileMenu }: { isMobil
     }
   };
 
-  const fetchUserProfile = async () => {
-    try {
-      if (!session?.user?.id) return;
-
-      console.log('👤 Fetching user profile for:', session.user.id);
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('first_name, last_name, email, is_admin')
-        .eq('id', session.user.id)
-        .single();
-
-      console.log('👤 Profile data:', data);
-      console.log('👤 Profile error:', error);
-
-      if (error) {
-        console.error('Error fetching user profile:', error);
-        setUserProfile({
-          first_name: session.user.user_metadata?.first_name || null,
-          last_name: session.user.user_metadata?.last_name || null,
-          email: session.user.email || null,
-          is_admin: session.user.user_metadata?.is_admin || false
-        });
-      } else {
-        setUserProfile(data);
-      }
-    } catch (error) {
-      console.error('Error fetching user profile:', error);
-      setUserProfile({
-        first_name: session?.user?.user_metadata?.first_name || null,
-        last_name: session?.user?.user_metadata?.last_name || null,
-        email: session?.user?.email || null,
-        is_admin: session?.user?.user_metadata?.is_admin || false
-      });
-    }
-  };
-
-  const handleSignOut = async () => {
-    await signOut();
-  };
 
   const hasDashboardPermissions = () => {
     if (isSuperAdmin) return true;
@@ -165,7 +118,6 @@ export default function Sidebar({ isMobileMenuOpen, closeMobileMenu }: { isMobil
 
   console.log('🔧 Current state:');
   console.log('  - isSuperAdmin:', isSuperAdmin);
-  console.log('  - userProfile:', userProfile);
   console.log('  - navigation items:', navigation.length);
   console.log('  - session user id:', session?.user?.id);
 
@@ -174,37 +126,11 @@ export default function Sidebar({ isMobileMenuOpen, closeMobileMenu }: { isMobil
     flex-col min-h-0 bg-white border-r border-gray-100
   `;
 
-  const getUserDisplayName = () => {
-    if (userProfile?.first_name && userProfile?.last_name) {
-      return `${userProfile.first_name} ${userProfile.last_name}`;
-    }
-    if (userProfile?.first_name) {
-      return userProfile.first_name;
-    }
-    if (userProfile?.email) {
-      return userProfile.email.split('@')[0];
-    }
-    return 'User';
-  };
-
-  const getUserInitials = () => {
-    if (userProfile?.first_name && userProfile?.last_name) {
-      return `${userProfile.first_name[0]}${userProfile.last_name[0]}`.toUpperCase();
-    }
-    if (userProfile?.first_name) {
-      return userProfile.first_name[0].toUpperCase();
-    }
-    if (userProfile?.email) {
-      return userProfile.email[0].toUpperCase();
-    }
-    return 'U';
-  };
-
   return (
     <aside className={sidebarClasses}>
       <div className="flex items-center h-16 flex-shrink-0 px-6 border-b border-gray-100">
         <img
-          src="/assets/images/planmoni_logo_main.png"
+          src="/assets/images/planmoni_logo_updated.png"
           alt="Planmoni Office"
           className="h-auto w-auto"
           onError={(e) => {
@@ -244,35 +170,6 @@ export default function Sidebar({ isMobileMenuOpen, closeMobileMenu }: { isMobil
             </NavLink>
           ))}
         </nav>
-      </div>
-      <div className="flex-shrink-0 border-t border-gray-100 p-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center min-w-0 flex-1">
-            <div className="flex-shrink-0">
-              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary to-primary-light flex items-center justify-center text-white shadow-sm">
-                <span className="text-sm font-semibold">{getUserInitials()}</span>
-              </div>
-            </div>
-            <div className="ml-3 min-w-0 flex-1">
-              <p className="text-sm font-semibold text-gray-900 truncate">{getUserDisplayName()}</p>
-              <p className="text-xs text-gray-500 truncate">
-                {userProfile?.email || session?.user?.email || 'No email'}
-              </p>
-              {isSuperAdmin && (
-                <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-red-50 text-red-700 mt-1">
-                  <Shield className="h-3 w-3 mr-1" />
-                  Super Admin
-                </span>
-              )}
-            </div>
-          </div>
-          <button
-            onClick={handleSignOut}
-            className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-colors flex-shrink-0 ml-2"
-          >
-            <LogOut className="h-5 w-5" />
-          </button>
-        </div>
       </div>
     </aside>
   );

@@ -163,7 +163,7 @@ export default function Login() {
         <div className="w-full max-w-md">
           <div className="mb-8 text-center">
             <img
-              src="/assets/images/planmoni_logo_main.png"
+              src="/assets/images/planmoni_logo_updated.png"
               alt="Planmoni"
               className="h-auto w-auto mx-auto mb-4"
             />
