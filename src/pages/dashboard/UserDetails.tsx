@@ -1,8 +1,9 @@
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Wallet, Calendar, Building2, ArrowUpRight, ArrowDownRight, RefreshCw, Shield, Lock, TrendingUp } from 'lucide-react';
-import { format } from 'date-fns';
+import { ArrowLeft, Wallet, Calendar, Building2, ArrowUpRight, ArrowDownRight, RefreshCw, Shield, Lock, TrendingUp, Clock } from 'lucide-react';
+import { format, addDays, addWeeks, addMonths } from 'date-fns';
 import { useUserDetails } from '@/hooks/queries/useUsersData';
 import { useRefreshData } from '@/hooks/mutations/useRefreshData';
+import { PayoutCountdown } from '@/components/PayoutCountdown';
 
 export default function UserDetails() {
   const { id } = useParams<{ id: string }>();
@@ -51,8 +52,35 @@ export default function UserDetails() {
   const totalPayouts = transactions
     .filter((t: any) => t.type === 'payout' && t.status === 'completed')
     .reduce((sum: number, t: any) => sum + t.amount, 0);
-  
+
   const activePlans = payoutPlans.filter((p: any) => p.status === 'active').length;
+
+  // Calculate end date for a payout plan
+  const calculateEndDate = (plan: any) => {
+    const startDate = new Date(plan.start_date);
+
+    switch (plan.frequency) {
+      case 'daily':
+        return addDays(startDate, plan.duration - 1);
+      case 'weekly':
+        return addWeeks(startDate, plan.duration - 1);
+      case 'monthly':
+        return addMonths(startDate, plan.duration - 1);
+      default:
+        return startDate;
+    }
+  };
+
+  // Find the latest end date across all plans
+  const lastPayoutDate = payoutPlans.length > 0
+    ? payoutPlans.reduce((latest: Date | null, plan: any) => {
+        const endDate = calculateEndDate(plan);
+        if (!latest || endDate > latest) {
+          return endDate;
+        }
+        return latest;
+      }, null)
+    : null;
 
   return (
     <div>
@@ -151,6 +179,21 @@ export default function UserDetails() {
           </div>
         </div>
       </div>
+
+      {lastPayoutDate && (
+        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 shadow-soft border border-blue-100 mb-6">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center">
+              <Calendar className="h-5 w-5 text-white" />
+            </div>
+            <h3 className="text-lg font-bold text-gray-900">Last Payout Date</h3>
+          </div>
+          <p className="text-gray-600 text-sm mb-3">Final payout date across all plans</p>
+          <p className="text-2xl font-bold text-gray-900">
+            {format(lastPayoutDate, 'MMMM d, yyyy')}
+          </p>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         <div>
@@ -251,56 +294,84 @@ export default function UserDetails() {
         <div className="bg-white rounded-2xl shadow-soft border border-gray-100 overflow-hidden">
           {payoutPlans.length > 0 ? (
             <div className="divide-y divide-gray-100">
-              {payoutPlans.map((plan: any) => (
-                <div key={plan.id} className="p-6 hover:bg-gray-50 transition-colors">
-                  <div className="flex justify-between items-start mb-4">
-                    <h3 className="text-lg font-semibold text-gray-900">{plan.name}</h3>
-                    <span className={`px-3 py-1 rounded-lg text-xs font-semibold ${
-                      plan.status === 'active'
-                        ? 'bg-green-50 text-green-600 border border-green-100'
-                        : plan.status === 'paused'
-                          ? 'bg-yellow-50 text-yellow-600 border border-yellow-100'
-                          : plan.status === 'completed'
-                            ? 'bg-blue-50 text-blue-600 border border-blue-100'
-                            : 'bg-gray-50 text-gray-600 border border-gray-100'
-                    }`}>
-                      {plan.status.charAt(0).toUpperCase() + plan.status.slice(1)}
-                    </span>
+              {payoutPlans.map((plan: any) => {
+                const endDate = calculateEndDate(plan);
+                return (
+                  <div key={plan.id} className="p-6 hover:bg-gray-50 transition-colors">
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="flex-1">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-1">{plan.name}</h3>
+                        <p className="text-sm text-gray-500">
+                          Created {format(new Date(plan.created_at), 'MMM d, yyyy')}
+                        </p>
+                      </div>
+                      <span className={`px-3 py-1 rounded-lg text-xs font-semibold ${
+                        plan.status === 'active'
+                          ? 'bg-green-50 text-green-600 border border-green-100'
+                          : plan.status === 'paused'
+                            ? 'bg-yellow-50 text-yellow-600 border border-yellow-100'
+                            : plan.status === 'completed'
+                              ? 'bg-blue-50 text-blue-600 border border-blue-100'
+                              : 'bg-gray-50 text-gray-600 border border-gray-100'
+                      }`}>
+                        {plan.status.charAt(0).toUpperCase() + plan.status.slice(1)}
+                      </span>
+                    </div>
+
+                    {plan.next_payout_date && plan.status === 'active' && (
+                      <div className="mb-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Clock className="h-4 w-4 text-blue-600" />
+                          <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Next Payout In</p>
+                        </div>
+                        <PayoutCountdown targetDate={plan.next_payout_date} />
+                        <p className="text-xs text-gray-500 mt-1">
+                          Due on {format(new Date(plan.next_payout_date), 'MMM d, yyyy')}
+                        </p>
+                      </div>
+                    )}
+
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                      <div>
+                        <p className="text-xs font-medium text-gray-500 mb-1">Total Amount</p>
+                        <p className="text-base font-bold text-gray-900">₦{plan.total_amount.toLocaleString()}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs font-medium text-gray-500 mb-1">Payout Amount</p>
+                        <p className="text-base font-bold text-gray-900">₦{plan.payout_amount.toLocaleString()}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs font-medium text-gray-500 mb-1">Frequency</p>
+                        <p className="text-base font-bold text-gray-900">
+                          {plan.frequency.charAt(0).toUpperCase() + plan.frequency.slice(1)}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs font-medium text-gray-500 mb-1">Progress</p>
+                        <p className="text-base font-bold text-gray-900">{plan.completed_payouts}/{plan.duration}</p>
+                      </div>
+                    </div>
+
+                    <div className="mb-3 p-3 bg-gray-50 rounded-lg">
+                      <p className="text-xs font-medium text-gray-500 mb-1">Plan End Date</p>
+                      <p className="text-sm font-bold text-gray-900">{format(endDate, 'MMMM d, yyyy')}</p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-xs text-gray-500">
+                        <span>{Math.round((plan.completed_payouts / plan.duration) * 100)}% complete</span>
+                        <span>{plan.duration - plan.completed_payouts} remaining</span>
+                      </div>
+                      <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
+                        <div
+                          className="bg-gradient-to-r from-green-500 to-green-600 h-full rounded-full transition-all duration-500"
+                          style={{ width: `${Math.round((plan.completed_payouts / plan.duration) * 100)}%` }}
+                        ></div>
+                      </div>
+                    </div>
                   </div>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                    <div>
-                      <p className="text-xs font-medium text-gray-500 mb-1">Total Amount</p>
-                      <p className="text-base font-bold text-gray-900">₦{plan.total_amount.toLocaleString()}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs font-medium text-gray-500 mb-1">Payout Amount</p>
-                      <p className="text-base font-bold text-gray-900">₦{plan.payout_amount.toLocaleString()}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs font-medium text-gray-500 mb-1">Frequency</p>
-                      <p className="text-base font-bold text-gray-900">
-                        {plan.frequency.charAt(0).toUpperCase() + plan.frequency.slice(1)}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xs font-medium text-gray-500 mb-1">Progress</p>
-                      <p className="text-base font-bold text-gray-900">{plan.completed_payouts}/{plan.duration}</p>
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-xs text-gray-500">
-                      <span>{Math.round((plan.completed_payouts / plan.duration) * 100)}% complete</span>
-                      <span>{plan.duration - plan.completed_payouts} remaining</span>
-                    </div>
-                    <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
-                      <div
-                        className="bg-gradient-to-r from-green-500 to-green-600 h-full rounded-full transition-all duration-500"
-                        style={{ width: `${Math.round((plan.completed_payouts / plan.duration) * 100)}%` }}
-                      ></div>
-                    </div>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           ) : (
             <div className="p-12 text-center">
