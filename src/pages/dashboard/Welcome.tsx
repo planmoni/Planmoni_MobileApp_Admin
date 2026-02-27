@@ -19,9 +19,7 @@ import {
   ScrollText,
   Mail,
   Bell,
-  BookOpen,
-  ArrowRight,
-  Sparkles
+  BookOpen
 } from 'lucide-react';
 
 export default function Welcome() {

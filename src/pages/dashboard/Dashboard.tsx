@@ -1,6 +1,6 @@
-import { RefreshCw, Users, ArrowUpRight, ArrowDownRight, Calendar, Lock, XCircle, Wallet, CheckCircle2, Clock, AlertCircle, Timer } from 'lucide-react';
+import { RefreshCw, Users, ArrowUpRight, ArrowDownRight, CheckCircle2, Clock } from 'lucide-react';
 import { PayoutCountdown } from '@/components/PayoutCountdown';
-import { Bar, Pie } from 'react-chartjs-2';
+import { Pie } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -110,73 +110,6 @@ export default function Dashboard() {
     ],
   };
 
-  const transactionVolumeData = {
-    labels: dashboardData?.transactionVolumeTrends.map(trend => format(new Date(trend.day), 'dd/MM')) || [],
-    datasets: [
-      {
-        label: 'Transaction Volume',
-        data: dashboardData?.transactionVolumeTrends.map(trend => trend.volume) || [],
-        backgroundColor: '#86EFAC',
-        borderRadius: 8,
-      },
-    ],
-  };
-
-  const chartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        display: false,
-      },
-      tooltip: {
-        backgroundColor: '#0F172A',
-        padding: 12,
-        borderRadius: 8,
-        titleFont: {
-          size: 13,
-          weight: 600,
-        },
-        bodyFont: {
-          size: 14,
-        },
-        callbacks: {
-          label: function(context: any) {
-            return formatCurrency(context.parsed.y);
-          }
-        }
-      },
-    },
-    scales: {
-      y: {
-        beginAtZero: true,
-        grid: {
-          color: '#F3F4F6',
-          drawBorder: false,
-        },
-        ticks: {
-          color: '#94A3B8',
-          font: {
-            size: 11,
-          },
-          callback: function(value: any) {
-            return '₦' + (value / 1000) + 'k';
-          }
-        },
-      },
-      x: {
-        grid: {
-          display: false,
-        },
-        ticks: {
-          color: '#94A3B8',
-          font: {
-            size: 11,
-          },
-        },
-      },
-    },
-  };
 
   const pieOptions = {
     responsive: true,

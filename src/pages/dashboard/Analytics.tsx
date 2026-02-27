@@ -1,4 +1,4 @@
-import { RefreshCw, TrendingUp, TrendingDown, Users, DollarSign, Repeat, Target, Wallet, CreditCard, CheckCircle2, Clock } from 'lucide-react';
+import { RefreshCw, TrendingUp, TrendingDown, Clock } from 'lucide-react';
 import { Line, Bar, Doughnut } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, BarElement, ArcElement, Title, Tooltip, Legend, Filler } from 'chart.js';
 import { format, subMonths } from 'date-fns';
@@ -76,7 +76,10 @@ export default function Analytics() {
     totalUsersBalance: 0,
     totalAmountInPlans: 0,
     totalCompletedPayouts: 0,
-    highestUserBalance: 0,
+    highestUserBalance: {
+      amount: 0,
+      user_name: '',
+    },
     mostRecentDeposit: null,
     mostRecentPayout: null,
   };
@@ -420,7 +423,10 @@ export default function Analytics() {
           <div className="flex justify-between items-start mb-4">
             <div className="flex-1">
               <p className="text-sm font-medium text-gray-500 mb-1">Highest User Balance</p>
-              <p className="text-2xl font-bold text-gray-900">₦{data.highestUserBalance.toLocaleString()}</p>
+              <p className="text-2xl font-bold text-gray-900 mb-1">₦{data.highestUserBalance.amount.toLocaleString()}</p>
+              {data.highestUserBalance.user_name && (
+                <p className="text-xs text-gray-500">{data.highestUserBalance.user_name}</p>
+              )}
             </div>
           </div>
           <div className="pt-3 border-t border-gray-100">
