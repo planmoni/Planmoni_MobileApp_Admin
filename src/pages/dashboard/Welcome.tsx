@@ -247,7 +247,7 @@ export default function Welcome() {
               <h1 className="text-2xl font-bold text-gray-900">
                 {getGreeting()}, {getUserDisplayName()}!
               </h1>
-              <p className="text-lg text-gray-600 mt-1">
+              <p className="text-sm text-gray-600 mt-1">
                 Welcome to your admin dashboard
               </p>
             </div>
