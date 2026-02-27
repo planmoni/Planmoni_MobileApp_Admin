@@ -86,7 +86,7 @@ export default function Users() {
     <div className="w-full min-w-0">
       <div className="flex justify-between items-center mb-6 md:mb-8">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-1">Users</h1>
+          <h1 className="text-2xl md:text-2xl font-bold text-gray-900 mb-1">Users</h1>
           <p className="text-sm md:text-base text-gray-500">Manage all users on the platform</p>
         </div>
         <button
@@ -104,7 +104,7 @@ export default function Users() {
             <div className="flex justify-between items-start mb-3 md:mb-4">
               <div className="flex-1">
                 <p className="text-sm font-medium text-gray-500 mb-1">Total Users</p>
-                <p className="text-2xl md:text-3xl font-bold text-gray-900">{userStats.total_users}</p>
+                <p className="text-2xl md:text-2xl font-bold text-gray-900">{userStats.total_users}</p>
               </div>
               <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-blue-50 flex items-center justify-center flex-shrink-0">
                 <UsersIcon className="h-4 w-4 md:h-5 md:w-5 text-blue-600" />
@@ -123,10 +123,7 @@ export default function Users() {
             <div className="flex justify-between items-start mb-3 md:mb-4">
               <div className="flex-1">
                 <p className="text-sm font-medium text-gray-500 mb-1">Active Users</p>
-                <p className="text-2xl md:text-3xl font-bold text-gray-900">{userStats.active_users_this_month}</p>
-              </div>
-              <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-green-50 flex items-center justify-center flex-shrink-0">
-                <TrendingUp className="h-4 w-4 md:h-5 md:w-5 text-green-600" />
+                <p className="text-2xl md:text-2xl font-bold text-gray-900">{userStats.active_users_this_month}</p>
               </div>
             </div>
             <div className="flex items-center gap-2 pt-2 md:pt-3 border-t border-gray-100">
@@ -138,10 +135,7 @@ export default function Users() {
             <div className="flex justify-between items-start mb-3 md:mb-4">
               <div className="flex-1">
                 <p className="text-sm font-medium text-gray-500 mb-1">Users with Balance</p>
-                <p className="text-2xl md:text-3xl font-bold text-gray-900">{userStats.users_with_balance}</p>
-              </div>
-              <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-yellow-50 flex items-center justify-center flex-shrink-0">
-                <Wallet className="h-4 w-4 md:h-5 md:w-5 text-yellow-600" />
+                <p className="text-2xl md:text-2xl font-bold text-gray-900">{userStats.users_with_balance}</p>
               </div>
             </div>
             <div className="flex items-center gap-2 pt-2 md:pt-3 border-t border-gray-100">
@@ -153,10 +147,7 @@ export default function Users() {
             <div className="flex justify-between items-start mb-3 md:mb-4">
               <div className="flex-1">
                 <p className="text-sm font-medium text-gray-500 mb-1">Users with Plans</p>
-                <p className="text-2xl md:text-3xl font-bold text-gray-900">{userStats.users_with_plans}</p>
-              </div>
-              <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-gray-50 flex items-center justify-center flex-shrink-0">
-                <UsersIcon className="h-4 w-4 md:h-5 md:w-5 text-gray-600" />
+                <p className="text-2xl md:text-2xl font-bold text-gray-900">{userStats.users_with_plans}</p>
               </div>
             </div>
             <div className="flex items-center gap-2 pt-2 md:pt-3 border-t border-gray-100">
