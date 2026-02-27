@@ -40,16 +40,19 @@ type AnalyticsData = {
   highestUserBalance: {
     amount: number;
     user_name: string;
+    user_id: string;
   };
   mostRecentDeposit: {
     amount: number;
     date: string;
     user_name: string;
+    user_id: string;
   } | null;
   mostRecentPayout: {
     amount: number;
     date: string;
     user_name: string;
+    user_id: string;
   } | null;
 };
 
@@ -107,16 +110,19 @@ const fetchAnalyticsData = async (): Promise<AnalyticsData> => {
         highestUserBalance: {
           amount: Math.round(parseFloat(data.highest_user_balance?.amount) || 0),
           user_name: data.highest_user_balance?.user_name || '',
+          user_id: data.highest_user_balance?.user_id || '',
         },
         mostRecentDeposit: data.most_recent_deposit && data.most_recent_deposit !== 'null' ? {
           amount: parseFloat(data.most_recent_deposit.amount),
           date: data.most_recent_deposit.date,
           user_name: data.most_recent_deposit.user_name,
+          user_id: data.most_recent_deposit.user_id,
         } : null,
         mostRecentPayout: data.most_recent_payout && data.most_recent_payout !== 'null' ? {
           amount: parseFloat(data.most_recent_payout.amount),
           date: data.most_recent_payout.date,
           user_name: data.most_recent_payout.user_name,
+          user_id: data.most_recent_payout.user_id,
         } : null,
       };
     }
@@ -354,7 +360,7 @@ const fetchAnalyticsDataFallback = async (): Promise<AnalyticsData> => {
   // Fetch most recent deposit
   const { data: recentDepositData, error: depositError } = await supabase
     .from('transactions')
-    .select('amount, created_at, profiles!inner(first_name, last_name)')
+    .select('amount, created_at, user_id, profiles!inner(first_name, last_name)')
     .eq('type', 'deposit')
     .order('created_at', { ascending: false })
     .limit(1)
@@ -368,6 +374,7 @@ const fetchAnalyticsDataFallback = async (): Promise<AnalyticsData> => {
     amount: parseFloat(recentDepositData.amount || '0'),
     date: recentDepositData.created_at,
     user_name: `${(recentDepositData.profiles as any).first_name} ${(recentDepositData.profiles as any).last_name}`,
+    user_id: recentDepositData.user_id,
   } : null;
 
   console.log('💳 Most recent deposit:', mostRecentDeposit);
@@ -375,7 +382,7 @@ const fetchAnalyticsDataFallback = async (): Promise<AnalyticsData> => {
   // Fetch most recent payout
   const { data: recentPayoutData, error: payoutError } = await supabase
     .from('transactions')
-    .select('amount, created_at, profiles!inner(first_name, last_name)')
+    .select('amount, created_at, user_id, profiles!inner(first_name, last_name)')
     .eq('type', 'payout')
     .order('created_at', { ascending: false })
     .limit(1)
@@ -389,6 +396,7 @@ const fetchAnalyticsDataFallback = async (): Promise<AnalyticsData> => {
     amount: parseFloat(recentPayoutData.amount || '0'),
     date: recentPayoutData.created_at,
     user_name: `${(recentPayoutData.profiles as any).first_name} ${(recentPayoutData.profiles as any).last_name}`,
+    user_id: recentPayoutData.user_id,
   } : null;
 
   console.log('💸 Most recent payout:', mostRecentPayout);
@@ -435,6 +443,7 @@ const fetchAnalyticsDataFallback = async (): Promise<AnalyticsData> => {
     highestUserBalance: {
       amount: Math.round(highestUserBalance),
       user_name: '',
+      user_id: '',
     },
     mostRecentDeposit,
     mostRecentPayout,

@@ -4,12 +4,14 @@ import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement
 import { format, subMonths } from 'date-fns';
 import { useAnalyticsData } from '@/hooks/queries/useAnalyticsData';
 import { useRefreshData } from '@/hooks/mutations/useRefreshData';
+import { useNavigate } from 'react-router-dom';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, ArcElement, Title, Tooltip, Legend, Filler);
 
 export default function Analytics() {
   const { data: analyticsData, isLoading, error } = useAnalyticsData();
   const refreshData = useRefreshData();
+  const navigate = useNavigate();
 
   const handleRefresh = () => {
     refreshData.mutate(['analytics']);
@@ -79,6 +81,7 @@ export default function Analytics() {
     highestUserBalance: {
       amount: 0,
       user_name: '',
+      user_id: '',
     },
     mostRecentDeposit: null,
     mostRecentPayout: null,
@@ -419,7 +422,12 @@ export default function Analytics() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mb-8">
-        <div className="bg-white rounded-2xl p-6 shadow-soft border border-gray-100">
+        <div
+          onClick={() => data.highestUserBalance.user_id && navigate(`/users/${data.highestUserBalance.user_id}`)}
+          className={`bg-white rounded-2xl p-6 shadow-soft border border-gray-100 transition-all ${
+            data.highestUserBalance.user_id ? 'cursor-pointer hover:shadow-md hover:border-accent' : ''
+          }`}
+        >
           <div className="flex justify-between items-start mb-4">
             <div className="flex-1">
               <p className="text-sm font-medium text-gray-500 mb-1">Highest User Balance</p>
@@ -430,11 +438,16 @@ export default function Analytics() {
             </div>
           </div>
           <div className="pt-3 border-t border-gray-100">
-            <span className="text-xs text-gray-500">Top user balance</span>
+            <span className="text-xs text-gray-500">Top user balance{data.highestUserBalance.user_id ? ' • Click to view profile' : ''}</span>
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl p-6 shadow-soft border border-gray-100">
+        <div
+          onClick={() => data.mostRecentDeposit?.user_id && navigate(`/users/${data.mostRecentDeposit.user_id}`)}
+          className={`bg-white rounded-2xl p-6 shadow-soft border border-gray-100 transition-all ${
+            data.mostRecentDeposit?.user_id ? 'cursor-pointer hover:shadow-md hover:border-accent' : ''
+          }`}
+        >
           <div className="flex justify-between items-start mb-4">
             <div className="flex-1">
               <p className="text-sm font-medium text-gray-500 mb-1">Most Recent Deposit</p>
@@ -452,13 +465,18 @@ export default function Analytics() {
             {data.mostRecentDeposit && (
               <div className="flex items-center gap-1 text-xs text-gray-500">
                 <Clock className="h-3 w-3" />
-                <span>{format(new Date(data.mostRecentDeposit.date), 'MMM d, yyyy h:mm a')}</span>
+                <span>{format(new Date(data.mostRecentDeposit.date), 'MMM d, yyyy h:mm a')}{data.mostRecentDeposit.user_id ? ' • Click to view profile' : ''}</span>
               </div>
             )}
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl p-6 shadow-soft border border-gray-100">
+        <div
+          onClick={() => data.mostRecentPayout?.user_id && navigate(`/users/${data.mostRecentPayout.user_id}`)}
+          className={`bg-white rounded-2xl p-6 shadow-soft border border-gray-100 transition-all ${
+            data.mostRecentPayout?.user_id ? 'cursor-pointer hover:shadow-md hover:border-accent' : ''
+          }`}
+        >
           <div className="flex justify-between items-start mb-4">
             <div className="flex-1">
               <p className="text-sm font-medium text-gray-500 mb-1">Most Recent Payout</p>
@@ -476,7 +494,7 @@ export default function Analytics() {
             {data.mostRecentPayout && (
               <div className="flex items-center gap-1 text-xs text-gray-500">
                 <Clock className="h-3 w-3" />
-                <span>{format(new Date(data.mostRecentPayout.date), 'MMM d, yyyy h:mm a')}</span>
+                <span>{format(new Date(data.mostRecentPayout.date), 'MMM d, yyyy h:mm a')}{data.mostRecentPayout.user_id ? ' • Click to view profile' : ''}</span>
               </div>
             )}
           </div>
