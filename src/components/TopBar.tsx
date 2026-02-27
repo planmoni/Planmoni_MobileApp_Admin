@@ -317,7 +317,7 @@ export default function TopBar({ isMobileMenuOpen, toggleMobileMenu }: TopBarPro
                         index === selectedIndex ? 'bg-blue-50' : ''
                       }`}
                     >
-                      <div className="h-10 w-10 rounded-lg bg-slate-500 flex items-center justify-center text-white flex-shrink-0">
+                      <div className="h-10 w-10 rounded-lg bg-slate-700 flex items-center justify-center text-white flex-shrink-0">
                         <span className="text-sm font-semibold">
                           {user.first_name?.[0]?.toUpperCase() || user.email[0].toUpperCase()}
                           {user.last_name?.[0]?.toUpperCase() || ''}
