@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Search, LogOut, Shield, Menu, X } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Search, User, LogOut, ChevronDown, Menu, X } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
@@ -13,34 +13,33 @@ export default function TopBar({ isMobileMenuOpen, toggleMobileMenu }: TopBarPro
   const { signOut, session } = useAuth();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
-  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [userProfile, setUserProfile] = useState<{
     first_name: string | null;
     last_name: string | null;
     email: string | null;
     is_admin: boolean;
   } | null>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (session?.user) {
-      checkSuperAdminStatus();
       fetchUserProfile();
     }
   }, [session?.user]);
 
-  const checkSuperAdminStatus = async () => {
-    try {
-      const { data, error } = await supabase.rpc('is_super_admin');
-      if (!error && data) {
-        setIsSuperAdmin(true);
-      } else {
-        setIsSuperAdmin(false);
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
       }
-    } catch (error) {
-      console.error('Error checking super admin status:', error);
-      setIsSuperAdmin(false);
-    }
-  };
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   const fetchUserProfile = async () => {
     try {
@@ -74,7 +73,13 @@ export default function TopBar({ isMobileMenuOpen, toggleMobileMenu }: TopBarPro
   };
 
   const handleSignOut = async () => {
+    setIsDropdownOpen(false);
     await signOut();
+  };
+
+  const handleProfileClick = () => {
+    setIsDropdownOpen(false);
+    navigate('/settings');
   };
 
   const handleSearch = (e: React.FormEvent) => {
@@ -82,19 +87,6 @@ export default function TopBar({ isMobileMenuOpen, toggleMobileMenu }: TopBarPro
     if (searchQuery.trim()) {
       navigate(`/users?search=${encodeURIComponent(searchQuery.trim())}`);
     }
-  };
-
-  const getUserDisplayName = () => {
-    if (userProfile?.first_name && userProfile?.last_name) {
-      return `${userProfile.first_name} ${userProfile.last_name}`;
-    }
-    if (userProfile?.first_name) {
-      return userProfile.first_name;
-    }
-    if (userProfile?.email) {
-      return userProfile.email.split('@')[0];
-    }
-    return 'User';
   };
 
   const getUserInitials = () => {
@@ -138,33 +130,39 @@ export default function TopBar({ isMobileMenuOpen, toggleMobileMenu }: TopBarPro
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="hidden md:flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors">
-            <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center text-white shadow-sm">
-              <span className="text-sm font-semibold">{getUserInitials()}</span>
-            </div>
-            <div className="text-right">
-              <p className="text-sm font-semibold text-gray-900">{getUserDisplayName()}</p>
-              <div className="flex items-center gap-2">
-                <p className="text-xs text-gray-500">
-                  {userProfile?.email || session?.user?.email || 'No email'}
-                </p>
-                {isSuperAdmin && (
-                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-red-50 text-red-700">
-                    <Shield className="h-3 w-3 mr-0.5" />
-                    Admin
-                  </span>
-                )}
+          <div className="relative" ref={dropdownRef}>
+            <button
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              className="hidden md:flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center text-white shadow-sm">
+                <span className="text-sm font-semibold">{getUserInitials()}</span>
               </div>
-            </div>
-          </div>
+              <div className="text-left">
+                <p className="text-sm font-semibold text-gray-900">Admin</p>
+              </div>
+              <ChevronDown className={`h-4 w-4 text-gray-500 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
+            </button>
 
-          <button
-            onClick={handleSignOut}
-            className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-colors"
-            title="Sign out"
-          >
-            <LogOut className="h-5 w-5" />
-          </button>
+            {isDropdownOpen && (
+              <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+                <button
+                  onClick={handleProfileClick}
+                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3 transition-colors"
+                >
+                  <User className="h-4 w-4" />
+                  Profile
+                </button>
+                <button
+                  onClick={handleSignOut}
+                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3 transition-colors"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Log Out
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
