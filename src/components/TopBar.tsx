@@ -67,16 +67,54 @@ export default function TopBar({ isMobileMenuOpen, toggleMobileMenu }: TopBarPro
       }
 
       try {
+        const searchTerm = `%${searchQuery}%`;
+
         const { data, error } = await supabase
           .from('profiles')
-          .select('id, first_name, last_name, email, phone')
-          .or(`first_name.ilike.%${searchQuery}%,last_name.ilike.%${searchQuery}%,email.ilike.%${searchQuery}%,phone.ilike.%${searchQuery}%`)
-          .limit(5);
+          .select(`
+            id,
+            first_name,
+            last_name,
+            email,
+            kyc_data!inner(phone_number)
+          `)
+          .or(`first_name.ilike.${searchTerm},last_name.ilike.${searchTerm},email.ilike.${searchTerm},kyc_data.phone_number.ilike.${searchTerm}`)
+          .limit(10);
 
         if (!error && data) {
-          setSuggestions(data);
+          const suggestions = data.map(user => ({
+            id: user.id,
+            first_name: user.first_name,
+            last_name: user.last_name,
+            email: user.email,
+            phone: Array.isArray(user.kyc_data) && user.kyc_data.length > 0
+              ? user.kyc_data[0].phone_number
+              : null
+          }));
+
+          setSuggestions(suggestions);
           setShowSuggestions(true);
           setSelectedIndex(-1);
+        } else if (error) {
+          const { data: profilesOnly } = await supabase
+            .from('profiles')
+            .select('id, first_name, last_name, email')
+            .or(`first_name.ilike.${searchTerm},last_name.ilike.${searchTerm},email.ilike.${searchTerm}`)
+            .limit(10);
+
+          if (profilesOnly) {
+            const suggestions = profilesOnly.map(user => ({
+              id: user.id,
+              first_name: user.first_name,
+              last_name: user.last_name,
+              email: user.email,
+              phone: null
+            }));
+
+            setSuggestions(suggestions);
+            setShowSuggestions(true);
+            setSelectedIndex(-1);
+          }
         }
       } catch (error) {
         console.error('Error searching users:', error);
@@ -279,7 +317,7 @@ export default function TopBar({ isMobileMenuOpen, toggleMobileMenu }: TopBarPro
                         index === selectedIndex ? 'bg-blue-50' : ''
                       }`}
                     >
-                      <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center text-white flex-shrink-0">
+                      <div className="h-10 w-10 rounded-lg bg-slate-500 flex items-center justify-center text-white flex-shrink-0">
                         <span className="text-sm font-semibold">
                           {user.first_name?.[0]?.toUpperCase() || user.email[0].toUpperCase()}
                           {user.last_name?.[0]?.toUpperCase() || ''}
