@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, RefreshCw, Users as UsersIcon, TrendingUp, Wallet } from 'lucide-react';
+import { Search, RefreshCw, Users as UsersIcon, TrendingUp } from 'lucide-react';
 import { useUsersData } from '@/hooks/queries/useUsersData';
 import { useRefreshData } from '@/hooks/mutations/useRefreshData';
 

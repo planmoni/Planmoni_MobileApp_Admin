@@ -1,6 +1,6 @@
 import { RefreshCw, Users, ArrowUpRight, ArrowDownRight, CheckCircle2, Clock } from 'lucide-react';
 import { PayoutCountdown } from '@/components/PayoutCountdown';
-import { Pie } from 'react-chartjs-2';
+import { Pie, Line } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -86,6 +86,57 @@ export default function Dashboard() {
         {isPositive ? '+' : '-'}{displayValue} vs yesterday
       </p>
     );
+  };
+
+  const transactionVolumeData = {
+    labels: dashboardData?.transactionVolumeTrends?.map(trend => format(new Date(trend.day), 'MMM dd')) || [],
+    datasets: [
+      {
+        label: 'Transaction Volume',
+        data: dashboardData?.transactionVolumeTrends?.map(trend => trend.volume) || [],
+        borderColor: '#3B82F6',
+        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+        fill: true,
+        tension: 0.4,
+        pointRadius: 4,
+        pointHoverRadius: 6,
+      },
+    ],
+  };
+
+  const lineOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: false,
+      },
+      tooltip: {
+        backgroundColor: '#0F172A',
+        padding: 12,
+        borderRadius: 8,
+        callbacks: {
+          label: (context: any) => {
+            return `Volume: ${formatCurrency(context.parsed.y)}`;
+          },
+        },
+      },
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        ticks: {
+          callback: (value: any) => {
+            return new Intl.NumberFormat('en-NG', {
+              style: 'currency',
+              currency: 'NGN',
+              minimumFractionDigits: 0,
+              notation: 'compact',
+            }).format(value);
+          },
+        },
+      },
+    },
   };
 
   const planDistributionData = {
@@ -384,6 +435,15 @@ export default function Dashboard() {
           <div className="mb-4 md:mb-6">
             <h3 className="text-base md:text-lg font-semibold text-gray-900">Transaction Volume</h3>
             <p className="text-xs md:text-sm text-gray-500">Last 7 days</p>
+          </div>
+          <div className="h-48 md:h-64">
+            {stats.transactionVolumeTrends && stats.transactionVolumeTrends.length > 0 ? (
+              <Line data={transactionVolumeData} options={lineOptions} />
+            ) : (
+              <div className="flex items-center justify-center h-full text-gray-400 text-sm">
+                No transaction data available
+              </div>
+            )}
           </div>
         </div>
         )}
