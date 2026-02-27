@@ -239,9 +239,7 @@ export default function Welcome() {
         <div className="mb-12">
           <div className="flex items-center gap-3 mb-4">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">
-                {getGreeting()}, {getUserDisplayName()}!
-              </h1>
+              
               <p className="text-sm text-gray-600 mt-1">
                 Welcome to your admin dashboard
               </p>
