@@ -333,9 +333,6 @@ export default function Dashboard() {
                   <p className="text-xl md:text-3xl font-bold text-gray-900">{stats.todayPlans}</p>
                   {renderComparison(stats.todayPlans, stats.yesterdayPlans, true)}
                 </div>
-                <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-purple-50 flex items-center justify-center flex-shrink-0">
-                  <Calendar className="h-4 w-4 md:h-5 md:w-5 text-purple-600" />
-                </div>
               </div>
             </div>
           </Link>
@@ -349,9 +346,6 @@ export default function Dashboard() {
                   <p className="text-xs md:text-sm font-medium text-gray-500 mb-1">KYC Completed</p>
                   <p className="text-xl md:text-3xl font-bold text-gray-900">{stats.todayKyc}</p>
                   {renderComparison(stats.todayKyc, stats.yesterdayKyc, true)}
-                </div>
-                <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-green-50 flex items-center justify-center flex-shrink-0">
-                  <CheckCircle2 className="h-4 w-4 md:h-5 md:w-5 text-green-600" />
                 </div>
               </div>
             </div>
@@ -367,9 +361,6 @@ export default function Dashboard() {
                   <p className="text-lg md:text-2xl font-bold text-gray-900 break-words">{formatCurrency(stats.todayLockedBalance)}</p>
                   {renderComparison(stats.todayLockedBalance, stats.yesterdayLockedBalance, false)}
                 </div>
-                <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-yellow-50 flex items-center justify-center flex-shrink-0">
-                  <Lock className="h-4 w-4 md:h-5 md:w-5 text-yellow-600" />
-                </div>
               </div>
             </div>
           </Link>
@@ -383,9 +374,6 @@ export default function Dashboard() {
                   <p className="text-xs md:text-sm font-medium text-gray-500 mb-1">Cancelled Plans</p>
                   <p className="text-xl md:text-3xl font-bold text-gray-900">{stats.todayCancelledPlans}</p>
                   {renderComparison(stats.todayCancelledPlans, stats.yesterdayCancelledPlans, true)}
-                </div>
-                <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-red-50 flex items-center justify-center flex-shrink-0">
-                  <XCircle className="h-4 w-4 md:h-5 md:w-5 text-red-600" />
                 </div>
               </div>
             </div>
@@ -401,9 +389,6 @@ export default function Dashboard() {
                   <p className="text-lg md:text-2xl font-bold text-gray-900 break-words">{formatCurrency(stats.todayWithdrawals)}</p>
                   {renderComparison(stats.todayWithdrawals, stats.yesterdayWithdrawals, false)}
                 </div>
-                <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-gray-50 flex items-center justify-center flex-shrink-0">
-                  <Wallet className="h-4 w-4 md:h-5 md:w-5 text-gray-600" />
-                </div>
               </div>
             </div>
           </Link>
@@ -418,9 +403,6 @@ export default function Dashboard() {
                   <p className="text-xl md:text-3xl font-bold text-gray-900">{stats.todayPayoutsDueCount}</p>
                   {renderComparison(stats.todayPayoutsDueCount, stats.yesterdayPayoutsDueCount, true)}
                 </div>
-                <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-orange-50 flex items-center justify-center flex-shrink-0">
-                  <AlertCircle className="h-4 w-4 md:h-5 md:w-5 text-orange-600" />
-                </div>
               </div>
             </div>
           </Link>
@@ -434,9 +416,6 @@ export default function Dashboard() {
                   <p className="text-xs md:text-sm font-medium text-gray-500 mb-1">Payouts Due Amount</p>
                   <p className="text-lg md:text-2xl font-bold text-gray-900 break-words">{formatCurrency(stats.todayPayoutsDueAmount)}</p>
                   {renderComparison(stats.todayPayoutsDueAmount, stats.yesterdayPayoutsDueAmount, false)}
-                </div>
-                <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-orange-50 flex items-center justify-center flex-shrink-0">
-                  <ArrowDownRight className="h-4 w-4 md:h-5 md:w-5 text-orange-600" />
                 </div>
               </div>
             </div>
@@ -459,9 +438,6 @@ export default function Dashboard() {
                     <p className="text-lg md:text-xl font-medium text-gray-400">No upcoming payouts</p>
                   )}
                 </div>
-                <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-blue-50 flex items-center justify-center flex-shrink-0">
-                  <Timer className="h-4 w-4 md:h-5 md:w-5 text-blue-600" />
-                </div>
               </div>
             </div>
           </Link>
@@ -475,9 +451,6 @@ export default function Dashboard() {
           <div className="mb-4 md:mb-6">
             <h3 className="text-base md:text-lg font-semibold text-gray-900">Transaction Volume</h3>
             <p className="text-xs md:text-sm text-gray-500">Last 7 days</p>
-          </div>
-          <div className="h-48 md:h-64">
-            <Bar data={transactionVolumeData} options={chartOptions} />
           </div>
         </div>
         )}
