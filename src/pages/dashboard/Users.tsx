@@ -195,28 +195,7 @@ export default function Users() {
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl shadow-soft border border-gray-100 mb-6 overflow-hidden">
-        <div className="grid grid-cols-3 gap-3 md:gap-4 p-4 md:p-6">
-          <div className="text-center">
-            <p className="text-xl md:text-2xl font-bold text-gray-900">{filteredUsers.length}</p>
-            <p className="text-xs md:text-sm text-gray-500 mt-1">
-              {filterType === 'all' ? 'Total Users' : 'Filtered'}
-            </p>
-          </div>
-          <div className="text-center border-x border-gray-100">
-            <p className="text-xl md:text-2xl font-bold text-gray-900">
-              {userStats?.new_users_this_month || 0}
-            </p>
-            <p className="text-xs md:text-sm text-gray-500 mt-1">New (30d)</p>
-          </div>
-          <div className="text-center">
-            <p className="text-xl md:text-2xl font-bold text-gray-900">
-              {userStats?.active_users_this_month || 0}
-            </p>
-            <p className="text-xs md:text-sm text-gray-500 mt-1">Active (30d)</p>
-          </div>
-        </div>
-      </div>
+      
 
       <div className="bg-white rounded-2xl shadow-soft border border-gray-100 overflow-hidden">
         {isLoading ? (
