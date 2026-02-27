@@ -283,67 +283,101 @@ const fetchAnalyticsDataFallback = async (): Promise<AnalyticsData> => {
     .from('profiles')
     .select('*', { count: 'exact', head: true });
 
-  // Fetch total users balance
+  console.log('👥 Total users count:', totalUsersCount);
+
+  // Fetch all wallet data to calculate totals
   const { data: walletsData, error: walletsError } = await supabase
     .from('wallets')
     .select('balance, locked_balance');
 
-  if (walletsError) throw walletsError;
+  if (walletsError) {
+    console.error('Wallets fetch error:', walletsError);
+  }
 
-  const totalUsersBalance = walletsData?.reduce((sum, wallet) =>
-    sum + wallet.balance + wallet.locked_balance, 0) || 0;
+  console.log('💰 Wallets data sample:', walletsData?.slice(0, 3));
+
+  const totalUsersBalance = walletsData?.reduce((sum, wallet) => {
+    const balance = parseFloat(wallet.balance || '0');
+    const lockedBalance = parseFloat(wallet.locked_balance || '0');
+    return sum + balance + lockedBalance;
+  }, 0) || 0;
 
   const highestUserBalance = walletsData?.reduce((max, wallet) => {
-    const totalBalance = wallet.balance + wallet.locked_balance;
+    const balance = parseFloat(wallet.balance || '0');
+    const lockedBalance = parseFloat(wallet.locked_balance || '0');
+    const totalBalance = balance + lockedBalance;
     return totalBalance > max ? totalBalance : max;
   }, 0) || 0;
 
-  // Fetch total amount in plans
+  console.log('💰 Total users balance:', totalUsersBalance);
+  console.log('💰 Highest user balance:', highestUserBalance);
+
+  // Fetch payout plans for active/paused
   const { data: activePlans, error: activePlansError } = await supabase
     .from('payout_plans')
     .select('total_amount')
     .in('status', ['active', 'paused']);
 
-  if (activePlansError) throw activePlansError;
+  if (activePlansError) {
+    console.error('Active plans fetch error:', activePlansError);
+  }
 
-  const totalAmountInPlans = activePlans?.reduce((sum, plan) =>
-    sum + plan.total_amount, 0) || 0;
+  const totalAmountInPlans = activePlans?.reduce((sum, plan) => {
+    const amount = parseFloat(plan.total_amount || '0');
+    return sum + amount;
+  }, 0) || 0;
 
-  // Fetch total completed payouts
+  console.log('📊 Total amount in plans:', totalAmountInPlans);
+
+  // Fetch completed payouts count
   const { count: completedPayoutsCount } = await supabase
     .from('payout_plans')
     .select('*', { count: 'exact', head: true })
     .eq('status', 'completed');
 
+  console.log('✅ Completed payouts count:', completedPayoutsCount);
+
   // Fetch most recent deposit
-  const { data: recentDeposit } = await supabase
+  const { data: recentDepositData, error: depositError } = await supabase
     .from('transactions')
-    .select('amount, created_at, user_id, profiles!inner(first_name, last_name)')
+    .select('amount, created_at, profiles!inner(first_name, last_name)')
     .eq('type', 'deposit')
     .order('created_at', { ascending: false })
     .limit(1)
-    .single();
+    .maybeSingle();
 
-  const mostRecentDeposit = recentDeposit ? {
-    amount: recentDeposit.amount,
-    date: recentDeposit.created_at,
-    user_name: `${(recentDeposit.profiles as any).first_name} ${(recentDeposit.profiles as any).last_name}`,
+  if (depositError) {
+    console.error('Recent deposit fetch error:', depositError);
+  }
+
+  const mostRecentDeposit = recentDepositData ? {
+    amount: parseFloat(recentDepositData.amount || '0'),
+    date: recentDepositData.created_at,
+    user_name: `${(recentDepositData.profiles as any).first_name} ${(recentDepositData.profiles as any).last_name}`,
   } : null;
 
+  console.log('💳 Most recent deposit:', mostRecentDeposit);
+
   // Fetch most recent payout
-  const { data: recentPayout } = await supabase
+  const { data: recentPayoutData, error: payoutError } = await supabase
     .from('transactions')
-    .select('amount, created_at, user_id, profiles!inner(first_name, last_name)')
+    .select('amount, created_at, profiles!inner(first_name, last_name)')
     .eq('type', 'payout')
     .order('created_at', { ascending: false })
     .limit(1)
-    .single();
+    .maybeSingle();
 
-  const mostRecentPayout = recentPayout ? {
-    amount: recentPayout.amount,
-    date: recentPayout.created_at,
-    user_name: `${(recentPayout.profiles as any).first_name} ${(recentPayout.profiles as any).last_name}`,
+  if (payoutError) {
+    console.error('Recent payout fetch error:', payoutError);
+  }
+
+  const mostRecentPayout = recentPayoutData ? {
+    amount: parseFloat(recentPayoutData.amount || '0'),
+    date: recentPayoutData.created_at,
+    user_name: `${(recentPayoutData.profiles as any).first_name} ${(recentPayoutData.profiles as any).last_name}`,
   } : null;
+
+  console.log('💸 Most recent payout:', mostRecentPayout);
 
   const finalAnalyticsData = {
     userGrowth: {
@@ -381,10 +415,10 @@ const fetchAnalyticsDataFallback = async (): Promise<AnalyticsData> => {
       payouts_amount: dailyPayouts[index],
     })),
     totalUsers: totalUsersCount || 0,
-    totalUsersBalance,
-    totalAmountInPlans,
+    totalUsersBalance: Math.round(totalUsersBalance),
+    totalAmountInPlans: Math.round(totalAmountInPlans),
     totalCompletedPayouts: completedPayoutsCount || 0,
-    highestUserBalance,
+    highestUserBalance: Math.round(highestUserBalance),
     mostRecentDeposit,
     mostRecentPayout,
   };
