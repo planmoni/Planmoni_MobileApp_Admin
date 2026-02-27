@@ -291,9 +291,6 @@ export default function Dashboard() {
                   <p className="text-xl md:text-3xl font-bold text-gray-900">{stats.todayUsers}</p>
                   {renderComparison(stats.todayUsers, stats.yesterdayUsers, true)}
                 </div>
-                <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-blue-50 flex items-center justify-center flex-shrink-0">
-                  <Users className="h-4 w-4 md:h-5 md:w-5 text-blue-600" />
-                </div>
               </div>
             </div>
           </Link>
