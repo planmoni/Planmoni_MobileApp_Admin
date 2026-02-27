@@ -30,6 +30,8 @@ const NotificationsPage = lazy(() => import('./pages/dashboard/Notifications'));
 const BlogPage = lazy(() => import('./pages/dashboard/Blog'));
 const AuditLogsPage = lazy(() => import('./pages/dashboard/AuditLogs'));
 const EmergencyWithdrawalsPage = lazy(() => import('./pages/dashboard/EmergencyWithdrawals'));
+const CompletedPayoutsPage = lazy(() => import('./pages/dashboard/CompletedPayouts'));
+const CancelledPayoutsPage = lazy(() => import('./pages/dashboard/CancelledPayouts'));
 const NotFoundPage = lazy(() => import('./pages/NotFound'));
 
 function App() {
@@ -64,6 +66,8 @@ function App() {
                 <Route path="dashboard" element={<DashboardPage />} />
                 <Route path="users" element={<UsersPage />} />
                 <Route path="users/:id" element={<UserDetailsPage />} />
+                <Route path="users/:id/completed-payouts" element={<CompletedPayoutsPage />} />
+                <Route path="users/:id/cancelled-payouts" element={<CancelledPayoutsPage />} />
                 <Route path="transactions" element={<TransactionsPage />} />
                 <Route path="calendar" element={<CalendarPage />} />
                 <Route path="analytics" element={<AnalyticsPage />} />

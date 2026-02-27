@@ -1,5 +1,5 @@
-import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Wallet, Calendar, Building2, ArrowUpRight, ArrowDownRight, RefreshCw, Shield, Lock, TrendingUp, Clock } from 'lucide-react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { ArrowLeft, Wallet, Calendar, Building2, ArrowUpRight, ArrowDownRight, RefreshCw, Shield, Lock, TrendingUp, Clock, CheckCircle2, XCircle } from 'lucide-react';
 import { format, addDays, addWeeks, addMonths } from 'date-fns';
 import { useUserDetails } from '@/hooks/queries/useUsersData';
 import { useRefreshData } from '@/hooks/mutations/useRefreshData';
@@ -7,6 +7,7 @@ import { PayoutCountdown } from '@/components/PayoutCountdown';
 
 export default function UserDetails() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const { data: userDetailsData, isLoading, error } = useUserDetails(id!);
   const refreshData = useRefreshData();
 
@@ -54,6 +55,11 @@ export default function UserDetails() {
     .reduce((sum: number, t: any) => sum + t.amount, 0);
 
   const activePlans = payoutPlans.filter((p: any) => p.status === 'active').length;
+  const completedPlans = payoutPlans.filter((p: any) => p.status === 'completed').length;
+  const cancelledPlans = payoutPlans.filter((p: any) => p.status === 'cancelled').length;
+
+  // Filter out completed and cancelled plans for display
+  const activePayoutPlans = payoutPlans.filter((p: any) => p.status !== 'completed' && p.status !== 'cancelled');
 
   // Calculate end date for a payout plan
   const calculateEndDate = (plan: any) => {
@@ -73,18 +79,6 @@ export default function UserDetails() {
         return startDate;
     }
   };
-
-  // Find the latest end date across all plans
-  const lastPayoutDate = payoutPlans.length > 0
-    ? payoutPlans.reduce((latest: Date | null, plan: any) => {
-        const endDate = calculateEndDate(plan);
-        if (!endDate || isNaN(endDate.getTime())) return latest;
-        if (!latest || endDate > latest) {
-          return endDate;
-        }
-        return latest;
-      }, null)
-    : null;
 
   return (
     <div>
@@ -134,7 +128,7 @@ export default function UserDetails() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mb-8">
         <div className="bg-white rounded-2xl p-6 shadow-soft border border-gray-100">
           <div className="flex justify-between items-start mb-4">
             <div className="flex-1">
@@ -179,6 +173,36 @@ export default function UserDetails() {
             </div>
             <div className="w-12 h-12 rounded-xl bg-yellow-50 flex items-center justify-center">
               <Calendar className="h-5 w-5 text-yellow-600" />
+            </div>
+          </div>
+        </div>
+
+        <div
+          className="bg-white rounded-2xl p-6 shadow-soft border border-gray-100 cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => navigate(`/users/${id}/completed-payouts`)}
+        >
+          <div className="flex justify-between items-start mb-4">
+            <div className="flex-1">
+              <p className="text-sm font-medium text-gray-500 mb-1">Completed Payouts</p>
+              <p className="text-3xl font-bold text-gray-900">{completedPlans}</p>
+            </div>
+            <div className="w-12 h-12 rounded-xl bg-green-50 flex items-center justify-center">
+              <CheckCircle2 className="h-5 w-5 text-green-600" />
+            </div>
+          </div>
+        </div>
+
+        <div
+          className="bg-white rounded-2xl p-6 shadow-soft border border-gray-100 cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => navigate(`/users/${id}/cancelled-payouts`)}
+        >
+          <div className="flex justify-between items-start mb-4">
+            <div className="flex-1">
+              <p className="text-sm font-medium text-gray-500 mb-1">Cancelled Payouts</p>
+              <p className="text-3xl font-bold text-gray-900">{cancelledPlans}</p>
+            </div>
+            <div className="w-12 h-12 rounded-xl bg-red-50 flex items-center justify-center">
+              <XCircle className="h-5 w-5 text-red-600" />
             </div>
           </div>
         </div>
@@ -280,11 +304,11 @@ export default function UserDetails() {
       </div>
 
       <div className="mb-8">
-        <h2 className="text-xl font-bold text-gray-900 mb-4">Payout Plans</h2>
+        <h2 className="text-xl font-bold text-gray-900 mb-4">Active Payout Plans</h2>
         <div className="bg-white rounded-2xl shadow-soft border border-gray-100 overflow-hidden">
-          {payoutPlans.length > 0 ? (
+          {activePayoutPlans.length > 0 ? (
             <div className="divide-y divide-gray-100">
-              {payoutPlans.map((plan: any) => {
+              {activePayoutPlans.map((plan: any) => {
                 const endDate = calculateEndDate(plan);
                 return (
                   <div key={plan.id} className="p-6 hover:bg-gray-50 transition-colors">
