@@ -1,4 +1,4 @@
-import { RefreshCw, Users, ArrowUpRight, ArrowDownRight, CheckCircle2, Clock } from 'lucide-react';
+import { Users, ArrowUpRight, ArrowDownRight, CheckCircle2, Clock } from 'lucide-react';
 import { PayoutCountdown } from '@/components/PayoutCountdown';
 import { Pie, Line } from 'react-chartjs-2';
 import {
@@ -243,9 +243,24 @@ export default function Dashboard() {
     transactionVolumeTrends: [],
   };
 
+  const getUserDisplayName = () => {
+    if (userProfile?.first_name) {
+      return userProfile.first_name;
+    }
+    return 'Admin';
+  };
+
   return (
     <div className="w-full min-w-0">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 md:mb-8">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
+            {getGreeting()}, {getUserDisplayName()}!
+          </h1>
+          <p className="text-sm md:text-base text-gray-600 mt-1">
+            Here's what's happening at Planmoni today
+          </p>
+        </div>
       </div>
 
       <div className="mb-6 md:mb-8">
