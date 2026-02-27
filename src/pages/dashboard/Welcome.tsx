@@ -281,7 +281,7 @@ export default function Welcome() {
                     <item.icon className="h-7 w-7 text-white" />
                   </div>
 
-                  <h3 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">
+                  <h3 className="text-sm font-bold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">
                     {item.name}
                   </h3>
 
