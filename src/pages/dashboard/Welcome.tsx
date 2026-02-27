@@ -244,7 +244,7 @@ export default function Welcome() {
               <Sparkles className="h-6 w-6 text-white" />
             </div>
             <div>
-              <h1 className="text-4xl font-bold text-gray-900">
+              <h1 className="text-3xl font-bold text-gray-900">
                 {getGreeting()}, {getUserDisplayName()}!
               </h1>
               <p className="text-lg text-gray-600 mt-1">
