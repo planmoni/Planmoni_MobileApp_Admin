@@ -1,5 +1,6 @@
 import { Users, ArrowUpRight, ArrowDownRight, CheckCircle2, Clock } from 'lucide-react';
 import { PayoutCountdown } from '@/components/PayoutCountdown';
+import TransactionDetailsModal from '@/components/TransactionDetailsModal';
 import { Pie, Line } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -30,6 +31,8 @@ export default function Dashboard() {
   const { session } = useAuth();
   const { hasPermission, isSuperAdmin } = usePermissions();
   const [userProfile, setUserProfile] = useState<any>(null);
+  const [selectedTransaction, setSelectedTransaction] = useState<any>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -248,6 +251,16 @@ export default function Dashboard() {
       return userProfile.first_name;
     }
     return 'Admin';
+  };
+
+  const handleTransactionClick = (transaction: any) => {
+    setSelectedTransaction(transaction);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedTransaction(null);
   };
 
   return (
@@ -477,7 +490,8 @@ export default function Dashboard() {
                 {stats.todayTransactions.slice(0, 5).map((transaction, index) => (
                   <div
                     key={transaction.id}
-                    className={`flex justify-between items-center p-4 md:p-5 hover:bg-gray-50 transition-colors ${
+                    onClick={() => handleTransactionClick(transaction)}
+                    className={`flex justify-between items-center p-4 md:p-5 hover:bg-gray-50 transition-colors cursor-pointer ${
                       index !== Math.min(stats.todayTransactions.length, 5) - 1 ? 'border-b border-gray-100' : ''
                     }`}
                   >
@@ -684,6 +698,12 @@ export default function Dashboard() {
         </div>
         )}
       </div>
+
+      <TransactionDetailsModal
+        transaction={selectedTransaction}
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+      />
     </div>
   );
 }
