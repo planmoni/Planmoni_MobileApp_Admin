@@ -301,7 +301,7 @@ export default function Analytics() {
           <div className="flex justify-between items-start mb-4">
             <div className="flex-1">
               <p className="text-sm font-medium text-gray-500 mb-1">Transaction Volume</p>
-              <p className="text-2xl font-bold text-gray-900">₦{data.transactionVolume.this_month.toLocaleString()}</p>
+              <p className="text-1xl font-bold text-gray-900">₦{data.transactionVolume.this_month.toLocaleString()}</p>
             </div>
           </div>
           <div className="flex items-center gap-2 pt-3 border-t border-gray-100">
