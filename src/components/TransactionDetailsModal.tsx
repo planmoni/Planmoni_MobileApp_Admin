@@ -1,5 +1,6 @@
 import { X, ArrowUpRight, ArrowDownRight, User, Calendar, Hash, CreditCard, ArrowLeftRight, FileText } from 'lucide-react';
 import { format } from 'date-fns';
+import { useNavigate } from 'react-router-dom';
 
 interface Transaction {
   id: string;
@@ -31,6 +32,8 @@ interface TransactionDetailsModalProps {
 }
 
 export default function TransactionDetailsModal({ transaction, isOpen, onClose }: TransactionDetailsModalProps) {
+  const navigate = useNavigate();
+
   if (!isOpen || !transaction) return null;
 
   const isPositive = transaction.type === 'deposit';
@@ -63,6 +66,13 @@ export default function TransactionDetailsModal({ transaction, isOpen, onClose }
         return 'bg-red-100 text-red-800';
       default:
         return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const handleUserClick = () => {
+    if (transaction.user_id) {
+      onClose();
+      navigate(`/users/${transaction.user_id}`);
     }
   };
 
@@ -138,7 +148,16 @@ export default function TransactionDetailsModal({ transaction, isOpen, onClose }
                   </div>
                   <div className="ml-4 flex-1">
                     <p className="text-sm font-medium text-gray-500">User</p>
-                    <p className="text-sm text-gray-900">{getUserName()}</p>
+                    {transaction.user_id ? (
+                      <button
+                        onClick={handleUserClick}
+                        className="text-sm text-gray-900 hover:text-primary transition-colors font-medium text-left"
+                      >
+                        {getUserName()}
+                      </button>
+                    ) : (
+                      <p className="text-sm text-gray-900">{getUserName()}</p>
+                    )}
                     <p className="text-xs text-gray-500">{getUserEmail()}</p>
                   </div>
                 </div>
