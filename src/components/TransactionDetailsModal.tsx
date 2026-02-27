@@ -1,4 +1,4 @@
-import { X, ArrowUpRight, ArrowDownRight, User, Calendar, Hash, CreditCard, ArrowLeftRight, FileText } from 'lucide-react';
+import { X, ArrowUpRight, ArrowDownRight, User, Calendar, Hash, CreditCard, ArrowLeftRight, FileText, ExternalLink } from 'lucide-react';
 import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 
@@ -140,26 +140,28 @@ export default function TransactionDetailsModal({ transaction, isOpen, onClose }
                   </div>
                 </div>
 
-                <div className="flex items-start">
-                  <div className="flex-shrink-0">
-                    <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
-                      <User className="h-5 w-5 text-gray-600" />
+                <div className="flex items-start justify-between">
+                  <div className="flex items-start flex-1">
+                    <div className="flex-shrink-0">
+                      <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
+                        <User className="h-5 w-5 text-gray-600" />
+                      </div>
+                    </div>
+                    <div className="ml-4 flex-1">
+                      <p className="text-sm font-medium text-gray-500">User</p>
+                      <p className="text-sm text-gray-900">{getUserName()}</p>
+                      <p className="text-xs text-gray-500">{getUserEmail()}</p>
                     </div>
                   </div>
-                  <div className="ml-4 flex-1">
-                    <p className="text-sm font-medium text-gray-500">User</p>
-                    {transaction.user_id ? (
-                      <button
-                        onClick={handleUserClick}
-                        className="text-sm text-gray-900 hover:text-primary transition-colors font-medium text-left"
-                      >
-                        {getUserName()}
-                      </button>
-                    ) : (
-                      <p className="text-sm text-gray-900">{getUserName()}</p>
-                    )}
-                    <p className="text-xs text-gray-500">{getUserEmail()}</p>
-                  </div>
+                  {transaction.user_id && (
+                    <button
+                      onClick={handleUserClick}
+                      className="ml-4 px-3 py-1.5 text-sm font-medium text-primary bg-primary/10 hover:bg-primary/20 rounded-lg transition-colors flex items-center gap-1.5"
+                    >
+                      View User
+                      <ExternalLink className="h-3.5 w-3.5" />
+                    </button>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
