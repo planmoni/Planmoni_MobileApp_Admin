@@ -174,7 +174,7 @@ export default function TopBar({ isMobileMenuOpen, toggleMobileMenu }: TopBarPro
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
               className="hidden md:flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors"
             >
-              <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center text-white shadow-sm">
+              <div className="h-10 w-10 rounded-lg bg-slate-900 flex items-center justify-center text-white shadow-sm">
                 <span className="text-sm font-semibold">{getUserInitials()}</span>
               </div>
               <div className="text-left">
