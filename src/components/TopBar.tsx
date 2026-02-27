@@ -14,6 +14,7 @@ export default function TopBar({ isMobileMenuOpen, toggleMobileMenu }: TopBarPro
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [userProfile, setUserProfile] = useState<{
     first_name: string | null;
     last_name: string | null;
@@ -25,6 +26,7 @@ export default function TopBar({ isMobileMenuOpen, toggleMobileMenu }: TopBarPro
   useEffect(() => {
     if (session?.user) {
       fetchUserProfile();
+      checkSuperAdminStatus();
     }
   }, [session?.user]);
 
@@ -40,6 +42,20 @@ export default function TopBar({ isMobileMenuOpen, toggleMobileMenu }: TopBarPro
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
+
+  const checkSuperAdminStatus = async () => {
+    try {
+      const { data, error } = await supabase.rpc('is_super_admin');
+      if (!error && data) {
+        setIsSuperAdmin(true);
+      } else {
+        setIsSuperAdmin(false);
+      }
+    } catch (error) {
+      console.error('Error checking super admin status:', error);
+      setIsSuperAdmin(false);
+    }
+  };
 
   const fetchUserProfile = async () => {
     try {
@@ -102,6 +118,29 @@ export default function TopBar({ isMobileMenuOpen, toggleMobileMenu }: TopBarPro
     return 'U';
   };
 
+  const getUserDisplayName = () => {
+    if (userProfile?.first_name && userProfile?.last_name) {
+      return `${userProfile.first_name} ${userProfile.last_name}`;
+    }
+    if (userProfile?.first_name) {
+      return userProfile.first_name;
+    }
+    if (userProfile?.email) {
+      return userProfile.email.split('@')[0];
+    }
+    return 'User';
+  };
+
+  const getUserRole = () => {
+    if (isSuperAdmin) {
+      return 'Super Admin';
+    }
+    if (userProfile?.is_admin) {
+      return 'Admin';
+    }
+    return 'User';
+  };
+
   return (
     <div className="sticky top-0 z-30 bg-white border-b border-gray-200">
       <div className="flex items-center justify-between h-16 px-4 md:px-6">
@@ -139,7 +178,8 @@ export default function TopBar({ isMobileMenuOpen, toggleMobileMenu }: TopBarPro
                 <span className="text-sm font-semibold">{getUserInitials()}</span>
               </div>
               <div className="text-left">
-                <p className="text-sm font-semibold text-gray-900">Admin</p>
+                <p className="text-sm font-semibold text-gray-900">{getUserDisplayName()}</p>
+                <p className="text-xs text-gray-500">{getUserRole()}</p>
               </div>
               <ChevronDown className={`h-4 w-4 text-gray-500 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
             </button>
