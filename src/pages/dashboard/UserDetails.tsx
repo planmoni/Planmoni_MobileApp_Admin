@@ -57,7 +57,10 @@ export default function UserDetails() {
 
   // Calculate end date for a payout plan
   const calculateEndDate = (plan: any) => {
+    if (!plan.start_date) return null;
+
     const startDate = new Date(plan.start_date);
+    if (isNaN(startDate.getTime())) return null;
 
     switch (plan.frequency) {
       case 'daily':
@@ -75,6 +78,7 @@ export default function UserDetails() {
   const lastPayoutDate = payoutPlans.length > 0
     ? payoutPlans.reduce((latest: Date | null, plan: any) => {
         const endDate = calculateEndDate(plan);
+        if (!endDate || isNaN(endDate.getTime())) return latest;
         if (!latest || endDate > latest) {
           return endDate;
         }
@@ -180,7 +184,7 @@ export default function UserDetails() {
         </div>
       </div>
 
-      {lastPayoutDate && (
+      {lastPayoutDate && !isNaN(lastPayoutDate.getTime()) && (
         <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 shadow-soft border border-blue-100 mb-6">
           <div className="flex items-center gap-3 mb-2">
             <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center">
@@ -301,9 +305,11 @@ export default function UserDetails() {
                     <div className="flex justify-between items-start mb-4">
                       <div className="flex-1">
                         <h3 className="text-lg font-semibold text-gray-900 mb-1">{plan.name}</h3>
-                        <p className="text-sm text-gray-500">
-                          Created {format(new Date(plan.created_at), 'MMM d, yyyy')}
-                        </p>
+                        {plan.created_at && (
+                          <p className="text-sm text-gray-500">
+                            Created {format(new Date(plan.created_at), 'MMM d, yyyy')}
+                          </p>
+                        )}
                       </div>
                       <span className={`px-3 py-1 rounded-lg text-xs font-semibold ${
                         plan.status === 'active'
@@ -318,7 +324,7 @@ export default function UserDetails() {
                       </span>
                     </div>
 
-                    {plan.next_payout_date && plan.status === 'active' && (
+                    {plan.next_payout_date && plan.status === 'active' && new Date(plan.next_payout_date).getTime() && (
                       <div className="mb-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
                         <div className="flex items-center gap-2 mb-2">
                           <Clock className="h-4 w-4 text-blue-600" />
@@ -352,10 +358,12 @@ export default function UserDetails() {
                       </div>
                     </div>
 
-                    <div className="mb-3 p-3 bg-gray-50 rounded-lg">
-                      <p className="text-xs font-medium text-gray-500 mb-1">Plan End Date</p>
-                      <p className="text-sm font-bold text-gray-900">{format(endDate, 'MMMM d, yyyy')}</p>
-                    </div>
+                    {endDate && !isNaN(endDate.getTime()) && (
+                      <div className="mb-3 p-3 bg-gray-50 rounded-lg">
+                        <p className="text-xs font-medium text-gray-500 mb-1">Plan End Date</p>
+                        <p className="text-sm font-bold text-gray-900">{format(endDate, 'MMMM d, yyyy')}</p>
+                      </div>
+                    )}
 
                     <div className="space-y-2">
                       <div className="flex justify-between text-xs text-gray-500">
