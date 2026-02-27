@@ -277,7 +277,7 @@ export default function Welcome() {
                 />
 
                 <div className="relative p-6">
-                  <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${item.color} flex items-center justify-center mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+                  <div className={`w-14 h-14 rounded-xl bg-gradient-to-br flex items-center justify-center mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300`}>
                     <item.icon className="h-7 w-7 text-white" />
                   </div>
 
