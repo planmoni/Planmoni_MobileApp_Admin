@@ -161,7 +161,7 @@ export default function Users() {
           </div>
           <input
             type="text"
-            placeholder="Search users..."
+            placeholder="Filter users..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="block w-full pl-10 md:pl-11 pr-3 md:pr-4 py-2.5 md:py-3 text-sm md:text-base border border-gray-200 rounded-xl bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all"
