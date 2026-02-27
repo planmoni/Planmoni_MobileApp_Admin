@@ -237,7 +237,7 @@ export default function Welcome() {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="mb-12">
-          <h1 class="text-2xl font-bold text-gray-900">Good afternoon, Super!</h1>
+          <h1 class="text-2xl font-bold text-gray-900">getGreeting</h1>
         </div>
 
         {availableItems.length === 0 ? (
