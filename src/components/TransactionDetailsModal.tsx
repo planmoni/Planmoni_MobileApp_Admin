@@ -149,19 +149,20 @@ export default function TransactionDetailsModal({ transaction, isOpen, onClose }
                     </div>
                     <div className="ml-4 flex-1">
                       <p className="text-sm font-medium text-gray-500">User</p>
-                      <p className="text-sm text-gray-900">{getUserName()}</p>
+                      {transaction.user_id ? (
+                        <button
+                          onClick={handleUserClick}
+                          className="text-sm text-gray-900 hover:text-blue-600 transition-colors font-medium flex items-center gap-1 group"
+                        >
+                          {getUserName()}
+                          <ExternalLink className="h-3.5 w-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </button>
+                      ) : (
+                        <p className="text-sm text-gray-900">{getUserName()}</p>
+                      )}
                       <p className="text-xs text-gray-500">{getUserEmail()}</p>
                     </div>
                   </div>
-                  {transaction.user_id && (
-                    <button
-                      onClick={handleUserClick}
-                      className="ml-4 px-3 py-1.5 text-sm font-medium text-primary bg-primary/10 hover:bg-primary/20 rounded-lg transition-colors flex items-center gap-1.5"
-                    >
-                      View User
-                      <ExternalLink className="h-3.5 w-3.5" />
-                    </button>
-                  )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
