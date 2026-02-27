@@ -54,15 +54,15 @@ const fetchAnalyticsData = async (): Promise<AnalyticsData> => {
   try {
     // Use the optimized RPC function for analytics data
     const { data: analyticsResult, error: analyticsError } = await supabase.rpc('get_analytics_data');
-    
+
     console.log('🔍 Analytics RPC Response:', analyticsResult);
-    
+
     if (analyticsError) {
       console.error('Analytics RPC error:', analyticsError);
       // Fallback to individual queries if RPC doesn't exist
       return await fetchAnalyticsDataFallback();
     }
-    
+
     if (analyticsResult && analyticsResult.length > 0) {
       const data = analyticsResult[0];
 
@@ -97,16 +97,24 @@ const fetchAnalyticsData = async (): Promise<AnalyticsData> => {
           percent_change: 0,
         },
         dailyTransactions: data.daily_transactions || [],
-        totalUsers: data.total_users || 0,
-        totalUsersBalance: data.total_users_balance || 0,
-        totalAmountInPlans: data.total_amount_in_plans || 0,
-        totalCompletedPayouts: data.total_completed_payouts || 0,
-        highestUserBalance: data.highest_user_balance || 0,
-        mostRecentDeposit: data.most_recent_deposit || null,
-        mostRecentPayout: data.most_recent_payout || null,
+        totalUsers: parseInt(data.total_users) || 0,
+        totalUsersBalance: Math.round(parseFloat(data.total_users_balance) || 0),
+        totalAmountInPlans: Math.round(parseFloat(data.total_amount_in_plans) || 0),
+        totalCompletedPayouts: parseInt(data.total_completed_payouts) || 0,
+        highestUserBalance: Math.round(parseFloat(data.highest_user_balance) || 0),
+        mostRecentDeposit: data.most_recent_deposit && data.most_recent_deposit !== 'null' ? {
+          amount: parseFloat(data.most_recent_deposit.amount),
+          date: data.most_recent_deposit.date,
+          user_name: data.most_recent_deposit.user_name,
+        } : null,
+        mostRecentPayout: data.most_recent_payout && data.most_recent_payout !== 'null' ? {
+          amount: parseFloat(data.most_recent_payout.amount),
+          date: data.most_recent_payout.date,
+          user_name: data.most_recent_payout.user_name,
+        } : null,
       };
     }
-    
+
     return await fetchAnalyticsDataFallback();
   } catch (error) {
     console.error('Error fetching analytics data:', error);
@@ -192,8 +200,8 @@ const fetchAnalyticsDataFallback = async (): Promise<AnalyticsData> => {
   
   if (lastMonthTransactionsError) throw lastMonthTransactionsError;
   
-  const thisMonthVolume = thisMonthTransactions?.reduce((sum, t) => sum + t.amount, 0) || 0;
-  const lastMonthVolume = lastMonthTransactions?.reduce((sum, t) => sum + t.amount, 0) || 0;
+  const thisMonthVolume = thisMonthTransactions?.reduce((sum, t) => sum + parseFloat(t.amount || '0'), 0) || 0;
+  const lastMonthVolume = lastMonthTransactions?.reduce((sum, t) => sum + parseFloat(t.amount || '0'), 0) || 0;
   
   console.log('💰 Analytics transaction volumes:');
   console.log('This month volume:', thisMonthVolume);
@@ -220,7 +228,7 @@ const fetchAnalyticsDataFallback = async (): Promise<AnalyticsData> => {
     
     if (monthTransactionsError) throw monthTransactionsError;
     
-    monthlyVolumeData.push(monthTransactions?.reduce((sum, t) => sum + t.amount, 0) || 0);
+    monthlyVolumeData.push(monthTransactions?.reduce((sum, t) => sum + parseFloat(t.amount || '0'), 0) || 0);
   }
   
   // Fetch payout plan distribution
