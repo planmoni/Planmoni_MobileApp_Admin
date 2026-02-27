@@ -237,14 +237,6 @@ export default function Welcome() {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="mb-12">
-          <div className="flex items-center gap-3 mb-4">
-            <div>
-              
-              <p className="text-sm text-gray-600 mt-1">
-                Welcome to your admin dashboard
-              </p>
-            </div>
-          </div>
         </div>
 
         {availableItems.length === 0 ? (
