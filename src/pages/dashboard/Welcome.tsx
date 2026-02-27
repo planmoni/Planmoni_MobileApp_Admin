@@ -286,10 +286,7 @@ export default function Welcome() {
                     {item.description}
                   </p>
 
-                  <div className="flex items-center text-blue-600 font-medium text-sm group-hover:gap-2 transition-all">
-                    <span>Open</span>
-                    <ArrowRight className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-all duration-300" />
-                  </div>
+                  
                 </div>
               </Link>
             ))}
