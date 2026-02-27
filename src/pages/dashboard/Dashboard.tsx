@@ -288,7 +288,7 @@ export default function Dashboard() {
               <div className="flex justify-between items-start mb-2">
                 <div className="flex-1">
                   <p className="text-xs md:text-sm font-medium text-gray-500 mb-1">New Users</p>
-                  <p className="text-xl md:text-3xl font-bold text-gray-900">{stats.todayUsers}</p>
+                  <p className="text-xl md:text-2xl font-bold text-gray-900">{stats.todayUsers}</p>
                   {renderComparison(stats.todayUsers, stats.yesterdayUsers, true)}
                 </div>
               </div>
@@ -330,7 +330,7 @@ export default function Dashboard() {
               <div className="flex justify-between items-start mb-2">
                 <div className="flex-1">
                   <p className="text-xs md:text-sm font-medium text-gray-500 mb-1">New Plans</p>
-                  <p className="text-xl md:text-3xl font-bold text-gray-900">{stats.todayPlans}</p>
+                  <p className="text-xl md:text-2xl font-bold text-gray-900">{stats.todayPlans}</p>
                   {renderComparison(stats.todayPlans, stats.yesterdayPlans, true)}
                 </div>
               </div>
@@ -344,7 +344,7 @@ export default function Dashboard() {
               <div className="flex justify-between items-start mb-2">
                 <div className="flex-1">
                   <p className="text-xs md:text-sm font-medium text-gray-500 mb-1">KYC Completed</p>
-                  <p className="text-xl md:text-3xl font-bold text-gray-900">{stats.todayKyc}</p>
+                  <p className="text-xl md:text-2xl font-bold text-gray-900">{stats.todayKyc}</p>
                   {renderComparison(stats.todayKyc, stats.yesterdayKyc, true)}
                 </div>
               </div>
@@ -372,7 +372,7 @@ export default function Dashboard() {
               <div className="flex justify-between items-start mb-2">
                 <div className="flex-1">
                   <p className="text-xs md:text-sm font-medium text-gray-500 mb-1">Cancelled Plans</p>
-                  <p className="text-xl md:text-3xl font-bold text-gray-900">{stats.todayCancelledPlans}</p>
+                  <p className="text-xl md:text-2xl font-bold text-gray-900">{stats.todayCancelledPlans}</p>
                   {renderComparison(stats.todayCancelledPlans, stats.yesterdayCancelledPlans, true)}
                 </div>
               </div>
@@ -400,7 +400,7 @@ export default function Dashboard() {
               <div className="flex justify-between items-start mb-2">
                 <div className="flex-1">
                   <p className="text-xs md:text-sm font-medium text-gray-500 mb-1">Payouts Due Today</p>
-                  <p className="text-xl md:text-3xl font-bold text-gray-900">{stats.todayPayoutsDueCount}</p>
+                  <p className="text-xl md:text-2xl font-bold text-gray-900">{stats.todayPayoutsDueCount}</p>
                   {renderComparison(stats.todayPayoutsDueCount, stats.yesterdayPayoutsDueCount, true)}
                 </div>
               </div>
