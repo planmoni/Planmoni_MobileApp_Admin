@@ -33,6 +33,21 @@ type AnalyticsData = {
     percent_change: number;
   };
   dailyTransactions: any[];
+  totalUsers: number;
+  totalUsersBalance: number;
+  totalAmountInPlans: number;
+  totalCompletedPayouts: number;
+  highestUserBalance: number;
+  mostRecentDeposit: {
+    amount: number;
+    date: string;
+    user_name: string;
+  } | null;
+  mostRecentPayout: {
+    amount: number;
+    date: string;
+    user_name: string;
+  } | null;
 };
 
 const fetchAnalyticsData = async (): Promise<AnalyticsData> => {
@@ -50,7 +65,7 @@ const fetchAnalyticsData = async (): Promise<AnalyticsData> => {
     
     if (analyticsResult && analyticsResult.length > 0) {
       const data = analyticsResult[0];
-      
+
       return {
         userGrowth: data.user_growth || {
           this_month: 0,
@@ -82,6 +97,13 @@ const fetchAnalyticsData = async (): Promise<AnalyticsData> => {
           percent_change: 0,
         },
         dailyTransactions: data.daily_transactions || [],
+        totalUsers: data.total_users || 0,
+        totalUsersBalance: data.total_users_balance || 0,
+        totalAmountInPlans: data.total_amount_in_plans || 0,
+        totalCompletedPayouts: data.total_completed_payouts || 0,
+        highestUserBalance: data.highest_user_balance || 0,
+        mostRecentDeposit: data.most_recent_deposit || null,
+        mostRecentPayout: data.most_recent_payout || null,
       };
     }
     
@@ -256,6 +278,73 @@ const fetchAnalyticsDataFallback = async (): Promise<AnalyticsData> => {
     dailyPayouts.push(Math.floor(Math.random() * 300000) + 50000);
   }
   
+  // Fetch total users count
+  const { count: totalUsersCount } = await supabase
+    .from('profiles')
+    .select('*', { count: 'exact', head: true });
+
+  // Fetch total users balance
+  const { data: walletsData, error: walletsError } = await supabase
+    .from('wallets')
+    .select('balance, locked_balance');
+
+  if (walletsError) throw walletsError;
+
+  const totalUsersBalance = walletsData?.reduce((sum, wallet) =>
+    sum + wallet.balance + wallet.locked_balance, 0) || 0;
+
+  const highestUserBalance = walletsData?.reduce((max, wallet) => {
+    const totalBalance = wallet.balance + wallet.locked_balance;
+    return totalBalance > max ? totalBalance : max;
+  }, 0) || 0;
+
+  // Fetch total amount in plans
+  const { data: activePlans, error: activePlansError } = await supabase
+    .from('payout_plans')
+    .select('total_amount')
+    .in('status', ['active', 'paused']);
+
+  if (activePlansError) throw activePlansError;
+
+  const totalAmountInPlans = activePlans?.reduce((sum, plan) =>
+    sum + plan.total_amount, 0) || 0;
+
+  // Fetch total completed payouts
+  const { count: completedPayoutsCount } = await supabase
+    .from('payout_plans')
+    .select('*', { count: 'exact', head: true })
+    .eq('status', 'completed');
+
+  // Fetch most recent deposit
+  const { data: recentDeposit } = await supabase
+    .from('transactions')
+    .select('amount, created_at, user_id, profiles!inner(first_name, last_name)')
+    .eq('type', 'deposit')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .single();
+
+  const mostRecentDeposit = recentDeposit ? {
+    amount: recentDeposit.amount,
+    date: recentDeposit.created_at,
+    user_name: `${(recentDeposit.profiles as any).first_name} ${(recentDeposit.profiles as any).last_name}`,
+  } : null;
+
+  // Fetch most recent payout
+  const { data: recentPayout } = await supabase
+    .from('transactions')
+    .select('amount, created_at, user_id, profiles!inner(first_name, last_name)')
+    .eq('type', 'payout')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .single();
+
+  const mostRecentPayout = recentPayout ? {
+    amount: recentPayout.amount,
+    date: recentPayout.created_at,
+    user_name: `${(recentPayout.profiles as any).first_name} ${(recentPayout.profiles as any).last_name}`,
+  } : null;
+
   const finalAnalyticsData = {
     userGrowth: {
       this_month: thisMonthUserCount,
@@ -284,17 +373,24 @@ const fetchAnalyticsDataFallback = async (): Promise<AnalyticsData> => {
     retentionRate: {
       value: retentionRate,
       trend: retentionRate >= 0 ? 'up' : 'down',
-      percent_change: 0, // Would need historical data to calculate
+      percent_change: 0,
     },
     dailyTransactions: dailyLabels.map((label, index) => ({
       date: label,
       deposits_amount: dailyDeposits[index],
       payouts_amount: dailyPayouts[index],
     })),
+    totalUsers: totalUsersCount || 0,
+    totalUsersBalance,
+    totalAmountInPlans,
+    totalCompletedPayouts: completedPayoutsCount || 0,
+    highestUserBalance,
+    mostRecentDeposit,
+    mostRecentPayout,
   };
 
   console.log('🎯 Final analytics data:', finalAnalyticsData);
-  
+
   return finalAnalyticsData;
 };
 

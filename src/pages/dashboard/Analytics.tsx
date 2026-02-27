@@ -1,4 +1,4 @@
-import { RefreshCw, TrendingUp, TrendingDown, Users, DollarSign, Repeat, Target } from 'lucide-react';
+import { RefreshCw, TrendingUp, TrendingDown, Users, DollarSign, Repeat, Target, Wallet, CreditCard, CheckCircle2, Clock } from 'lucide-react';
 import { Line, Bar, Doughnut } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, BarElement, ArcElement, Title, Tooltip, Legend, Filler } from 'chart.js';
 import { format, subMonths } from 'date-fns';
@@ -72,6 +72,13 @@ export default function Analytics() {
       percent_change: 0,
     },
     dailyTransactions: [],
+    totalUsers: 0,
+    totalUsersBalance: 0,
+    totalAmountInPlans: 0,
+    totalCompletedPayouts: 0,
+    highestUserBalance: 0,
+    mostRecentDeposit: null,
+    mostRecentPayout: null,
   };
 
   const userGrowthData = {
@@ -103,7 +110,7 @@ export default function Analytics() {
         label: 'Transaction Volume',
         data: data.transactionVolume.monthly_data.map((item: any) => {
           const volume = typeof item === 'number' ? item : item.volume || 0;
-          return volume / 1000000;
+          return volume;
         }),
         backgroundColor: 'rgba(134, 239, 172, 0.8)',
         borderRadius: 8,
@@ -294,7 +301,7 @@ export default function Analytics() {
           <div className="flex justify-between items-start mb-4">
             <div className="flex-1">
               <p className="text-sm font-medium text-gray-500 mb-1">Transaction Volume</p>
-              <p className="text-3xl font-bold text-gray-900">₦{(data.transactionVolume.this_month / 1000000).toFixed(1)}M</p>
+              <p className="text-3xl font-bold text-gray-900">₦{data.transactionVolume.this_month.toLocaleString()}</p>
             </div>
             <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center">
               <DollarSign className="h-5 w-5 text-blue-600" />
@@ -369,6 +376,139 @@ export default function Analytics() {
         </div>
       </div>
 
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+        <div className="bg-white rounded-2xl p-6 shadow-soft border border-gray-100">
+          <div className="flex justify-between items-start mb-4">
+            <div className="flex-1">
+              <p className="text-sm font-medium text-gray-500 mb-1">All Users</p>
+              <p className="text-3xl font-bold text-gray-900">{data.totalUsers.toLocaleString()}</p>
+            </div>
+            <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center">
+              <Users className="h-5 w-5 text-blue-600" />
+            </div>
+          </div>
+          <div className="pt-3 border-t border-gray-100">
+            <span className="text-xs text-gray-500">Total registered users</span>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl p-6 shadow-soft border border-gray-100">
+          <div className="flex justify-between items-start mb-4">
+            <div className="flex-1">
+              <p className="text-sm font-medium text-gray-500 mb-1">Total User's Balance</p>
+              <p className="text-3xl font-bold text-gray-900">₦{data.totalUsersBalance.toLocaleString()}</p>
+            </div>
+            <div className="w-12 h-12 rounded-xl bg-green-50 flex items-center justify-center">
+              <Wallet className="h-5 w-5 text-green-600" />
+            </div>
+          </div>
+          <div className="pt-3 border-t border-gray-100">
+            <span className="text-xs text-gray-500">Combined user balances</span>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl p-6 shadow-soft border border-gray-100">
+          <div className="flex justify-between items-start mb-4">
+            <div className="flex-1">
+              <p className="text-sm font-medium text-gray-500 mb-1">Total Amount in Plans</p>
+              <p className="text-3xl font-bold text-gray-900">₦{data.totalAmountInPlans.toLocaleString()}</p>
+            </div>
+            <div className="w-12 h-12 rounded-xl bg-yellow-50 flex items-center justify-center">
+              <Target className="h-5 w-5 text-yellow-600" />
+            </div>
+          </div>
+          <div className="pt-3 border-t border-gray-100">
+            <span className="text-xs text-gray-500">Active & paused plans</span>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl p-6 shadow-soft border border-gray-100">
+          <div className="flex justify-between items-start mb-4">
+            <div className="flex-1">
+              <p className="text-sm font-medium text-gray-500 mb-1">Total Completed Payouts</p>
+              <p className="text-3xl font-bold text-gray-900">{data.totalCompletedPayouts.toLocaleString()}</p>
+            </div>
+            <div className="w-12 h-12 rounded-xl bg-green-50 flex items-center justify-center">
+              <CheckCircle2 className="h-5 w-5 text-green-600" />
+            </div>
+          </div>
+          <div className="pt-3 border-t border-gray-100">
+            <span className="text-xs text-gray-500">Completed payout plans</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mb-8">
+        <div className="bg-white rounded-2xl p-6 shadow-soft border border-gray-100">
+          <div className="flex justify-between items-start mb-4">
+            <div className="flex-1">
+              <p className="text-sm font-medium text-gray-500 mb-1">Highest User Balance</p>
+              <p className="text-3xl font-bold text-gray-900">₦{data.highestUserBalance.toLocaleString()}</p>
+            </div>
+            <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center">
+              <TrendingUp className="h-5 w-5 text-blue-600" />
+            </div>
+          </div>
+          <div className="pt-3 border-t border-gray-100">
+            <span className="text-xs text-gray-500">Top user balance</span>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl p-6 shadow-soft border border-gray-100">
+          <div className="flex justify-between items-start mb-4">
+            <div className="flex-1">
+              <p className="text-sm font-medium text-gray-500 mb-1">Most Recent Deposit</p>
+              {data.mostRecentDeposit ? (
+                <>
+                  <p className="text-2xl font-bold text-gray-900 mb-1">₦{data.mostRecentDeposit.amount.toLocaleString()}</p>
+                  <p className="text-xs text-gray-500">{data.mostRecentDeposit.user_name}</p>
+                </>
+              ) : (
+                <p className="text-2xl font-bold text-gray-400">No deposits</p>
+              )}
+            </div>
+            <div className="w-12 h-12 rounded-xl bg-green-50 flex items-center justify-center">
+              <CreditCard className="h-5 w-5 text-green-600" />
+            </div>
+          </div>
+          <div className="pt-3 border-t border-gray-100">
+            {data.mostRecentDeposit && (
+              <div className="flex items-center gap-1 text-xs text-gray-500">
+                <Clock className="h-3 w-3" />
+                <span>{format(new Date(data.mostRecentDeposit.date), 'MMM d, yyyy h:mm a')}</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl p-6 shadow-soft border border-gray-100">
+          <div className="flex justify-between items-start mb-4">
+            <div className="flex-1">
+              <p className="text-sm font-medium text-gray-500 mb-1">Most Recent Payout</p>
+              {data.mostRecentPayout ? (
+                <>
+                  <p className="text-2xl font-bold text-gray-900 mb-1">₦{data.mostRecentPayout.amount.toLocaleString()}</p>
+                  <p className="text-xs text-gray-500">{data.mostRecentPayout.user_name}</p>
+                </>
+              ) : (
+                <p className="text-2xl font-bold text-gray-400">No payouts</p>
+              )}
+            </div>
+            <div className="w-12 h-12 rounded-xl bg-red-50 flex items-center justify-center">
+              <DollarSign className="h-5 w-5 text-red-600" />
+            </div>
+          </div>
+          <div className="pt-3 border-t border-gray-100">
+            {data.mostRecentPayout && (
+              <div className="flex items-center gap-1 text-xs text-gray-500">
+                <Clock className="h-3 w-3" />
+                <span>{format(new Date(data.mostRecentPayout.date), 'MMM d, yyyy h:mm a')}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         <div className="bg-white rounded-2xl p-6 shadow-soft border border-gray-100">
           <div className="mb-6">
@@ -383,10 +523,35 @@ export default function Analytics() {
         <div className="bg-white rounded-2xl p-6 shadow-soft border border-gray-100">
           <div className="mb-6">
             <h3 className="text-lg font-semibold text-gray-900">Transaction Volume</h3>
-            <p className="text-sm text-gray-500">Monthly volumes (₦M)</p>
+            <p className="text-sm text-gray-500">Monthly volumes (₦)</p>
           </div>
           <div className="h-80">
-            <Bar data={transactionVolumeData} options={commonChartOptions} />
+            <Bar data={transactionVolumeData} options={{
+              ...commonChartOptions,
+              plugins: {
+                ...commonChartOptions.plugins,
+                tooltip: {
+                  ...commonChartOptions.plugins.tooltip,
+                  callbacks: {
+                    label: function(context: any) {
+                      return '₦' + context.parsed.y.toLocaleString();
+                    }
+                  }
+                }
+              },
+              scales: {
+                ...commonChartOptions.scales,
+                y: {
+                  ...commonChartOptions.scales.y,
+                  ticks: {
+                    ...commonChartOptions.scales.y.ticks,
+                    callback: function(value: any) {
+                      return '₦' + value.toLocaleString();
+                    }
+                  }
+                }
+              }
+            }} />
           </div>
         </div>
       </div>
