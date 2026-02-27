@@ -304,7 +304,6 @@ export default function Analytics() {
               <p className="text-2xl font-bold text-gray-900">₦{data.transactionVolume.this_month.toLocaleString()}</p>
             </div>
             <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center">
-              <DollarSign className="h-5 w-5 text-blue-600" />
             </div>
           </div>
           <div className="flex items-center gap-2 pt-3 border-t border-gray-100">
