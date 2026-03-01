@@ -308,56 +308,34 @@ export default function UserDetails() {
           <h2 className="text-xl font-bold text-gray-900 mb-4">KYC Information</h2>
           <div className="bg-white rounded-2xl shadow-soft border border-gray-100 overflow-hidden">
             <div className="p-6">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-3">
-                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                    kycData.approved ? 'bg-green-50' : 'bg-yellow-50'
-                  }`}>
-                    {kycData.approved ? (
-                      <CheckCircle className="h-6 w-6 text-green-600" />
-                    ) : (
-                      <AlertCircle className="h-6 w-6 text-yellow-600" />
-                    )}
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-500">Verification Status</p>
-                    <p className={`text-lg font-bold ${kycData.approved ? 'text-green-600' : 'text-yellow-600'}`}>
-                      {kycData.approved ? 'Verified' : 'Pending Verification'}
-                    </p>
-                  </div>
+              <div className="flex items-center gap-3 mb-6">
+                <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                  kycData.tier === 3 ? 'bg-purple-50' :
+                  kycData.tier === 2 ? 'bg-green-50' :
+                  kycData.tier === 1 ? 'bg-blue-50' : 'bg-gray-50'
+                }`}>
+                  {kycData.tier === 3 ? (
+                    <CheckCircle className="h-6 w-6 text-purple-600" />
+                  ) : kycData.tier === 2 ? (
+                    <CheckCircle className="h-6 w-6 text-green-600" />
+                  ) : kycData.tier === 1 ? (
+                    <CheckCircle className="h-6 w-6 text-blue-600" />
+                  ) : (
+                    <AlertCircle className="h-6 w-6 text-gray-600" />
+                  )}
                 </div>
-                {kycProgress && (
-                  <div className="text-right">
-                    <p className="text-sm font-medium text-gray-500 mb-1">Completion Progress</p>
-                    <div className="flex items-center gap-2">
-                      <div className="w-32 bg-gray-100 h-2 rounded-full overflow-hidden">
-                        <div
-                          className="bg-gradient-to-r from-blue-500 to-blue-600 h-full rounded-full transition-all duration-500"
-                          style={{
-                            width: `${
-                              (
-                                (kycProgress.personal_info_completed ? 25 : 0) +
-                                (kycProgress.bvn_verified ? 25 : 0) +
-                                (kycProgress.documents_verified ? 25 : 0) +
-                                (kycProgress.address_completed ? 25 : 0)
-                              )
-                            }%`
-                          }}
-                        ></div>
-                      </div>
-                      <span className="text-sm font-bold text-gray-900">
-                        {Math.round(
-                          (
-                            (kycProgress.personal_info_completed ? 25 : 0) +
-                            (kycProgress.bvn_verified ? 25 : 0) +
-                            (kycProgress.documents_verified ? 25 : 0) +
-                            (kycProgress.address_completed ? 25 : 0)
-                          )
-                        )}%
-                      </span>
-                    </div>
-                  </div>
-                )}
+                <div>
+                  <p className="text-sm font-medium text-gray-500">Verification Status</p>
+                  <p className={`text-lg font-bold ${
+                    kycData.tier === 3 ? 'text-purple-600' :
+                    kycData.tier === 2 ? 'text-green-600' :
+                    kycData.tier === 1 ? 'text-blue-600' : 'text-gray-600'
+                  }`}>
+                    {kycData.tier === 3 ? 'Tier 3' :
+                     kycData.tier === 2 ? 'Tier 2' :
+                     kycData.tier === 1 ? 'Tier 1' : 'Unverified'}
+                  </p>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
