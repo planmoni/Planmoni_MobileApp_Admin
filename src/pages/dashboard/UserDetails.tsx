@@ -610,6 +610,29 @@ export default function UserDetails() {
                       </div>
                     </div>
 
+                    {plan.bank_account && (
+                      <div className="mb-4 p-4 bg-gray-50 rounded-xl border border-gray-200">
+                        <div className="flex items-center gap-2 mb-2">
+                          <CreditCard className="h-4 w-4 text-gray-600" />
+                          <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Payout Account</p>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                          <div>
+                            <p className="text-xs text-gray-500 mb-0.5">Account Name</p>
+                            <p className="text-sm font-semibold text-gray-900">{plan.bank_account.account_name}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-500 mb-0.5">Account Number</p>
+                            <p className="text-sm font-mono font-semibold text-gray-900">{plan.bank_account.account_number}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-500 mb-0.5">Bank</p>
+                            <p className="text-sm font-semibold text-gray-900">{plan.bank_account.bank_name}</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
                     {endDate && !isNaN(endDate.getTime()) && (
                       <div className="mb-3 p-3 bg-gray-50 rounded-lg">
                         <p className="text-xs font-medium text-gray-500 mb-1">Plan End Date</p>
