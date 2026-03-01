@@ -374,7 +374,7 @@ export default function UserDetails() {
                           {kycData.first_name} {kycData.middle_name ? kycData.middle_name + ' ' : ''}{kycData.last_name}
                         </p>
                       </div>
-                      {kycData.date_of_birth && (
+                      {kycData.date_of_birth && !isNaN(new Date(kycData.date_of_birth).getTime()) && (
                         <div>
                           <p className="text-xs text-gray-500">Date of Birth</p>
                           <p className="text-sm font-semibold text-gray-900">
@@ -385,43 +385,53 @@ export default function UserDetails() {
                     </div>
                   </div>
 
-                  <div>
-                    <p className="text-sm font-medium text-gray-500 mb-2 flex items-center gap-2">
-                      <Phone className="h-4 w-4" />
-                      Contact Information
-                    </p>
-                    <div className="pl-6 space-y-2">
-                      <div>
-                        <p className="text-xs text-gray-500">Phone Number</p>
-                        <p className="text-sm font-semibold text-gray-900">{kycData.phone_number}</p>
+                  {kycData.phone_number && (
+                    <div>
+                      <p className="text-sm font-medium text-gray-500 mb-2 flex items-center gap-2">
+                        <Phone className="h-4 w-4" />
+                        Contact Information
+                      </p>
+                      <div className="pl-6 space-y-2">
+                        <div>
+                          <p className="text-xs text-gray-500">Phone Number</p>
+                          <p className="text-sm font-semibold text-gray-900">{kycData.phone_number}</p>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  )}
 
-                  <div>
-                    <p className="text-sm font-medium text-gray-500 mb-2 flex items-center gap-2">
-                      <MapPin className="h-4 w-4" />
-                      Address Information
-                    </p>
-                    <div className="pl-6 space-y-2">
-                      <div>
-                        <p className="text-xs text-gray-500">Address</p>
-                        <p className="text-sm font-semibold text-gray-900">
-                          {kycData.address_no ? `${kycData.address_no}, ` : ''}{kycData.address}
-                        </p>
-                      </div>
-                      <div className="grid grid-cols-2 gap-2">
+                  {kycData.address && (
+                    <div>
+                      <p className="text-sm font-medium text-gray-500 mb-2 flex items-center gap-2">
+                        <MapPin className="h-4 w-4" />
+                        Address Information
+                      </p>
+                      <div className="pl-6 space-y-2">
                         <div>
-                          <p className="text-xs text-gray-500">LGA</p>
-                          <p className="text-sm font-semibold text-gray-900">{kycData.lga}</p>
+                          <p className="text-xs text-gray-500">Address</p>
+                          <p className="text-sm font-semibold text-gray-900">
+                            {kycData.address_no ? `${kycData.address_no}, ` : ''}{kycData.address}
+                          </p>
                         </div>
-                        <div>
-                          <p className="text-xs text-gray-500">State</p>
-                          <p className="text-sm font-semibold text-gray-900">{kycData.state}</p>
-                        </div>
+                        {(kycData.lga || kycData.state) && (
+                          <div className="grid grid-cols-2 gap-2">
+                            {kycData.lga && (
+                              <div>
+                                <p className="text-xs text-gray-500">LGA</p>
+                                <p className="text-sm font-semibold text-gray-900">{kycData.lga}</p>
+                              </div>
+                            )}
+                            {kycData.state && (
+                              <div>
+                                <p className="text-xs text-gray-500">State</p>
+                                <p className="text-sm font-semibold text-gray-900">{kycData.state}</p>
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
-                  </div>
+                  )}
                 </div>
 
                 <div className="space-y-4">
@@ -435,7 +445,10 @@ export default function UserDetails() {
                         <div>
                           <p className="text-xs text-gray-500">BVN</p>
                           <p className="text-sm font-mono font-semibold text-gray-900">
-                            {kycData.bvn.slice(0, 3)}{'*'.repeat(kycData.bvn.length - 6)}{kycData.bvn.slice(-3)}
+                            {kycData.bvn.length > 6
+                              ? `${kycData.bvn.slice(0, 3)}${'*'.repeat(kycData.bvn.length - 6)}${kycData.bvn.slice(-3)}`
+                              : kycData.bvn
+                            }
                           </p>
                         </div>
                       )}
@@ -443,7 +456,10 @@ export default function UserDetails() {
                         <div>
                           <p className="text-xs text-gray-500">NIN</p>
                           <p className="text-sm font-mono font-semibold text-gray-900">
-                            {kycData.nin.slice(0, 3)}{'*'.repeat(kycData.nin.length - 6)}{kycData.nin.slice(-3)}
+                            {kycData.nin.length > 6
+                              ? `${kycData.nin.slice(0, 3)}${'*'.repeat(kycData.nin.length - 6)}${kycData.nin.slice(-3)}`
+                              : kycData.nin
+                            }
                           </p>
                         </div>
                       )}
@@ -530,16 +546,20 @@ export default function UserDetails() {
                 </div>
               </div>
 
-              <div className="mt-6 pt-6 border-t border-gray-100">
-                <div className="grid grid-cols-2 gap-4 text-xs text-gray-500">
-                  <div>
-                    <span className="font-medium">Submitted:</span> {format(new Date(kycData.created_at), 'MMM d, yyyy')}
-                  </div>
-                  <div>
-                    <span className="font-medium">Last Updated:</span> {format(new Date(kycData.updated_at), 'MMM d, yyyy')}
+              {kycData.created_at && (
+                <div className="mt-6 pt-6 border-t border-gray-100">
+                  <div className="grid grid-cols-2 gap-4 text-xs text-gray-500">
+                    <div>
+                      <span className="font-medium">Submitted:</span> {format(new Date(kycData.created_at), 'MMM d, yyyy')}
+                    </div>
+                    {kycData.updated_at && (
+                      <div>
+                        <span className="font-medium">Last Updated:</span> {format(new Date(kycData.updated_at), 'MMM d, yyyy')}
+                      </div>
+                    )}
                   </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         </div>
