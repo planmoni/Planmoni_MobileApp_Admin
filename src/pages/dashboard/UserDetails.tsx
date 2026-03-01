@@ -43,16 +43,9 @@ export default function UserDetails() {
     );
   }
 
-  const { user, transactions, payoutPlans, bankAccounts, kycData, kycProgress } = userDetailsData;
+  const { user, transactions, payoutPlans, bankAccounts, kycData, kycProgress, totalDeposits, totalPayouts } = userDetailsData;
 
   // Calculate user stats
-  const totalDeposits = transactions
-    .filter((t: any) => t.type === 'deposit' && t.status === 'completed')
-    .reduce((sum: number, t: any) => sum + t.amount, 0);
-
-  const totalPayouts = transactions
-    .filter((t: any) => t.type === 'payout' && t.status === 'completed')
-    .reduce((sum: number, t: any) => sum + t.amount, 0);
 
   const activePlans = payoutPlans.filter((p: any) => p.status === 'active').length;
   const completedPlans = payoutPlans.filter((p: any) => p.status === 'completed').length;

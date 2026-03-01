@@ -170,6 +170,8 @@ export const useUserDetails = (userId: string) => {
             locked_balance: userInfo.locked_balance || 0
           }]
         },
+        totalDeposits: userInfo.total_deposits || 0,
+        totalPayouts: userInfo.total_payouts || 0,
         transactions: userInfo.recent_transactions || [],
         payoutPlans: userInfo.payout_plans || [],
         bankAccounts: accountData || [],
