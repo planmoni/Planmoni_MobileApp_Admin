@@ -310,15 +310,15 @@ export default function UserDetails() {
             <div className="p-6">
               <div className="flex items-center gap-3 mb-6">
                 <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                  kycData.tier === 3 ? 'bg-purple-50' :
-                  kycData.tier === 2 ? 'bg-green-50' :
-                  kycData.tier === 1 ? 'bg-blue-50' : 'bg-gray-50'
+                  kycProgress?.tier_3_completed ? 'bg-purple-50' :
+                  kycProgress?.tier_2_completed ? 'bg-green-50' :
+                  kycProgress?.tier_1_completed ? 'bg-blue-50' : 'bg-gray-50'
                 }`}>
-                  {kycData.tier === 3 ? (
+                  {kycProgress?.tier_3_completed ? (
                     <CheckCircle className="h-6 w-6 text-purple-600" />
-                  ) : kycData.tier === 2 ? (
+                  ) : kycProgress?.tier_2_completed ? (
                     <CheckCircle className="h-6 w-6 text-green-600" />
-                  ) : kycData.tier === 1 ? (
+                  ) : kycProgress?.tier_1_completed ? (
                     <CheckCircle className="h-6 w-6 text-blue-600" />
                   ) : (
                     <AlertCircle className="h-6 w-6 text-gray-600" />
@@ -327,13 +327,13 @@ export default function UserDetails() {
                 <div>
                   <p className="text-sm font-medium text-gray-500">Verification Status</p>
                   <p className={`text-lg font-bold ${
-                    kycData.tier === 3 ? 'text-purple-600' :
-                    kycData.tier === 2 ? 'text-green-600' :
-                    kycData.tier === 1 ? 'text-blue-600' : 'text-gray-600'
+                    kycProgress?.tier_3_completed ? 'text-purple-600' :
+                    kycProgress?.tier_2_completed ? 'text-green-600' :
+                    kycProgress?.tier_1_completed ? 'text-blue-600' : 'text-gray-600'
                   }`}>
-                    {kycData.tier === 3 ? 'Tier 3' :
-                     kycData.tier === 2 ? 'Tier 2' :
-                     kycData.tier === 1 ? 'Tier 1' : 'Unverified'}
+                    {kycProgress?.tier_3_completed ? 'Tier 3' :
+                     kycProgress?.tier_2_completed ? 'Tier 2' :
+                     kycProgress?.tier_1_completed ? 'Tier 1' : 'Unverified'}
                   </p>
                 </div>
               </div>
