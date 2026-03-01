@@ -236,7 +236,7 @@ export default function Welcome() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="mb-12 text-center">
+        <div className="mb-12">
           <h1 className="text-4xl font-bold text-gray-900 mb-3">
             {getGreeting()}, {getUserDisplayName()}!
           </h1>
@@ -246,7 +246,7 @@ export default function Welcome() {
         </div>
 
         {availableItems.length === 0 ? (
-          <div className="bg-white rounded-2xl shadow-sm p-12 text-center">
+          <div className="bg-white rounded-2xl shadow-sm p-12">
             <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
               <AlertTriangle className="h-8 w-8 text-gray-400" />
             </div>
