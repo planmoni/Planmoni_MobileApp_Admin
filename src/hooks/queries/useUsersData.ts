@@ -130,11 +130,33 @@ export const useUserDetails = (userId: string) => {
         .select('*')
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
-      
+
       if (accountError) {
         console.error('Error fetching bank accounts:', accountError);
       }
-      
+
+      // Fetch KYC data
+      const { data: kycData, error: kycError } = await supabase
+        .from('kyc_data')
+        .select('*')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (kycError) {
+        console.error('Error fetching KYC data:', kycError);
+      }
+
+      // Fetch KYC progress
+      const { data: kycProgress, error: kycProgressError } = await supabase
+        .from('kyc_progress')
+        .select('*')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (kycProgressError) {
+        console.error('Error fetching KYC progress:', kycProgressError);
+      }
+
       return {
         user: {
           id: userInfo.id,
@@ -150,7 +172,9 @@ export const useUserDetails = (userId: string) => {
         },
         transactions: userInfo.recent_transactions || [],
         payoutPlans: userInfo.payout_plans || [],
-        bankAccounts: accountData || []
+        bankAccounts: accountData || [],
+        kycData: kycData,
+        kycProgress: kycProgress
       };
     },
     enabled: !!userId,

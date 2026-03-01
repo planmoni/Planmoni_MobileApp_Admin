@@ -1,5 +1,5 @@
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Wallet, Calendar, Building2, ArrowUpRight, ArrowDownRight, RefreshCw, Shield, Lock, TrendingUp, Clock, CheckCircle2, XCircle } from 'lucide-react';
+import { ArrowLeft, Wallet, Calendar, Building2, ArrowUpRight, ArrowDownRight, RefreshCw, Shield, Lock, TrendingUp, Clock, CheckCircle2, XCircle, User, Phone, MapPin, FileText, CreditCard, CheckCircle, XCircleIcon, AlertCircle } from 'lucide-react';
 import { format, addDays, addWeeks, addMonths } from 'date-fns';
 import { useUserDetails } from '@/hooks/queries/useUsersData';
 import { useRefreshData } from '@/hooks/mutations/useRefreshData';
@@ -43,7 +43,7 @@ export default function UserDetails() {
     );
   }
 
-  const { user, transactions, payoutPlans, bankAccounts } = userDetailsData;
+  const { user, transactions, payoutPlans, bankAccounts, kycData, kycProgress } = userDetailsData;
 
   // Calculate user stats
   const totalDeposits = transactions
@@ -302,6 +302,248 @@ export default function UserDetails() {
           </div>
         </div>
       </div>
+
+      {kycData && (
+        <div className="mb-8">
+          <h2 className="text-xl font-bold text-gray-900 mb-4">KYC Information</h2>
+          <div className="bg-white rounded-2xl shadow-soft border border-gray-100 overflow-hidden">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                    kycData.approved ? 'bg-green-50' : 'bg-yellow-50'
+                  }`}>
+                    {kycData.approved ? (
+                      <CheckCircle className="h-6 w-6 text-green-600" />
+                    ) : (
+                      <AlertCircle className="h-6 w-6 text-yellow-600" />
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">Verification Status</p>
+                    <p className={`text-lg font-bold ${kycData.approved ? 'text-green-600' : 'text-yellow-600'}`}>
+                      {kycData.approved ? 'Verified' : 'Pending Verification'}
+                    </p>
+                  </div>
+                </div>
+                {kycProgress && (
+                  <div className="text-right">
+                    <p className="text-sm font-medium text-gray-500 mb-1">Completion Progress</p>
+                    <div className="flex items-center gap-2">
+                      <div className="w-32 bg-gray-100 h-2 rounded-full overflow-hidden">
+                        <div
+                          className="bg-gradient-to-r from-blue-500 to-blue-600 h-full rounded-full transition-all duration-500"
+                          style={{
+                            width: `${
+                              (
+                                (kycProgress.personal_info_completed ? 25 : 0) +
+                                (kycProgress.bvn_verified ? 25 : 0) +
+                                (kycProgress.documents_verified ? 25 : 0) +
+                                (kycProgress.address_completed ? 25 : 0)
+                              )
+                            }%`
+                          }}
+                        ></div>
+                      </div>
+                      <span className="text-sm font-bold text-gray-900">
+                        {Math.round(
+                          (
+                            (kycProgress.personal_info_completed ? 25 : 0) +
+                            (kycProgress.bvn_verified ? 25 : 0) +
+                            (kycProgress.documents_verified ? 25 : 0) +
+                            (kycProgress.address_completed ? 25 : 0)
+                          )
+                        )}%
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-sm font-medium text-gray-500 mb-2 flex items-center gap-2">
+                      <User className="h-4 w-4" />
+                      Personal Information
+                    </p>
+                    <div className="pl-6 space-y-2">
+                      <div>
+                        <p className="text-xs text-gray-500">Full Name</p>
+                        <p className="text-sm font-semibold text-gray-900">
+                          {kycData.first_name} {kycData.middle_name ? kycData.middle_name + ' ' : ''}{kycData.last_name}
+                        </p>
+                      </div>
+                      {kycData.date_of_birth && (
+                        <div>
+                          <p className="text-xs text-gray-500">Date of Birth</p>
+                          <p className="text-sm font-semibold text-gray-900">
+                            {format(new Date(kycData.date_of_birth), 'MMMM d, yyyy')}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="text-sm font-medium text-gray-500 mb-2 flex items-center gap-2">
+                      <Phone className="h-4 w-4" />
+                      Contact Information
+                    </p>
+                    <div className="pl-6 space-y-2">
+                      <div>
+                        <p className="text-xs text-gray-500">Phone Number</p>
+                        <p className="text-sm font-semibold text-gray-900">{kycData.phone_number}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="text-sm font-medium text-gray-500 mb-2 flex items-center gap-2">
+                      <MapPin className="h-4 w-4" />
+                      Address Information
+                    </p>
+                    <div className="pl-6 space-y-2">
+                      <div>
+                        <p className="text-xs text-gray-500">Address</p>
+                        <p className="text-sm font-semibold text-gray-900">
+                          {kycData.address_no ? `${kycData.address_no}, ` : ''}{kycData.address}
+                        </p>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <p className="text-xs text-gray-500">LGA</p>
+                          <p className="text-sm font-semibold text-gray-900">{kycData.lga}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500">State</p>
+                          <p className="text-sm font-semibold text-gray-900">{kycData.state}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-sm font-medium text-gray-500 mb-2 flex items-center gap-2">
+                      <FileText className="h-4 w-4" />
+                      Identity Verification
+                    </p>
+                    <div className="pl-6 space-y-2">
+                      {kycData.bvn && (
+                        <div>
+                          <p className="text-xs text-gray-500">BVN</p>
+                          <p className="text-sm font-mono font-semibold text-gray-900">
+                            {kycData.bvn.slice(0, 3)}{'*'.repeat(kycData.bvn.length - 6)}{kycData.bvn.slice(-3)}
+                          </p>
+                        </div>
+                      )}
+                      {kycData.nin && (
+                        <div>
+                          <p className="text-xs text-gray-500">NIN</p>
+                          <p className="text-sm font-mono font-semibold text-gray-900">
+                            {kycData.nin.slice(0, 3)}{'*'.repeat(kycData.nin.length - 6)}{kycData.nin.slice(-3)}
+                          </p>
+                        </div>
+                      )}
+                      {kycData.document_type && (
+                        <div>
+                          <p className="text-xs text-gray-500">Document Type</p>
+                          <p className="text-sm font-semibold text-gray-900 capitalize">{kycData.document_type}</p>
+                        </div>
+                      )}
+                      {kycData.document_number && (
+                        <div>
+                          <p className="text-xs text-gray-500">Document Number</p>
+                          <p className="text-sm font-mono font-semibold text-gray-900">{kycData.document_number}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {(kycData.bank_name || kycData.account_number) && (
+                    <div>
+                      <p className="text-sm font-medium text-gray-500 mb-2 flex items-center gap-2">
+                        <CreditCard className="h-4 w-4" />
+                        Bank Information
+                      </p>
+                      <div className="pl-6 space-y-2">
+                        {kycData.bank_name && (
+                          <div>
+                            <p className="text-xs text-gray-500">Bank Name</p>
+                            <p className="text-sm font-semibold text-gray-900">{kycData.bank_name}</p>
+                          </div>
+                        )}
+                        {kycData.account_number && (
+                          <div>
+                            <p className="text-xs text-gray-500">Account Number</p>
+                            <p className="text-sm font-mono font-semibold text-gray-900">{kycData.account_number}</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {kycProgress && (
+                    <div>
+                      <p className="text-sm font-medium text-gray-500 mb-2 flex items-center gap-2">
+                        <CheckCircle className="h-4 w-4" />
+                        Verification Stages
+                      </p>
+                      <div className="pl-6 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-gray-600">Personal Info</span>
+                          {kycProgress.personal_info_completed ? (
+                            <CheckCircle className="h-4 w-4 text-green-600" />
+                          ) : (
+                            <XCircleIcon className="h-4 w-4 text-gray-300" />
+                          )}
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-gray-600">BVN Verification</span>
+                          {kycProgress.bvn_verified ? (
+                            <CheckCircle className="h-4 w-4 text-green-600" />
+                          ) : (
+                            <XCircleIcon className="h-4 w-4 text-gray-300" />
+                          )}
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-gray-600">Documents Verified</span>
+                          {kycProgress.documents_verified ? (
+                            <CheckCircle className="h-4 w-4 text-green-600" />
+                          ) : (
+                            <XCircleIcon className="h-4 w-4 text-gray-300" />
+                          )}
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-gray-600">Address Completed</span>
+                          {kycProgress.address_completed ? (
+                            <CheckCircle className="h-4 w-4 text-green-600" />
+                          ) : (
+                            <XCircleIcon className="h-4 w-4 text-gray-300" />
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="mt-6 pt-6 border-t border-gray-100">
+                <div className="grid grid-cols-2 gap-4 text-xs text-gray-500">
+                  <div>
+                    <span className="font-medium">Submitted:</span> {format(new Date(kycData.created_at), 'MMM d, yyyy')}
+                  </div>
+                  <div>
+                    <span className="font-medium">Last Updated:</span> {format(new Date(kycData.updated_at), 'MMM d, yyyy')}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="mb-8">
         <h2 className="text-xl font-bold text-gray-900 mb-4">Active Payout Plans</h2>
