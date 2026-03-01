@@ -444,7 +444,9 @@ export default function UserDetails() {
                       {kycData.document_type && (
                         <div>
                           <p className="text-xs text-gray-500">Document Type</p>
-                          <p className="text-sm font-semibold text-gray-900 capitalize">{kycData.document_type}</p>
+                          <p className="text-sm font-semibold text-gray-900 capitalize">
+                            {typeof kycData.document_type === 'object' ? kycData.document_type.document_name : kycData.document_type}
+                          </p>
                         </div>
                       )}
                       {kycData.document_number && (
