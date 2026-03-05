@@ -1,5 +1,5 @@
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Wallet, Calendar, Building2, ArrowUpRight, ArrowDownRight, RefreshCw, Shield, Lock, TrendingUp, Clock, CheckCircle2, XCircle, User, Phone, MapPin, FileText, CreditCard, CheckCircle, XCircleIcon, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Wallet, Calendar, Building2, ArrowUpRight, ArrowDownRight, RefreshCw, Shield, Lock, TrendingUp, Clock, CircleCheck as CheckCircle2, Circle as XCircle, User, Phone, MapPin, FileText, CreditCard, CircleCheck as CheckCircle, Circle as XCircleIcon, CircleAlert as AlertCircle } from 'lucide-react';
 import { format, addDays, addWeeks, addMonths } from 'date-fns';
 import { useUserDetails } from '@/hooks/queries/useUsersData';
 import { useRefreshData } from '@/hooks/mutations/useRefreshData';
