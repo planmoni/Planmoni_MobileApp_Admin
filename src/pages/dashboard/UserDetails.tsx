@@ -784,53 +784,7 @@ export default function UserDetails() {
       <div>
         <h2 className="text-xl font-bold text-gray-900 mb-4">User Activity</h2>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-white rounded-2xl p-6 shadow-soft border border-gray-100">
-            <div className="mb-6">
-              
-              <p className="text-sm text-gray-500 mt-1">
-                Latest audit logs for this user
-              </p>
-            </div>
-            <div className="space-y-3 max-h-[500px] overflow-y-auto">
-              {userActivity?.auditLogs && userActivity.auditLogs.length > 0 ? (
-                userActivity.auditLogs.map((log: any) => (
-                  <div
-                    key={log.id}
-                    className="p-4 rounded-xl border border-gray-100 hover:border-gray-200 hover:shadow-sm transition-all"
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-lg">
-                        {getActionIcon(log.action)}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className={`px-2 py-0.5 rounded-md text-xs font-medium border ${getActionColor(log.action)}`}>
-                            {log.action}
-                          </span>
-                          <span className="px-2 py-0.5 rounded-md text-xs font-medium bg-gray-50 text-gray-600">
-                            {log.resource_type}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2 text-xs text-gray-400">
-                          <Clock className="h-3 w-3" />
-                          {format(new Date(log.created_at), 'MMM d, yyyy HH:mm:ss')}
-                        </div>
-                        {log.ip_address && (
-                          <div className="text-xs text-gray-400 mt-1">
-                            IP: {log.ip_address}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="text-center py-8 text-gray-400">
-                  <Shield className="h-12 w-12 mx-auto mb-2 opacity-20" />
-                  <p>No recent actions</p>
-                </div>
-              )}
-            </div>
+          </div>
           </div>
 
           <div className="bg-white rounded-2xl p-6 shadow-soft border border-gray-100">
