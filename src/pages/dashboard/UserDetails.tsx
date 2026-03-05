@@ -787,10 +787,6 @@ export default function UserDetails() {
 
           <div className="bg-white rounded-2xl p-6 shadow-soft border border-gray-100">
             <div className="mb-6">
-              <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                <Zap className="h-5 w-5 text-green-600" />
-                System Events
-              </h3>
               <p className="text-sm text-gray-500 mt-1">
                 Recent events for this user
               </p>
