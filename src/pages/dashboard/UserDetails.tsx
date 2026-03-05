@@ -781,7 +781,7 @@ export default function UserDetails() {
         </div>
       </div>
 
-      <div>
+      {/* <div>
         <h2 className="text-xl font-bold text-gray-900 mb-4">User Activity</h2>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="bg-white rounded-2xl p-6 shadow-soft border border-gray-100">
@@ -834,7 +834,7 @@ export default function UserDetails() {
                 </div>
               )}
             </div>
-          </div>
+          </div> */}
 
           <div className="bg-white rounded-2xl p-6 shadow-soft border border-gray-100">
             <div className="mb-6">
