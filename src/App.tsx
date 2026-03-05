@@ -32,6 +32,7 @@ const AuditLogsPage = lazy(() => import('./pages/dashboard/AuditLogs'));
 const EmergencyWithdrawalsPage = lazy(() => import('./pages/dashboard/EmergencyWithdrawals'));
 const CompletedPayoutsPage = lazy(() => import('./pages/dashboard/CompletedPayouts'));
 const CancelledPayoutsPage = lazy(() => import('./pages/dashboard/CancelledPayouts'));
+const UserTransactionsPage = lazy(() => import('./pages/dashboard/UserTransactions'));
 const NotFoundPage = lazy(() => import('./pages/NotFound'));
 
 function App() {
@@ -66,6 +67,7 @@ function App() {
                 <Route path="dashboard" element={<DashboardPage />} />
                 <Route path="users" element={<UsersPage />} />
                 <Route path="users/:id" element={<UserDetailsPage />} />
+                <Route path="users/:id/transactions" element={<UserTransactionsPage />} />
                 <Route path="users/:id/completed-payouts" element={<CompletedPayoutsPage />} />
                 <Route path="users/:id/cancelled-payouts" element={<CancelledPayoutsPage />} />
                 <Route path="transactions" element={<TransactionsPage />} />

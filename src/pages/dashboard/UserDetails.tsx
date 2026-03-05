@@ -705,17 +705,14 @@ export default function UserDetails() {
                   </div>
                 ))}
               </div>
-              {transactions.length > 5 && (
-                <div className="border-t border-gray-100 p-4 text-center bg-gray-50">
-                  <Link
-                    to="/transactions"
-                    state={{ userId: id, userName: `${user.first_name} ${user.last_name}` }}
-                    className="text-gray-900 hover:text-gray-700 text-sm font-semibold transition-colors"
-                  >
-                    View All {transactions.length} Transactions
-                  </Link>
-                </div>
-              )}
+              <div className="border-t border-gray-100 p-4 text-center bg-gray-50">
+                <Link
+                  to={`/users/${id}/transactions`}
+                  className="inline-flex items-center px-5 py-2.5 bg-gray-900 text-white rounded-xl hover:bg-gray-800 transition-colors shadow-sm font-semibold"
+                >
+                  View All Transactions
+                </Link>
+              </div>
             </>
           ) : (
             <div className="p-12 text-center">
