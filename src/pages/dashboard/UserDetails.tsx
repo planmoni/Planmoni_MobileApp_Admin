@@ -1,9 +1,11 @@
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Wallet, Calendar, Building2, ArrowUpRight, ArrowDownRight, RefreshCw, Shield, Lock, TrendingUp, Clock, CircleCheck as CheckCircle2, Circle as XCircle, User, Phone, MapPin, FileText, CreditCard, CircleCheck as CheckCircle, Circle as XCircleIcon, CircleAlert as AlertCircle } from 'lucide-react';
+import { ArrowLeft, Wallet, Calendar, Building2, ArrowUpRight, ArrowDownRight, RefreshCw, Shield, Lock, TrendingUp, Clock, CircleCheck as CheckCircle2, Circle as XCircle, User, Phone, MapPin, FileText, CreditCard, CircleCheck as CheckCircle, Circle as XCircleIcon, CircleAlert as AlertCircle, Zap } from 'lucide-react';
 import { format, addDays, addWeeks, addMonths } from 'date-fns';
 import { useUserDetails } from '@/hooks/queries/useUsersData';
 import { useRefreshData } from '@/hooks/mutations/useRefreshData';
 import { PayoutCountdown } from '@/components/PayoutCountdown';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/lib/supabase';
 
 export default function UserDetails() {
   const { id } = useParams<{ id: string }>();
@@ -11,10 +13,63 @@ export default function UserDetails() {
   const { data: userDetailsData, isLoading, error } = useUserDetails(id!);
   const refreshData = useRefreshData();
 
+  const { data: userActivity } = useQuery({
+    queryKey: ['user-activity', id],
+    queryFn: async () => {
+      const [auditResult, eventsResult] = await Promise.all([
+        supabase
+          .from('audit_logs')
+          .select('*')
+          .eq('user_id', id)
+          .order('created_at', { ascending: false })
+          .limit(10),
+        supabase
+          .from('events')
+          .select('*')
+          .eq('user_id', id)
+          .order('created_at', { ascending: false })
+          .limit(10)
+      ]);
+
+      if (auditResult.error) throw auditResult.error;
+      if (eventsResult.error) throw eventsResult.error;
+
+      return {
+        auditLogs: auditResult.data || [],
+        events: eventsResult.data || []
+      };
+    },
+    enabled: !!id,
+  });
+
   const handleRefresh = () => {
     if (id) {
       refreshData.mutate(['user', id]);
     }
+  };
+
+  const getActionIcon = (action: string) => {
+    if (action.includes('create')) return '🆕';
+    if (action.includes('update')) return '✏️';
+    if (action.includes('delete')) return '🗑️';
+    if (action.includes('login')) return '🔐';
+    return '📝';
+  };
+
+  const getEventIcon = (type: string) => {
+    if (type.includes('payout')) return '💰';
+    if (type.includes('kyc')) return '📋';
+    if (type.includes('transaction')) return '💳';
+    if (type.includes('notification')) return '🔔';
+    return '📌';
+  };
+
+  const getActionColor = (action: string) => {
+    if (action.includes('create')) return 'bg-green-50 text-green-700 border-green-200';
+    if (action.includes('update')) return 'bg-blue-50 text-blue-700 border-blue-200';
+    if (action.includes('delete')) return 'bg-red-50 text-red-700 border-red-200';
+    if (action.includes('login')) return 'bg-purple-50 text-purple-700 border-purple-200';
+    return 'bg-gray-50 text-gray-700 border-gray-200';
   };
 
   if (isLoading) {
@@ -661,7 +716,7 @@ export default function UserDetails() {
         </div>
       </div>
 
-      <div>
+      <div className="mb-8">
         <h2 className="text-xl font-bold text-gray-900 mb-4">Recent Transactions</h2>
         <div className="bg-white rounded-2xl shadow-soft border border-gray-100 overflow-hidden">
           {transactions.length > 0 ? (
@@ -723,6 +778,119 @@ export default function UserDetails() {
               <p className="text-gray-400 text-sm mt-1">User hasn't made any transactions yet</p>
             </div>
           )}
+        </div>
+      </div>
+
+      <div>
+        <h2 className="text-xl font-bold text-gray-900 mb-4">User Activity</h2>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="bg-white rounded-2xl p-6 shadow-soft border border-gray-100">
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <Shield className="h-5 w-5 text-blue-600" />
+                Recent Actions
+              </h3>
+              <p className="text-sm text-gray-500 mt-1">
+                Latest audit logs for this user
+              </p>
+            </div>
+            <div className="space-y-3 max-h-[500px] overflow-y-auto">
+              {userActivity?.auditLogs && userActivity.auditLogs.length > 0 ? (
+                userActivity.auditLogs.map((log: any) => (
+                  <div
+                    key={log.id}
+                    className="p-4 rounded-xl border border-gray-100 hover:border-gray-200 hover:shadow-sm transition-all"
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-lg">
+                        {getActionIcon(log.action)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className={`px-2 py-0.5 rounded-md text-xs font-medium border ${getActionColor(log.action)}`}>
+                            {log.action}
+                          </span>
+                          <span className="px-2 py-0.5 rounded-md text-xs font-medium bg-gray-50 text-gray-600">
+                            {log.resource_type}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-gray-400">
+                          <Clock className="h-3 w-3" />
+                          {format(new Date(log.created_at), 'MMM d, yyyy HH:mm:ss')}
+                        </div>
+                        {log.ip_address && (
+                          <div className="text-xs text-gray-400 mt-1">
+                            IP: {log.ip_address}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-8 text-gray-400">
+                  <Shield className="h-12 w-12 mx-auto mb-2 opacity-20" />
+                  <p>No recent actions</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl p-6 shadow-soft border border-gray-100">
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <Zap className="h-5 w-5 text-green-600" />
+                System Events
+              </h3>
+              <p className="text-sm text-gray-500 mt-1">
+                Recent events for this user
+              </p>
+            </div>
+            <div className="space-y-3 max-h-[500px] overflow-y-auto">
+              {userActivity?.events && userActivity.events.length > 0 ? (
+                userActivity.events.map((event: any) => (
+                  <div
+                    key={event.id}
+                    className="p-4 rounded-xl border border-gray-100 hover:border-gray-200 hover:shadow-sm transition-all"
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-lg">
+                        {getEventIcon(event.type)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-semibold text-gray-900 mb-1">{event.title}</h4>
+                        {event.description && (
+                          <p className="text-sm text-gray-600 mb-2 line-clamp-2">{event.description}</p>
+                        )}
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className={`px-2 py-0.5 rounded-md text-xs font-medium ${
+                            event.status === 'completed' ? 'bg-green-50 text-green-700' :
+                            event.status === 'pending' ? 'bg-yellow-50 text-yellow-700' :
+                            event.status === 'failed' ? 'bg-red-50 text-red-700' :
+                            'bg-gray-50 text-gray-700'
+                          }`}>
+                            {event.status}
+                          </span>
+                          <span className="px-2 py-0.5 rounded-md text-xs font-medium bg-gray-50 text-gray-600">
+                            {event.type}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-gray-400">
+                          <Clock className="h-3 w-3" />
+                          {format(new Date(event.created_at), 'MMM d, yyyy HH:mm:ss')}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-8 text-gray-400">
+                  <Zap className="h-12 w-12 mx-auto mb-2 opacity-20" />
+                  <p>No recent events</p>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </div>
