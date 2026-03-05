@@ -892,6 +892,18 @@ export default function UserDetails() {
             </div>
           </div>
         </div>
+
+        {((userActivity?.auditLogs && userActivity.auditLogs.length > 0) ||
+          (userActivity?.events && userActivity.events.length > 0)) && (
+          <div className="mt-6 text-center">
+            <Link
+              to={`/users/${id}/events`}
+              className="inline-flex items-center px-5 py-2.5 bg-gray-900 text-white rounded-xl hover:bg-gray-800 transition-colors shadow-sm font-semibold"
+            >
+              View All Events
+            </Link>
+          </div>
+        )}
       </div>
     </div>
   );

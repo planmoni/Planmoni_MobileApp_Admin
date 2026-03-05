@@ -33,6 +33,7 @@ const EmergencyWithdrawalsPage = lazy(() => import('./pages/dashboard/EmergencyW
 const CompletedPayoutsPage = lazy(() => import('./pages/dashboard/CompletedPayouts'));
 const CancelledPayoutsPage = lazy(() => import('./pages/dashboard/CancelledPayouts'));
 const UserTransactionsPage = lazy(() => import('./pages/dashboard/UserTransactions'));
+const UserEventsPage = lazy(() => import('./pages/dashboard/UserEvents'));
 const NotFoundPage = lazy(() => import('./pages/NotFound'));
 
 function App() {
@@ -68,6 +69,7 @@ function App() {
                 <Route path="users" element={<UsersPage />} />
                 <Route path="users/:id" element={<UserDetailsPage />} />
                 <Route path="users/:id/transactions" element={<UserTransactionsPage />} />
+                <Route path="users/:id/events" element={<UserEventsPage />} />
                 <Route path="users/:id/completed-payouts" element={<CompletedPayoutsPage />} />
                 <Route path="users/:id/cancelled-payouts" element={<CancelledPayoutsPage />} />
                 <Route path="transactions" element={<TransactionsPage />} />
