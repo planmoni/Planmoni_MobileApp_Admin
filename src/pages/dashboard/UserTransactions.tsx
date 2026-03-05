@@ -21,7 +21,13 @@ export default function UserTransactions() {
       if (error) throw error;
       if (!data || data.length === 0) throw new Error('User not found');
 
-      return data[0];
+      const userInfo = data[0];
+      return {
+        id: userInfo.id,
+        first_name: userInfo.first_name,
+        last_name: userInfo.last_name,
+        email: userInfo.email,
+      };
     },
     enabled: !!id,
   });
