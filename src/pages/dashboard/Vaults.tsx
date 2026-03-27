@@ -415,7 +415,7 @@ export default function Vaults() {
                       Current Balance
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                      Total Spent
+                      Total remaining to fund
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                       Status
