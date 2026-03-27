@@ -120,7 +120,7 @@ export default function Vaults() {
   };
 
   const balanceBarData = {
-    labels: ['Total Funded', 'Current Balance', 'Total Spent'],
+    labels: ['Total Funded', 'Current Balance', 'Remaining to fund'],
     datasets: [
       {
         label: 'Amount (NGN)',
