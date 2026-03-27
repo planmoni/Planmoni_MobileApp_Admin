@@ -192,7 +192,7 @@ export default function VaultDetails() {
                 </p>
               </div>
               <div>
-                <p className="text-xs text-gray-500 mb-1">Total Spent</p>
+                <p className="text-xs text-gray-500 mb-1">Total remaining to fund</p>
                 <p className="text-2xl font-bold text-orange-600">
                   {new Intl.NumberFormat('en-NG', {
                     style: 'currency',
