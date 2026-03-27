@@ -42,18 +42,25 @@ export default function UserDetails() {
     enabled: !!id,
   });
 
+  const { data: userVaults } = useQuery({
+    queryKey: ['user-vaults', id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('budget_plans')
+        .select('*, plan_wallets(*)')
+        .eq('user_id', id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!id,
+  });
+
   const handleRefresh = () => {
     if (id) {
       refreshData.mutate(['user', id]);
     }
-  };
-
-  const getActionIcon = (action: string) => {
-    if (action.includes('create')) return '🆕';
-    if (action.includes('update')) return '✏️';
-    if (action.includes('delete')) return '🗑️';
-    if (action.includes('login')) return '🔐';
-    return '📝';
   };
 
   const getEventIcon = (type: string) => {
@@ -62,14 +69,6 @@ export default function UserDetails() {
     if (type.includes('transaction')) return '💳';
     if (type.includes('notification')) return '🔔';
     return '📌';
-  };
-
-  const getActionColor = (action: string) => {
-    if (action.includes('create')) return 'bg-green-50 text-green-700 border-green-200';
-    if (action.includes('update')) return 'bg-blue-50 text-blue-700 border-blue-200';
-    if (action.includes('delete')) return 'bg-red-50 text-red-700 border-red-200';
-    if (action.includes('login')) return 'bg-purple-50 text-purple-700 border-purple-200';
-    return 'bg-gray-50 text-gray-700 border-gray-200';
   };
 
   if (isLoading) {
@@ -711,6 +710,152 @@ export default function UserDetails() {
               </div>
               <p className="text-gray-500 font-medium">No payout plans found</p>
               <p className="text-gray-400 text-sm mt-1">User hasn't created any plans yet</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="mb-8">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-bold text-gray-900">Vaults</h2>
+          {userVaults && userVaults.length > 0 && (
+            <Link
+              to="/vaults"
+              className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
+            >
+              View All Vaults
+              <ArrowUpRight className="h-4 w-4" />
+            </Link>
+          )}
+        </div>
+        <div className="bg-white rounded-2xl shadow-soft border border-gray-100 overflow-hidden">
+          {userVaults && userVaults.length > 0 ? (
+            <div className="divide-y divide-gray-100">
+              {userVaults.map((vault: any) => (
+                <div key={vault.id} className="p-6 hover:bg-gray-50 transition-colors">
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="flex-1">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-1">{vault.name}</h3>
+                      {vault.description && (
+                        <p className="text-sm text-gray-500">{vault.description}</p>
+                      )}
+                      {vault.created_at && (
+                        <p className="text-xs text-gray-400 mt-1">
+                          Created {format(new Date(vault.created_at), 'MMM d, yyyy')}
+                        </p>
+                      )}
+                    </div>
+                    <span className={`px-3 py-1 rounded-lg text-xs font-semibold ${
+                      vault.status === 'active'
+                        ? 'bg-green-50 text-green-600 border border-green-100'
+                        : vault.status === 'paused'
+                          ? 'bg-yellow-50 text-yellow-600 border border-yellow-100'
+                          : vault.status === 'completed'
+                            ? 'bg-blue-50 text-blue-600 border border-blue-100'
+                            : 'bg-gray-50 text-gray-600 border border-gray-100'
+                    }`}>
+                      {vault.status.charAt(0).toUpperCase() + vault.status.slice(1)}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                    <div>
+                      <p className="text-xs font-medium text-gray-500 mb-1">Total Budget</p>
+                      <p className="text-base font-bold text-gray-900">
+                        {new Intl.NumberFormat('en-NG', {
+                          style: 'currency',
+                          currency: 'NGN'
+                        }).format(vault.total_budget || 0)}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-medium text-gray-500 mb-1">Current Balance</p>
+                      <p className="text-base font-bold text-green-600">
+                        {new Intl.NumberFormat('en-NG', {
+                          style: 'currency',
+                          currency: 'NGN'
+                        }).format(vault.current_balance || 0)}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-medium text-gray-500 mb-1">Total Spent</p>
+                      <p className="text-base font-bold text-orange-600">
+                        {new Intl.NumberFormat('en-NG', {
+                          style: 'currency',
+                          currency: 'NGN'
+                        }).format((vault.total_budget || 0) - (vault.current_balance || 0))}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-medium text-gray-500 mb-1">Wallet Balance</p>
+                      <p className="text-base font-bold text-gray-900">
+                        {new Intl.NumberFormat('en-NG', {
+                          style: 'currency',
+                          currency: 'NGN'
+                        }).format(vault.plan_wallets?.[0]?.balance || 0)}
+                      </p>
+                    </div>
+                  </div>
+
+                  {vault.auto_topup_enabled && (
+                    <div className="mb-3 p-3 bg-blue-50 rounded-lg border border-blue-100">
+                      <p className="text-xs font-semibold text-blue-700 mb-1">Auto Top-up Enabled</p>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <p className="text-xs text-blue-600">Top-up Amount</p>
+                          <p className="text-sm font-bold text-blue-900">
+                            {new Intl.NumberFormat('en-NG', {
+                              style: 'currency',
+                              currency: 'NGN'
+                            }).format(vault.auto_topup_amount || 0)}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-blue-600">Trigger</p>
+                          <p className="text-sm font-bold text-blue-900">
+                            {new Intl.NumberFormat('en-NG', {
+                              style: 'currency',
+                              currency: 'NGN'
+                            }).format(vault.auto_topup_trigger || 0)}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {vault.start_date && (
+                    <div className="flex items-center gap-4 text-sm text-gray-500">
+                      <div className="flex items-center gap-1">
+                        <Calendar className="h-4 w-4" />
+                        <span>Start: {format(new Date(vault.start_date), 'MMM d, yyyy')}</span>
+                      </div>
+                      {vault.end_date && (
+                        <div className="flex items-center gap-1">
+                          <span>End: {format(new Date(vault.end_date), 'MMM d, yyyy')}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="mt-4">
+                    <Link
+                      to={`/vaults/${vault.id}`}
+                      className="inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 font-medium"
+                    >
+                      View Vault Details
+                      <ArrowUpRight className="h-4 w-4" />
+                    </Link>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="p-12 text-center">
+              <div className="w-16 h-16 rounded-2xl bg-gray-50 flex items-center justify-center mx-auto mb-4">
+                <Wallet className="h-7 w-7 text-gray-400" />
+              </div>
+              <p className="text-gray-500 font-medium">No vaults found</p>
+              <p className="text-gray-400 text-sm mt-1">User hasn't created any vaults yet</p>
             </div>
           )}
         </div>
