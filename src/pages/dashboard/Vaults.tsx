@@ -303,7 +303,7 @@ export default function Vaults() {
               <DollarSign className="h-5 w-5 text-green-600" />
             </div>
             <div>
-              <p className="text-sm text-gray-500">Current Balance</p>
+              <p className="text-sm text-gray-500">Funds added</p>
               <p className="text-2xl font-bold text-gray-900">
                 {new Intl.NumberFormat('en-NG', {
                   style: 'currency',
