@@ -159,10 +159,10 @@ export default function VaultDetails() {
                 </div>
               </div>
 
-              {vault.description && (
+              {vault.plan_name && vault.plan_name !== vault.name && (
                 <div className="md:col-span-2">
-                  <p className="text-sm text-gray-500 mb-1">Description</p>
-                  <p className="text-gray-900">{vault.description}</p>
+                  <p className="text-sm text-gray-500 mb-1">Plan Name</p>
+                  <p className="text-gray-900">{vault.plan_name}</p>
                 </div>
               )}
             </div>
@@ -228,12 +228,9 @@ export default function VaultDetails() {
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs text-blue-700">Trigger Balance</p>
-                  <p className="text-lg font-semibold text-blue-900">
-                    {new Intl.NumberFormat('en-NG', {
-                      style: 'currency',
-                      currency: 'NGN'
-                    }).format(vault.auto_topup_trigger || 0)}
+                  <p className="text-xs text-blue-700">Frequency</p>
+                  <p className="text-lg font-semibold text-blue-900 capitalize">
+                    {vault.auto_topup_frequency || 'N/A'}
                   </p>
                 </div>
               </div>

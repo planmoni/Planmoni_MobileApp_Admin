@@ -736,8 +736,8 @@ export default function UserDetails() {
                   <div className="flex justify-between items-start mb-4">
                     <div className="flex-1">
                       <h3 className="text-lg font-semibold text-gray-900 mb-1">{vault.name}</h3>
-                      {vault.description && (
-                        <p className="text-sm text-gray-500">{vault.description}</p>
+                      {vault.plan_name && vault.plan_name !== vault.name && (
+                        <p className="text-sm text-gray-500">{vault.plan_name}</p>
                       )}
                       {vault.created_at && (
                         <p className="text-xs text-gray-400 mt-1">
@@ -811,12 +811,9 @@ export default function UserDetails() {
                           </p>
                         </div>
                         <div>
-                          <p className="text-xs text-blue-600">Trigger</p>
-                          <p className="text-sm font-bold text-blue-900">
-                            {new Intl.NumberFormat('en-NG', {
-                              style: 'currency',
-                              currency: 'NGN'
-                            }).format(vault.auto_topup_trigger || 0)}
+                          <p className="text-xs text-blue-600">Frequency</p>
+                          <p className="text-sm font-bold text-blue-900 capitalize">
+                            {vault.auto_topup_frequency || 'N/A'}
                           </p>
                         </div>
                       </div>

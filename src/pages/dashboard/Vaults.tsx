@@ -457,8 +457,8 @@ export default function Vaults() {
                       <td className="px-6 py-4">
                         <div className="space-y-1">
                           <div className="text-sm font-medium text-gray-900">{vault.name}</div>
-                          {vault.description && (
-                            <div className="text-xs text-gray-500 max-w-xs truncate">{vault.description}</div>
+                          {vault.plan_name && vault.plan_name !== vault.name && (
+                            <div className="text-xs text-gray-500 max-w-xs truncate">{vault.plan_name}</div>
                           )}
                           {vault.auto_topup_enabled && (
                             <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-50 text-blue-700">
@@ -552,8 +552,8 @@ export default function Vaults() {
                   <div className="space-y-2.5">
                     <div>
                       <div className="text-sm font-semibold text-gray-900 mb-0.5">{vault.name}</div>
-                      {vault.description && (
-                        <div className="text-xs text-gray-500 line-clamp-2">{vault.description}</div>
+                      {vault.plan_name && vault.plan_name !== vault.name && (
+                        <div className="text-xs text-gray-500 line-clamp-2">{vault.plan_name}</div>
                       )}
                       {vault.auto_topup_enabled && (
                         <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-50 text-blue-700 mt-1">
