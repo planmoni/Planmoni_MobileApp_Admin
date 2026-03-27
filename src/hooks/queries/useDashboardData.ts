@@ -16,6 +16,9 @@ type DashboardStats = {
   todayPayoutsDueAmount: number;
   nextPayoutDate: string | null;
   nextPayoutAmount: number;
+  todayNewVaults: number;
+  todayFundedVaults: number;
+  todayUnlockedVaults: number;
 
   // Yesterday's stats (for comparison)
   yesterdayUsers: number;
@@ -28,6 +31,9 @@ type DashboardStats = {
   yesterdayWithdrawals: number;
   yesterdayPayoutsDueCount: number;
   yesterdayPayoutsDueAmount: number;
+  yesterdayNewVaults: number;
+  yesterdayFundedVaults: number;
+  yesterdayUnlockedVaults: number;
 
   // Totals
   totalUsers: number;
@@ -179,6 +185,28 @@ const fetchTodayStats = async () => {
     .limit(1)
     .maybeSingle();
 
+  // Today's vaults (budget_plans created today)
+  const { count: todayNewVaultsCount } = await supabase
+    .from('budget_plans')
+    .select('id', { count: 'exact', head: true })
+    .gte('created_at', startOfToday.toISOString())
+    .lte('created_at', endOfToday.toISOString());
+
+  // Today's funded vaults (vaults that received deposits today via plan_wallets)
+  const { data: todayFundedVaultsData } = await supabase
+    .from('plan_wallets')
+    .select('plan_id')
+    .gte('updated_at', startOfToday.toISOString())
+    .lte('updated_at', endOfToday.toISOString())
+    .gt('balance', 0);
+
+  // Today's unlocked vaults (vaults that had end_date reached today or were unlocked)
+  const { count: todayUnlockedVaultsCount } = await supabase
+    .from('budget_plans')
+    .select('id', { count: 'exact', head: true })
+    .gte('end_date', startOfToday.toISOString().split('T')[0])
+    .lte('end_date', endOfToday.toISOString().split('T')[0]);
+
   return {
     todayUsers: todayUsersCount || 0,
     todayDeposits: todayDepositsData?.reduce((sum, t) => sum + t.amount, 0) || 0,
@@ -192,6 +220,9 @@ const fetchTodayStats = async () => {
     todayPayoutsDueAmount: todayPayoutsDueData?.reduce((sum, p) => sum + Number(p.payout_amount), 0) || 0,
     nextPayoutDate: nextPayoutData?.next_payout_date || null,
     nextPayoutAmount: nextPayoutData ? Number(nextPayoutData.payout_amount) : 0,
+    todayNewVaults: todayNewVaultsCount || 0,
+    todayFundedVaults: new Set(todayFundedVaultsData?.map(v => v.plan_id) || []).size,
+    todayUnlockedVaults: todayUnlockedVaultsCount || 0,
   };
 };
 
@@ -267,6 +298,28 @@ const fetchYesterdayStats = async () => {
     .lte('next_payout_date', endOfYesterday.toISOString())
     .eq('status', 'active');
 
+  // Yesterday's vaults (budget_plans created yesterday)
+  const { count: yesterdayNewVaultsCount } = await supabase
+    .from('budget_plans')
+    .select('id', { count: 'exact', head: true })
+    .gte('created_at', startOfYesterday.toISOString())
+    .lte('created_at', endOfYesterday.toISOString());
+
+  // Yesterday's funded vaults (vaults that received deposits yesterday via plan_wallets)
+  const { data: yesterdayFundedVaultsData } = await supabase
+    .from('plan_wallets')
+    .select('plan_id')
+    .gte('updated_at', startOfYesterday.toISOString())
+    .lte('updated_at', endOfYesterday.toISOString())
+    .gt('balance', 0);
+
+  // Yesterday's unlocked vaults (vaults that had end_date reached yesterday)
+  const { count: yesterdayUnlockedVaultsCount } = await supabase
+    .from('budget_plans')
+    .select('id', { count: 'exact', head: true })
+    .gte('end_date', startOfYesterday.toISOString().split('T')[0])
+    .lte('end_date', endOfYesterday.toISOString().split('T')[0]);
+
   return {
     yesterdayUsers: yesterdayUsersCount || 0,
     yesterdayDeposits: yesterdayDepositsData?.reduce((sum, t) => sum + t.amount, 0) || 0,
@@ -278,6 +331,9 @@ const fetchYesterdayStats = async () => {
     yesterdayLockedBalance: yesterdayLockedBalanceData?.reduce((sum, p) => sum + Number(p.total_amount), 0) || 0,
     yesterdayPayoutsDueCount: yesterdayPayoutsDueCount || 0,
     yesterdayPayoutsDueAmount: yesterdayPayoutsDueData?.reduce((sum, p) => sum + Number(p.payout_amount), 0) || 0,
+    yesterdayNewVaults: yesterdayNewVaultsCount || 0,
+    yesterdayFundedVaults: new Set(yesterdayFundedVaultsData?.map(v => v.plan_id) || []).size,
+    yesterdayUnlockedVaults: yesterdayUnlockedVaultsCount || 0,
   };
 };
 
@@ -969,9 +1025,19 @@ const fetchDashboardDataFallback = async (): Promise<DashboardStats> => {
     }))
   ].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).slice(0, 10);
 
+  // Fetch vault stats for fallback
+  const vaultStats = await fetchTodayStats();
+  const vaultStatsYesterday = await fetchYesterdayStats();
+
   const finalAnalyticsData = {
     ...todayStats,
     ...yesterdayStats,
+    todayNewVaults: vaultStats.todayNewVaults,
+    todayFundedVaults: vaultStats.todayFundedVaults,
+    todayUnlockedVaults: vaultStats.todayUnlockedVaults,
+    yesterdayNewVaults: vaultStatsYesterday.yesterdayNewVaults,
+    yesterdayFundedVaults: vaultStatsYesterday.yesterdayFundedVaults,
+    yesterdayUnlockedVaults: vaultStatsYesterday.yesterdayUnlockedVaults,
     totalUsers: await getTotalUsers(),
     totalDeposits: await getTotalDeposits(),
     totalPayouts: await getTotalPayouts(),

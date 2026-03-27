@@ -1,4 +1,4 @@
-import { Users, ArrowUpRight, ArrowDownRight, CheckCircle2, Clock } from 'lucide-react';
+import { Users, ArrowUpRight, ArrowDownRight, CircleCheck as CheckCircle2, Clock } from 'lucide-react';
 import { PayoutCountdown } from '@/components/PayoutCountdown';
 import TransactionDetailsModal from '@/components/TransactionDetailsModal';
 import { Pie, Line } from 'react-chartjs-2';
@@ -222,6 +222,9 @@ export default function Dashboard() {
     todayPayoutsDueAmount: 0,
     nextPayoutDate: null,
     nextPayoutAmount: 0,
+    todayNewVaults: 0,
+    todayFundedVaults: 0,
+    todayUnlockedVaults: 0,
     yesterdayUsers: 0,
     yesterdayDeposits: 0,
     yesterdayPayouts: 0,
@@ -232,6 +235,9 @@ export default function Dashboard() {
     yesterdayWithdrawals: 0,
     yesterdayPayoutsDueCount: 0,
     yesterdayPayoutsDueAmount: 0,
+    yesterdayNewVaults: 0,
+    yesterdayFundedVaults: 0,
+    yesterdayUnlockedVaults: 0,
     totalUsers: 0,
     totalDeposits: 0,
     totalPayouts: 0,
@@ -439,6 +445,42 @@ export default function Dashboard() {
             </div>
           </Link>
           )}
+
+          <Link to="/vaults">
+            <div className="bg-white rounded-2xl p-4 md:p-6 shadow-soft border border-gray-100 hover:shadow-md transition-shadow cursor-pointer">
+              <div className="flex justify-between items-start mb-2">
+                <div className="flex-1">
+                  <p className="text-xs md:text-sm font-medium text-gray-500 mb-1">New Vaults</p>
+                  <p className="text-xl md:text-2xl font-bold text-gray-900">{stats.todayNewVaults}</p>
+                  {renderComparison(stats.todayNewVaults, stats.yesterdayNewVaults, true)}
+                </div>
+              </div>
+            </div>
+          </Link>
+
+          <Link to="/vaults">
+            <div className="bg-white rounded-2xl p-4 md:p-6 shadow-soft border border-gray-100 hover:shadow-md transition-shadow cursor-pointer">
+              <div className="flex justify-between items-start mb-2">
+                <div className="flex-1">
+                  <p className="text-xs md:text-sm font-medium text-gray-500 mb-1">Funded Vaults</p>
+                  <p className="text-xl md:text-2xl font-bold text-gray-900">{stats.todayFundedVaults}</p>
+                  {renderComparison(stats.todayFundedVaults, stats.yesterdayFundedVaults, true)}
+                </div>
+              </div>
+            </div>
+          </Link>
+
+          <Link to="/vaults">
+            <div className="bg-white rounded-2xl p-4 md:p-6 shadow-soft border border-gray-100 hover:shadow-md transition-shadow cursor-pointer">
+              <div className="flex justify-between items-start mb-2">
+                <div className="flex-1">
+                  <p className="text-xs md:text-sm font-medium text-gray-500 mb-1">Unlocked Vaults</p>
+                  <p className="text-xl md:text-2xl font-bold text-gray-900">{stats.todayUnlockedVaults}</p>
+                  {renderComparison(stats.todayUnlockedVaults, stats.yesterdayUnlockedVaults, true)}
+                </div>
+              </div>
+            </div>
+          </Link>
         </div>
       </div>
 
