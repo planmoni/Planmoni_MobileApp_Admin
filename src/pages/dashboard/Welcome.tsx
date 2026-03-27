@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePermissions } from '@/contexts/PermissionsContext';
 import { supabase } from '@/lib/supabase';
-import { Home, Users, CreditCard, BarChart3, Activity, FileText, DollarSign, CalendarDays, Repeat, TriangleAlert as AlertTriangle, Image, Smartphone, ScrollText, Mail, Bell, BookOpen, Wallet } from 'lucide-react';
+import { Home, Users, CreditCard, BarChart3, Activity, FileText, DollarSign, CalendarDays, Repeat, TriangleAlert as AlertTriangle, Image, Smartphone, ScrollText, Mail, Bell, BookOpen, Vault } from 'lucide-react';
 
 export default function Welcome() {
   const { session } = useAuth();
@@ -130,7 +130,7 @@ export default function Welcome() {
     {
       name: 'Vaults',
       path: '/vaults',
-      icon: Wallet,
+      icon: Vault,
       resource: 'vaults',
       action: 'list',
       description: 'Manage user budget vaults',
