@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { usePermissions } from '../contexts/PermissionsContext';
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Home, Users, CreditCard, BarChart3, Shield, Image, Activity, FileText, DollarSign, CalendarDays, Repeat, ScrollText, TriangleAlert as AlertTriangle, Smartphone, Mail, Bell, BookOpen, Wallet } from 'lucide-react';
+import { Home, Users, CreditCard, BarChart3, Shield, Image, Activity, FileText, DollarSign, CalendarDays, Repeat, ScrollText, TriangleAlert as AlertTriangle, Smartphone, Mail, Bell, BookOpen, Vault } from 'lucide-react';
 
 export default function Sidebar({ isMobileMenuOpen, closeMobileMenu }: { isMobileMenuOpen: boolean, closeMobileMenu: () => void }) {
   const { session } = useAuth();
@@ -78,7 +78,7 @@ export default function Sidebar({ isMobileMenuOpen, closeMobileMenu }: { isMobil
     { name: 'KYC Data', path: '/kyc-data', icon: FileText, resource: 'kyc', action: 'list' },
     { name: 'Payout Events', path: '/payout-events', icon: DollarSign, resource: 'payout_events', action: 'list' },
     { name: 'Payout Plans', path: '/payout-plans', icon: Repeat, resource: 'payout_plans', action: 'list' },
-    { name: 'Vaults', path: '/vaults', icon: Wallet, resource: 'vaults', action: 'list' },
+    { name: 'Vaults', path: '/vaults', icon: Vault, resource: 'vaults', action: 'list' },
     { name: 'Emergency Withdrawals', path: '/emergency-withdrawals', icon: AlertTriangle, resource: 'emergency_withdrawals', action: 'list' },
     { name: 'Marketing', path: '/marketing', icon: Mail, resource: 'marketing', action: 'view' },
     { name: 'Notifications', path: '/notifications', icon: Bell, resource: 'notifications', action: 'view' },
