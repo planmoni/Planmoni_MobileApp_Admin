@@ -778,7 +778,7 @@ export default function UserDetails() {
                       </p>
                     </div>
                     <div>
-                      <p className="text-xs font-medium text-gray-500 mb-1">Total Spent</p>
+                      <p className="text-xs font-medium text-gray-500 mb-1">Total Remaining to Fund</p>
                       <p className="text-base font-bold text-orange-600">
                         {new Intl.NumberFormat('en-NG', {
                           style: 'currency',
