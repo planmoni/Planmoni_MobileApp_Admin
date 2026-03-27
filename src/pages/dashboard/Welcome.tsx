@@ -3,24 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePermissions } from '@/contexts/PermissionsContext';
 import { supabase } from '@/lib/supabase';
-import {
-  Home,
-  Users,
-  CreditCard,
-  BarChart3,
-  Activity,
-  FileText,
-  DollarSign,
-  CalendarDays,
-  Repeat,
-  AlertTriangle,
-  Image,
-  Smartphone,
-  ScrollText,
-  Mail,
-  Bell,
-  BookOpen
-} from 'lucide-react';
+import { Home, Users, CreditCard, BarChart3, Activity, FileText, DollarSign, CalendarDays, Repeat, TriangleAlert as AlertTriangle, Image, Smartphone, ScrollText, Mail, Bell, BookOpen, Wallet } from 'lucide-react';
 
 export default function Welcome() {
   const { session } = useAuth();
@@ -143,6 +126,15 @@ export default function Welcome() {
       action: 'list',
       description: 'View user payout plans',
       color: 'from-cyan-500 to-cyan-600'
+    },
+    {
+      name: 'Vaults',
+      path: '/vaults',
+      icon: Wallet,
+      resource: 'vaults',
+      action: 'list',
+      description: 'Manage user budget vaults',
+      color: 'from-indigo-500 to-indigo-600'
     },
     {
       name: 'Emergency Withdrawals',

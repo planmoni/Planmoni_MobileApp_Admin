@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Filter, RefreshCw, CircleCheck as CheckCircle, Circle as XCircle, Clock, Calendar, User, ChevronLeft, ChevronRight, Wallet, DollarSign, CirclePause as PauseCircle } from 'lucide-react';
+import { Search, Filter, RefreshCw, CircleCheck as CheckCircle, Circle as XCircle, Clock, Calendar, User, ChevronLeft, ChevronRight, Wallet, DollarSign } from 'lucide-react';
 import { useVaults } from '@/hooks/queries/useVaults';
 import { useRefreshData } from '@/hooks/mutations/useRefreshData';
 import { format } from 'date-fns';
@@ -29,7 +29,7 @@ ChartJS.register(
 export default function Vaults() {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'paused' | 'completed' | 'cancelled'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'completed' | 'cancelled'>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 50;
   const { data, isLoading, error } = useVaults(searchQuery, statusFilter, currentPage, pageSize);
@@ -48,8 +48,6 @@ export default function Vaults() {
     switch (status) {
       case 'active':
         return 'bg-green-50 text-green-700';
-      case 'paused':
-        return 'bg-yellow-50 text-yellow-700';
       case 'completed':
         return 'bg-blue-50 text-blue-700';
       case 'cancelled':
@@ -63,8 +61,6 @@ export default function Vaults() {
     switch (status) {
       case 'active':
         return <Clock className="h-4 w-4" />;
-      case 'paused':
-        return <PauseCircle className="h-4 w-4" />;
       case 'completed':
         return <CheckCircle className="h-4 w-4" />;
       case 'cancelled':
@@ -99,18 +95,16 @@ export default function Vaults() {
   const { vaults = [], stats, totalCount = 0, totalPages = 0 } = data || {};
 
   const statusPieData = {
-    labels: ['Active', 'Paused', 'Completed', 'Cancelled'],
+    labels: ['Active', 'Completed', 'Cancelled'],
     datasets: [
       {
         data: [
           stats?.active || 0,
-          stats?.paused || 0,
           stats?.completed || 0,
           stats?.cancelled || 0
         ],
         backgroundColor: [
           '#10b981',
-          '#f59e0b',
           '#3b82f6',
           '#ef4444'
         ],
@@ -223,26 +217,6 @@ export default function Vaults() {
         </button>
 
         <button
-          onClick={() => handleCardClick('paused')}
-          className={`bg-white rounded-2xl p-6 shadow-soft border transition-all hover:shadow-md ${
-            statusFilter === 'paused' ? 'border-yellow-600 ring-2 ring-yellow-600' : 'border-gray-100'
-          }`}
-        >
-          <div className="flex justify-between items-start mb-4">
-            <div className="flex-1 text-left">
-              <p className="text-sm font-medium text-gray-500 mb-1">Paused</p>
-              <p className="text-3xl font-bold text-yellow-600">{stats?.paused || 0}</p>
-            </div>
-            <div className="w-12 h-12 rounded-xl bg-yellow-50 flex items-center justify-center">
-              <PauseCircle className="h-5 w-5 text-yellow-600" />
-            </div>
-          </div>
-          <div className="flex items-center gap-2 pt-3 border-t border-gray-100">
-            <span className="text-xs text-gray-500">Temporarily paused</span>
-          </div>
-        </button>
-
-        <button
           onClick={() => handleCardClick('completed')}
           className={`bg-white rounded-2xl p-6 shadow-soft border transition-all hover:shadow-md ${
             statusFilter === 'completed' ? 'border-blue-600 ring-2 ring-blue-600' : 'border-gray-100'
@@ -259,6 +233,26 @@ export default function Vaults() {
           </div>
           <div className="flex items-center gap-2 pt-3 border-t border-gray-100">
             <span className="text-xs text-gray-500">Successfully finished</span>
+          </div>
+        </button>
+
+        <button
+          onClick={() => handleCardClick('cancelled')}
+          className={`bg-white rounded-2xl p-6 shadow-soft border transition-all hover:shadow-md ${
+            statusFilter === 'cancelled' ? 'border-red-600 ring-2 ring-red-600' : 'border-gray-100'
+          }`}
+        >
+          <div className="flex justify-between items-start mb-4">
+            <div className="flex-1 text-left">
+              <p className="text-sm font-medium text-gray-500 mb-1">Cancelled</p>
+              <p className="text-3xl font-bold text-red-600">{stats?.cancelled || 0}</p>
+            </div>
+            <div className="w-12 h-12 rounded-xl bg-red-50 flex items-center justify-center">
+              <XCircle className="h-5 w-5 text-red-600" />
+            </div>
+          </div>
+          <div className="flex items-center gap-2 pt-3 border-t border-gray-100">
+            <span className="text-xs text-gray-500">User cancelled</span>
           </div>
         </button>
       </div>
@@ -360,7 +354,6 @@ export default function Vaults() {
             >
               <option value="all">All Status</option>
               <option value="active">Active</option>
-              <option value="paused">Paused</option>
               <option value="completed">Completed</option>
               <option value="cancelled">Cancelled</option>
             </select>
