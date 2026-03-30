@@ -8,7 +8,7 @@ const corsHeaders = {
 };
 
 interface SendPushNotificationRequest {
-  action: 'send_notification';
+  action: 'send_notification' | 'send_reengagement';
   title?: string;
   body?: string;
   data?: Record<string, any>;
@@ -16,6 +16,9 @@ interface SendPushNotificationRequest {
   target_user_ids?: string[];
   target_segment_id?: string;
   personalize?: boolean;
+  notification_type?: string;
+  notification_category?: string;
+  category?: string;
 }
 
 interface ExpoPushMessage {
@@ -34,16 +37,52 @@ interface ExpoPushTicket {
   details?: any;
 }
 
-// Simple function to truncate strings
+const REENGAGEMENT_TEMPLATES: Record<string, any> = {
+  zero_balance_reminder: {
+    title: '💰 Your Wallet Needs Attention',
+    body: 'Your wallet balance is empty. Add funds to start saving again and reach your goals!',
+    data: { type: 'zero_balance_reminder', screen: 'Wallet', action: 'deposit' },
+    sound: 'default',
+    priority: 'high',
+  },
+  vault_unfunded_reminder: {
+    title: '🏦 Your Vault is Waiting',
+    body: 'Fund your vault to activate automatic savings and watch your money grow!',
+    data: { type: 'vault_unfunded_reminder', screen: 'Vaults', action: 'fund_vault' },
+    sound: 'default',
+    priority: 'high',
+  },
+  deposit_no_plan: {
+    title: '📋 Complete Your Setup',
+    body: "You've deposited funds but haven't created a savings plan yet. Create one now to start earning!",
+    data: { type: 'deposit_no_plan', screen: 'CreatePlan', action: 'create_plan' },
+    sound: 'default',
+    priority: 'high',
+  },
+  no_plan_yet: {
+    title: '👋 Welcome to PlanMoni!',
+    body: 'Complete your setup by creating your first savings plan and start your journey to financial freedom.',
+    data: { type: 'no_plan_yet', screen: 'CreatePlan', action: 'create_plan' },
+    sound: 'default',
+    priority: 'normal',
+  },
+  re_engagement: {
+    title: '🌟 We Miss You!',
+    body: "It's been a while since your last visit. Come back and continue your savings journey with PlanMoni!",
+    data: { type: 're_engagement', screen: 'Dashboard', action: 'open_app' },
+    sound: 'default',
+    priority: 'normal',
+  },
+};
+
 function truncateString(str: string, maxLength: number): string {
   if (!str || typeof str !== 'string') return '';
   return str.length > maxLength ? str.substring(0, maxLength) : str;
 }
 
-// Clean data object - remove any strings longer than 100 chars
 function cleanDataObject(data: any): any {
   if (!data || typeof data !== 'object') return {};
-  
+
   const cleaned: any = {};
   for (const [key, value] of Object.entries(data)) {
     if (typeof value === 'string') {
@@ -51,7 +90,7 @@ function cleanDataObject(data: any): any {
     } else if (typeof value === 'number' || typeof value === 'boolean') {
       cleaned[key] = value;
     } else if (Array.isArray(value)) {
-      cleaned[key] = value.map(item => 
+      cleaned[key] = value.map(item =>
         typeof item === 'string' ? truncateString(item, 100) : item
       );
     } else if (value && typeof value === 'object') {
@@ -66,8 +105,7 @@ async function sendPushNotifications(
 ): Promise<ExpoPushTicket[]> {
   try {
     console.log(`Sending ${messages.length} messages to Expo API`);
-    
-    // Validate messages before sending
+
     const validatedMessages = messages.map(msg => {
       const validated: ExpoPushMessage = {
         to: msg.to,
@@ -76,20 +114,12 @@ async function sendPushNotifications(
         body: truncateString(msg.body, 200),
         priority: msg.priority || 'high',
       };
-      
-      // Only include data if it exists and is an object
+
       if (msg.data && typeof msg.data === 'object' && Object.keys(msg.data).length > 0) {
         validated.data = cleanDataObject(msg.data);
       }
-      
-      return validated;
-    });
 
-    console.log('First validated message:', {
-      to: validatedMessages[0]?.to?.substring(0, 30) + '...',
-      titleLength: validatedMessages[0]?.title?.length,
-      bodyLength: validatedMessages[0]?.body?.length,
-      hasData: !!validatedMessages[0]?.data
+      return validated;
     });
 
     const response = await fetch('https://exp.host/--/api/v2/push/send', {
@@ -128,11 +158,9 @@ function personalizeMessage(message: string, firstName: string | null, shouldPer
   }
   const name = firstName && firstName.trim() ? firstName.trim() : 'there';
   const prefix = `Hello ${name}, `;
-  // Reserve space for prefix (max ~30 chars), so message can be up to 170 chars
   const maxMessageLength = 170;
   const truncatedMessage = truncateString(message, maxMessageLength);
   const finalMessage = prefix + truncatedMessage;
-  // Final truncate to ensure 200 max
   return truncateString(finalMessage, 200);
 }
 
@@ -171,7 +199,6 @@ Deno.serve(async (req: Request) => {
       throw new Error('Unauthorized');
     }
 
-    // Service role client - bypasses RLS
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const hasPermission = await checkNotificationPermission(supabaseAuth);
@@ -211,6 +238,177 @@ Deno.serve(async (req: Request) => {
     if (req.method === 'POST') {
       const body: SendPushNotificationRequest = await req.json();
 
+      if (body.action === 'send_reengagement') {
+        const { category } = body;
+
+        if (!category || !REENGAGEMENT_TEMPLATES[category]) {
+          return new Response(JSON.stringify({ error: 'Invalid re-engagement category' }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        const template = REENGAGEMENT_TEMPLATES[category];
+
+        let rpcFunction = '';
+        switch (category) {
+          case 'zero_balance_reminder':
+            rpcFunction = 'get_zero_balance_users';
+            break;
+          case 'vault_unfunded_reminder':
+            rpcFunction = 'get_unfunded_vault_users';
+            break;
+          case 'deposit_no_plan':
+            rpcFunction = 'get_deposit_no_plan_users';
+            break;
+          case 'no_plan_yet':
+            rpcFunction = 'get_no_plan_users';
+            break;
+          case 're_engagement':
+            rpcFunction = 'get_inactive_users';
+            break;
+          default:
+            throw new Error('Invalid category');
+        }
+
+        const { data: eligibleUsers, error: rpcError } = await supabase.rpc(rpcFunction);
+
+        if (rpcError) throw rpcError;
+
+        if (!eligibleUsers || eligibleUsers.length === 0) {
+          return new Response(JSON.stringify({
+            success: false,
+            error: 'No eligible users found for this re-engagement category',
+          }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        const userIds = eligibleUsers.map((u: any) => u.user_id);
+
+        const { data: tokens } = await supabase
+          .from('user_push_tokens')
+          .select('expo_push_token, user_id')
+          .in('user_id', userIds)
+          .eq('is_active', true);
+
+        if (!tokens || tokens.length === 0) {
+          return new Response(JSON.stringify({
+            success: false,
+            error: 'No active push tokens found for eligible users',
+          }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        const { data: notificationRecord, error: notifError } = await supabase
+          .from('push_notifications')
+          .insert({
+            title: template.title,
+            body: template.body,
+            data: template.data,
+            target_type: 'individual',
+            target_user_ids: userIds,
+            status: 'sending',
+            created_by: user.id,
+            notification_type: 'reengagement',
+            notification_category: category,
+          })
+          .select()
+          .single();
+
+        if (notifError) throw notifError;
+
+        const validTokens = tokens.filter(t => isValidExpoPushToken(t.expo_push_token));
+
+        const messages: ExpoPushMessage[] = validTokens.map(token => ({
+          to: token.expo_push_token,
+          sound: template.sound,
+          title: template.title,
+          body: template.body,
+          data: template.data,
+          priority: template.priority,
+        }));
+
+        const BATCH_SIZE = 100;
+        let deliveredCount = 0;
+        let failedCount = 0;
+
+        for (let i = 0; i < messages.length; i += BATCH_SIZE) {
+          const batch = messages.slice(i, i + BATCH_SIZE);
+          const batchTokens = validTokens.slice(i, i + BATCH_SIZE);
+
+          try {
+            const tickets = await sendPushNotifications(batch);
+
+            for (let j = 0; j < tickets.length; j++) {
+              const ticket = tickets[j];
+              const token = batchTokens[j];
+
+              await supabase.from('push_notification_logs').insert({
+                push_notification_id: notificationRecord.id,
+                user_id: token.user_id,
+                push_token: token.expo_push_token,
+                status: ticket.status === 'ok' ? 'delivered' : 'failed',
+                error_message: ticket.status === 'error' ? ticket.message : null,
+                expo_receipt_id: ticket.id || null,
+                sent_at: new Date().toISOString(),
+              });
+
+              if (ticket.status === 'ok') {
+                deliveredCount++;
+                await supabase
+                  .from('profiles')
+                  .update({
+                    last_reengagement_sent: {
+                      [category]: new Date().toISOString(),
+                    },
+                  })
+                  .eq('id', token.user_id);
+              } else {
+                failedCount++;
+                if (ticket.message?.toLowerCase().includes('devicenotregistered') ||
+                    ticket.message?.toLowerCase().includes('invalid')) {
+                  await supabase
+                    .from('user_push_tokens')
+                    .update({ is_active: false })
+                    .eq('expo_push_token', token.expo_push_token);
+                }
+              }
+            }
+          } catch (error: any) {
+            console.error(`Error sending batch:`, error);
+            failedCount += batch.length;
+          }
+        }
+
+        await supabase
+          .from('push_notifications')
+          .update({
+            status: failedCount === validTokens.length ? 'failed' : 'sent',
+            total_recipients: validTokens.length,
+            delivered_count: deliveredCount,
+            failed_count: failedCount,
+            sent_at: new Date().toISOString(),
+          })
+          .eq('id', notificationRecord.id);
+
+        return new Response(JSON.stringify({
+          success: true,
+          message: `Re-engagement alert sent to ${deliveredCount} users`,
+          notification_id: notificationRecord.id,
+          stats: {
+            total: validTokens.length,
+            delivered: deliveredCount,
+            failed: failedCount,
+          },
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
       if (body.action !== 'send_notification') {
         return new Response(JSON.stringify({ error: 'Invalid action' }), {
           status: 400,
@@ -226,13 +424,14 @@ Deno.serve(async (req: Request) => {
         target_user_ids = [],
         target_segment_id,
         personalize = false,
+        notification_type = 'manual',
+        notification_category,
       } = body;
 
       if (!title || !messageBody) {
         throw new Error('Title and body are required');
       }
 
-      // Create notification record
       const { data: notificationRecord, error: notifError } = await supabase
         .from('push_notifications')
         .insert({
@@ -244,6 +443,8 @@ Deno.serve(async (req: Request) => {
           target_segment_id: target_type === 'segment' ? target_segment_id : null,
           status: 'sending',
           created_by: user.id,
+          notification_type,
+          notification_category: notification_category || null,
         })
         .select()
         .single();
@@ -255,21 +456,18 @@ Deno.serve(async (req: Request) => {
       console.log('Title:', truncateString(title, 50));
       console.log('Body:', truncateString(messageBody, 50));
 
-      // Get tokens based on target type
       let tokens: Array<{ expo_push_token: string; user_id: string; first_name?: string | null }> = [];
 
       if (target_type === 'all') {
-        // Get all active tokens using RPC function (bypasses RLS)
         const { data: rpcTokens, error: rpcError } = await supabase.rpc('get_all_active_push_tokens');
-        
+
         if (rpcError) {
           console.error('RPC error, trying direct query:', rpcError);
-          // Fallback to direct query
           const { data: directTokens, error: directError } = await supabase
             .from('user_push_tokens')
             .select('expo_push_token, user_id')
             .eq('is_active', true);
-          
+
           if (directError) throw directError;
           tokens = (directTokens || []).map(t => ({ ...t, first_name: null }));
         } else {
@@ -285,16 +483,15 @@ Deno.serve(async (req: Request) => {
           .select('expo_push_token, user_id')
           .in('user_id', target_user_ids)
           .eq('is_active', true);
-        
+
         if (directError) throw directError;
-        
-        // Get first names
+
         const userIds = [...new Set((directTokens || []).map(t => t.user_id))];
         const { data: profiles } = await supabase
           .from('profiles')
           .select('id, first_name')
           .in('id', userIds);
-        
+
         const profilesMap = new Map((profiles || []).map(p => [p.id, p.first_name]));
         tokens = (directTokens || []).map(t => ({
           ...t,
@@ -323,7 +520,7 @@ Deno.serve(async (req: Request) => {
             .from('payout_plans')
             .select('user_id')
             .eq('status', 'active');
-          
+
           const planUserIds = [...new Set((plans || []).map(p => p.user_id))];
           if (planUserIds.length > 0) {
             const { data: directTokens } = await supabase
@@ -331,13 +528,13 @@ Deno.serve(async (req: Request) => {
               .select('expo_push_token, user_id')
               .in('user_id', planUserIds)
               .eq('is_active', true);
-            
+
             const userIds = [...new Set((directTokens || []).map(t => t.user_id))];
             const { data: profiles } = await supabase
               .from('profiles')
               .select('id, first_name')
               .in('id', userIds);
-            
+
             const profilesMap = new Map((profiles || []).map(p => [p.id, p.first_name]));
             tokens = (directTokens || []).map(t => ({
               ...t,
@@ -349,7 +546,7 @@ Deno.serve(async (req: Request) => {
             .from('kyc_data')
             .select('user_id')
             .eq('approved', true);
-          
+
           const kycUserIds = [...new Set((kycUsers || []).map(k => k.user_id))];
           if (kycUserIds.length > 0) {
             const { data: directTokens } = await supabase
@@ -357,13 +554,13 @@ Deno.serve(async (req: Request) => {
               .select('expo_push_token, user_id')
               .in('user_id', kycUserIds)
               .eq('is_active', true);
-            
+
             const userIds = [...new Set((directTokens || []).map(t => t.user_id))];
             const { data: profiles } = await supabase
               .from('profiles')
               .select('id, first_name')
               .in('id', userIds);
-            
+
             const profilesMap = new Map((profiles || []).map(p => [p.id, p.first_name]));
             tokens = (directTokens || []).map(t => ({
               ...t,
@@ -395,7 +592,6 @@ Deno.serve(async (req: Request) => {
         });
       }
 
-      // Filter valid tokens
       const validTokens = tokens.filter(t => isValidExpoPushToken(t.expo_push_token));
       console.log(`Valid tokens: ${validTokens.length} / ${tokens.length}`);
 
@@ -419,7 +615,6 @@ Deno.serve(async (req: Request) => {
         });
       }
 
-      // Create messages - simple and clean
       const messages: ExpoPushMessage[] = validTokens.map(token => {
         const finalTitle = truncateString(title, 100);
         const finalBody = personalizeMessage(messageBody, token.first_name, personalize);
@@ -431,7 +626,6 @@ Deno.serve(async (req: Request) => {
           priority: 'high',
         };
 
-        // Only add data if it has content and clean it
         if (data && typeof data === 'object' && Object.keys(data).length > 0) {
           const cleanedData = cleanDataObject(data);
           if (Object.keys(cleanedData).length > 0) {
@@ -443,15 +637,7 @@ Deno.serve(async (req: Request) => {
       });
 
       console.log(`Prepared ${messages.length} messages`);
-      console.log('Sample message:', {
-        to: messages[0]?.to?.substring(0, 30),
-        title: messages[0]?.title,
-        body: messages[0]?.body?.substring(0, 50),
-        titleLen: messages[0]?.title?.length,
-        bodyLen: messages[0]?.body?.length
-      });
 
-      // Send in batches of 100
       const BATCH_SIZE = 100;
       let deliveredCount = 0;
       let failedCount = 0;
@@ -473,7 +659,7 @@ Deno.serve(async (req: Request) => {
               push_token: token.expo_push_token,
               status: ticket.status === 'ok' ? 'delivered' : 'failed',
               error_message: ticket.status === 'error' ? ticket.message : null,
-              expo_ticket_id: ticket.id || null,
+              expo_receipt_id: ticket.id || null,
               sent_at: new Date().toISOString(),
             });
 
@@ -481,7 +667,6 @@ Deno.serve(async (req: Request) => {
               deliveredCount++;
             } else {
               failedCount++;
-              // Deactivate invalid tokens
               if (ticket.message?.toLowerCase().includes('devicenotregistered') ||
                   ticket.message?.toLowerCase().includes('invalid')) {
                 await supabase

@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
+import { useState, useEffect } from 'react';
 
 export interface PushNotification {
   id: string;
@@ -18,6 +19,37 @@ export interface PushNotification {
   created_by: string;
   created_at: string;
   updated_at: string;
+  notification_type?: string;
+  notification_category?: string;
+}
+
+export interface NotificationDispatchLog {
+  id: string;
+  push_notification_id: string;
+  user_id: string;
+  user_email: string;
+  user_full_name: string;
+  notification_title: string;
+  notification_body: string;
+  notification_type: string;
+  notification_category: string;
+  status: string;
+  error_message: string | null;
+  sent_at: string;
+  delivered_at: string | null;
+  created_at: string;
+}
+
+export interface ReengagementUser {
+  user_id: string;
+  email: string;
+  full_name: string;
+  [key: string]: any;
+}
+
+export interface ReengagementStats {
+  category: string;
+  eligible_count: number;
 }
 
 export interface PushNotificationSegment {
@@ -145,5 +177,187 @@ export function useUserPushTokens() {
       if (error) throw error;
       return data;
     },
+  });
+}
+
+export interface DispatchFilters {
+  status?: string;
+  category?: string;
+  search?: string;
+  dateFrom?: string;
+  dateTo?: string;
+}
+
+export function useNotificationDispatchLogs(
+  limit: number = 100,
+  offset: number = 0,
+  filters: DispatchFilters = {}
+) {
+  return useQuery({
+    queryKey: ['notification-dispatch-logs', limit, offset, filters],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('get_notification_dispatch_logs', {
+        limit_count: limit,
+        offset_count: offset,
+        filter_status: filters.status || null,
+        filter_category: filters.category || null,
+        search_term: filters.search || null,
+        date_from: filters.dateFrom || null,
+        date_to: filters.dateTo || null,
+      });
+
+      if (error) throw error;
+      return data as NotificationDispatchLog[];
+    },
+    refetchInterval: 10000,
+  });
+}
+
+export function useRealtimeDispatch(onNewDispatch?: (dispatch: NotificationDispatchLog) => void) {
+  const [realtimeEnabled, setRealtimeEnabled] = useState(true);
+
+  useEffect(() => {
+    if (!realtimeEnabled || !onNewDispatch) return;
+
+    const channel = supabase
+      .channel('notification-dispatch')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'push_notification_logs',
+        },
+        async (payload) => {
+          const log = payload.new;
+
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('email, full_name')
+            .eq('id', log.user_id)
+            .single();
+
+          const { data: notificationData } = await supabase
+            .from('push_notifications')
+            .select('title, body, notification_type, notification_category')
+            .eq('id', log.push_notification_id)
+            .single();
+
+          if (profileData && notificationData) {
+            onNewDispatch({
+              id: log.id,
+              push_notification_id: log.push_notification_id,
+              user_id: log.user_id,
+              user_email: profileData.email,
+              user_full_name: profileData.full_name,
+              notification_title: notificationData.title,
+              notification_body: notificationData.body,
+              notification_type: notificationData.notification_type,
+              notification_category: notificationData.notification_category,
+              status: log.status,
+              error_message: log.error_message,
+              sent_at: log.sent_at,
+              delivered_at: log.delivered_at,
+              created_at: log.created_at,
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [realtimeEnabled, onNewDispatch]);
+
+  return { realtimeEnabled, setRealtimeEnabled };
+}
+
+export function useReengagementStats() {
+  return useQuery({
+    queryKey: ['reengagement-stats'],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('get_reengagement_stats');
+
+      if (error) throw error;
+      return data as ReengagementStats[];
+    },
+    refetchInterval: 30000,
+  });
+}
+
+export function useReengagementUsers(category: string, enabled: boolean = false) {
+  return useQuery({
+    queryKey: ['reengagement-users', category],
+    queryFn: async () => {
+      let rpcFunction = '';
+      switch (category) {
+        case 'zero_balance_reminder':
+          rpcFunction = 'get_zero_balance_users';
+          break;
+        case 'vault_unfunded_reminder':
+          rpcFunction = 'get_unfunded_vault_users';
+          break;
+        case 'deposit_no_plan':
+          rpcFunction = 'get_deposit_no_plan_users';
+          break;
+        case 'no_plan_yet':
+          rpcFunction = 'get_no_plan_users';
+          break;
+        case 're_engagement':
+          rpcFunction = 'get_inactive_users';
+          break;
+        default:
+          throw new Error('Invalid reengagement category');
+      }
+
+      const { data, error } = await supabase.rpc(rpcFunction);
+
+      if (error) throw error;
+      return data as ReengagementUser[];
+    },
+    enabled,
+  });
+}
+
+export function useDispatchStats() {
+  return useQuery({
+    queryKey: ['dispatch-stats'],
+    queryFn: async () => {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const { data, error } = await supabase
+        .from('push_notification_logs')
+        .select('status, sent_at, delivered_at')
+        .gte('sent_at', today.toISOString());
+
+      if (error) throw error;
+
+      const stats = {
+        total_dispatched: data?.length || 0,
+        total_delivered: data?.filter(d => d.status === 'delivered').length || 0,
+        total_failed: data?.filter(d => d.status === 'failed').length || 0,
+        success_rate: 0,
+        avg_delivery_time: 0,
+      };
+
+      if (stats.total_dispatched > 0) {
+        stats.success_rate = Math.round((stats.total_delivered / stats.total_dispatched) * 100);
+      }
+
+      const deliveredLogs = data?.filter(d => d.delivered_at && d.sent_at) || [];
+      if (deliveredLogs.length > 0) {
+        const totalTime = deliveredLogs.reduce((sum, log) => {
+          const sentTime = new Date(log.sent_at!).getTime();
+          const deliveredTime = new Date(log.delivered_at!).getTime();
+          return sum + (deliveredTime - sentTime);
+        }, 0);
+        stats.avg_delivery_time = Math.round(totalTime / deliveredLogs.length / 1000);
+      }
+
+      return stats;
+    },
+    refetchInterval: 30000,
   });
 }

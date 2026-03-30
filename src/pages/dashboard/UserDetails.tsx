@@ -4,6 +4,7 @@ import { format, addDays, addWeeks, addMonths } from 'date-fns';
 import { useUserDetails } from '@/hooks/queries/useUsersData';
 import { useRefreshData } from '@/hooks/mutations/useRefreshData';
 import { PayoutCountdown } from '@/components/PayoutCountdown';
+import SendReengagementButton from '@/components/SendReengagementButton';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 
@@ -127,6 +128,11 @@ export default function UserDetails() {
     }
   };
 
+  const userBalance = user.wallets?.[0]?.balance || 0;
+  const hasDeposits = totalDeposits > 0;
+  const hasUnfundedVaults = (userVaults || []).some((v: any) => v.is_active && (!v.plan_wallets?.[0]?.balance || v.plan_wallets[0].balance === 0));
+  const isInactive = false;
+
   return (
     <div>
       <div className="flex justify-between items-center mb-8">
@@ -142,13 +148,23 @@ export default function UserDetails() {
             <p className="text-gray-500">View and manage user information</p>
           </div>
         </div>
-        <button
-          onClick={handleRefresh}
-          className="p-3 rounded-xl bg-white hover:bg-gray-50 transition-colors shadow-soft border border-gray-100"
-          disabled={refreshData.isPending}
-        >
-          <RefreshCw className={`h-5 w-5 text-gray-600 ${refreshData.isPending ? 'animate-spin' : ''}`} />
-        </button>
+        <div className="flex items-center gap-3">
+          <SendReengagementButton
+            userId={id!}
+            userBalance={userBalance}
+            hasActivePlans={activePlans > 0}
+            hasDeposits={hasDeposits}
+            hasUnfundedVaults={hasUnfundedVaults}
+            isInactive={isInactive}
+          />
+          <button
+            onClick={handleRefresh}
+            className="p-3 rounded-xl bg-white hover:bg-gray-50 transition-colors shadow-soft border border-gray-100"
+            disabled={refreshData.isPending}
+          >
+            <RefreshCw className={`h-5 w-5 text-gray-600 ${refreshData.isPending ? 'animate-spin' : ''}`} />
+          </button>
+        </div>
       </div>
 
       <div className="bg-white rounded-2xl p-6 shadow-soft border border-gray-100 mb-6">
