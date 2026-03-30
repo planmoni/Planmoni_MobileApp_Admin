@@ -91,7 +91,21 @@ export default function SendReengagementButton({
         throw new Error(result.error || 'Failed to send alert');
       }
 
-      showToast('Re-engagement alert sent successfully', 'success');
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to send notification');
+      }
+
+      const stats = result.stats || {};
+      if (stats.delivered === 0 && stats.failed > 0) {
+        throw new Error('User has no active push tokens or all deliveries failed');
+      }
+
+      showToast(
+        stats.delivered > 0
+          ? `Alert sent successfully to ${stats.delivered} device${stats.delivered > 1 ? 's' : ''}`
+          : 'Alert sent successfully',
+        'success'
+      );
       setShowConfirmModal(false);
       setSelectedCategory(null);
     } catch (err) {

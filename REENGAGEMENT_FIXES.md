@@ -2,7 +2,13 @@
 
 ## Issues Fixed
 
-The re-engagement notification system was showing 0 eligible users for all categories because the database functions had overly restrictive conditions. The following fixes were applied:
+### Issue 1: Eligible User Counts Showing 0
+The re-engagement notification system was showing 0 eligible users for all categories because the database functions had overly restrictive conditions.
+
+### Issue 2: Individual Notifications Not Working Properly
+When sending notifications from the User Details page, the system would show "success" even when the user had no push tokens or delivery failed.
+
+## Fixes Applied
 
 ### 1. Zero Balance Users (`get_zero_balance_users`)
 **Previous Issue:** Required `wallet.updated_at` to be older than 3 days, which excluded users who never had transactions.
@@ -99,9 +105,44 @@ Based on your user base, you should see:
 - **Status**: ✅ Applied successfully
 - **Changes**: Dropped and recreated all 5 re-engagement functions with improved logic
 
+## Frontend Improvements
+
+### SendReengagementButton Component
+Enhanced error handling and user feedback:
+
+1. **Better Success Messages** - Now shows actual delivery count (e.g., "Alert sent successfully to 2 devices")
+2. **Zero Delivery Detection** - Throws error if user has no active push tokens or all deliveries failed
+3. **Response Validation** - Checks both HTTP status and response.success flag
+4. **Clear Error Messages** - Shows specific error when user has no push tokens
+
+### What Happens When Sending Individual Notifications
+
+1. Button checks if user qualifies for any re-engagement categories
+2. User selects category and confirms
+3. Frontend sends request to `admin-push-notifications` edge function
+4. Edge function:
+   - Validates user permissions
+   - Fetches user's active push tokens
+   - If no tokens found: Returns error with status 400
+   - If tokens found: Sends to Expo Push API
+   - Logs delivery status for each token
+5. Frontend now properly handles all response scenarios
+
+## Known Issues & Notes
+
+### Old Edge Function
+There's an old `send-push-notifications` edge function (ID: ca30b4b8-eff4-4a22-acb9-4a354a7eaaad) that still exists in Supabase but has no source code in the project. This function returns 401 errors when called. It's not used by the admin panel but might be called by:
+- Database triggers
+- Scheduled jobs
+- Old mobile app versions
+
+**Recommendation**: Investigate and remove this function if it's no longer needed, or update it to match the current `admin-push-notifications` implementation.
+
 ## Next Steps
 
 1. Verify the counts in the admin dashboard
-2. Test sending a re-engagement notification to a small segment first
-3. Monitor delivery rates and user engagement
-4. Adjust time windows if needed (currently 3 days for zero balance, 14 days for inactivity)
+2. Test sending individual notifications from User Details page
+3. Verify error messages appear correctly when user has no push tokens
+4. Monitor delivery rates and user engagement
+5. Adjust time windows if needed (currently 3 days for zero balance, 14 days for inactivity)
+6. Clean up old `send-push-notifications` edge function
