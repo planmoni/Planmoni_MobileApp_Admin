@@ -72,7 +72,7 @@ export const REENGAGEMENT_TEMPLATES: Record<string, NotificationTemplate> = {
     priority: 'high',
   },
   [NOTIFICATION_CATEGORIES.NO_PLAN_YET]: {
-    title: '👋 Welcome to PlanMoni!',
+    title: '👋 Welcome to Planmoni!',
     body: 'Complete your setup by creating your first savings plan and start your journey to financial freedom.',
     data: {
       type: 'no_plan_yet',
