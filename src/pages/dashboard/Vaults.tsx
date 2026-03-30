@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Filter, RefreshCw, CircleCheck as CheckCircle, Circle as XCircle, Clock, Calendar, User, ChevronLeft, ChevronRight, Wallet, DollarSign } from 'lucide-react';
+import { Search, Filter, RefreshCw, CircleCheck as CheckCircle, Circle as XCircle, Clock, Calendar, User, ChevronLeft, ChevronRight, Wallet } from 'lucide-react';
 import { useVaults } from '@/hooks/queries/useVaults';
 import { useRefreshData } from '@/hooks/mutations/useRefreshData';
 import { format } from 'date-fns';

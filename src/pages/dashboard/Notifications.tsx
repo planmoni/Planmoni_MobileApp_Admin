@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Bell, Send, RefreshCw, Users, CheckCircle, XCircle, Search, Filter } from 'lucide-react';
+import { Bell, Send, RefreshCw, Users, CircleCheck as CheckCircle, Circle as XCircle, Search, Filter } from 'lucide-react';
 import { useNotifications, useNotificationSegments, useNotificationStats } from '@/hooks/queries/useNotifications';
 import { useRefreshData } from '@/hooks/mutations/useRefreshData';
 import { useToast } from '@/contexts/ToastContext';
@@ -48,13 +48,11 @@ export default function Notifications() {
   useEffect(() => {
     const fetchAllUsersCount = async () => {
       try {
-        const { count, error } = await supabase
-          .from('user_push_tokens')
-          .select('*', { count: 'exact', head: true })
-          .eq('is_active', true);
-        
-        if (!error && count !== null) {
-          setAllUsersCount(count);
+        const { data, error } = await supabase
+          .rpc('get_active_push_token_count');
+
+        if (!error && data !== null) {
+          setAllUsersCount(data);
         }
       } catch (err) {
         console.error('Error fetching all users count:', err);
