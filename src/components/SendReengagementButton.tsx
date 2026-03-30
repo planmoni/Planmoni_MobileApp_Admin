@@ -127,7 +127,7 @@ export default function SendReengagementButton({
     <div className="relative">
       <button
         onClick={() => setShowDropdown(!showDropdown)}
-        className="flex items-center space-x-2 px-4 py-2 bg-orange-600 text-white rounded-xl hover:bg-orange-700 transition-colors shadow-sm"
+        className="flex items-center space-x-2 px-4 py-2 bg-gray-900 text-white rounded-xl hover:bg-gray-800 transition-all shadow-md hover:shadow-lg"
       >
         <Bell className="h-5 w-5" />
         <span>Send Alert</span>
@@ -167,76 +167,73 @@ export default function SendReengagementButton({
       )}
 
       {showConfirmModal && selectedCategory && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full">
-            <div className="p-6 border-b border-gray-100">
-              <h2 className="text-2xl font-bold text-gray-900">Confirm Alert</h2>
-            </div>
-
-            <div className="p-6 space-y-4">
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl max-w-md w-full shadow-2xl transform transition-all">
+            <div className="p-8">
               {(() => {
                 const category = REENGAGEMENT_CATEGORIES.find(c => c.id === selectedCategory);
                 return category ? (
-                  <>
-                    <div className="flex items-center space-x-3">
-                      <span className="text-3xl">{category.icon}</span>
-                      <div>
-                        <h3 className="text-lg font-semibold text-gray-900">{category.title}</h3>
-                        <p className="text-sm text-gray-600">{category.description}</p>
+                  <div className="space-y-6">
+                    <div className="text-center">
+                      <div className="mx-auto w-16 h-16 bg-gradient-to-br from-gray-900 to-gray-700 rounded-2xl flex items-center justify-center mb-4 shadow-lg">
+                        <Bell className="h-8 w-8 text-white" />
                       </div>
+                      <h2 className="text-2xl font-bold text-gray-900 mb-2">Confirm Alert</h2>
+                      <p className="text-gray-600 text-sm">You're about to send a notification to this user</p>
                     </div>
 
-                    <div className="bg-orange-50 border border-orange-200 rounded-xl p-4">
-                      <p className="text-sm text-gray-900">
-                        Send this re-engagement alert to this user?
-                      </p>
-                    </div>
+                    <div className="bg-gray-50 border border-gray-200 rounded-2xl p-5">
+                      <div className="flex items-start space-x-3 mb-4">
+                        <span className="text-3xl">{category.icon}</span>
+                        <div className="flex-1">
+                          <h3 className="text-base font-semibold text-gray-900">{category.title}</h3>
+                          <p className="text-xs text-gray-600 mt-1">{category.description}</p>
+                        </div>
+                      </div>
 
-                    <div className="bg-blue-50 border border-blue-100 rounded-xl p-4">
-                      <div className="flex">
-                        <Bell className="h-5 w-5 text-blue-600 mt-0.5" />
-                        <div className="ml-3 flex-1">
-                          <h4 className="text-sm font-medium text-blue-900">Preview</h4>
-                          <div className="mt-2 text-sm text-blue-800">
-                            <p className="font-semibold">{category.template.title}</p>
-                            <p className="mt-1">{category.template.body}</p>
+                      <div className="bg-white border border-gray-200 rounded-xl p-4">
+                        <div className="flex items-start space-x-2">
+                          <div className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></div>
+                          <div className="flex-1">
+                            <p className="text-sm font-semibold text-gray-900">{category.template.title}</p>
+                            <p className="text-sm text-gray-600 mt-1">{category.template.body}</p>
                           </div>
                         </div>
                       </div>
                     </div>
-                  </>
+
+                    <div className="flex space-x-3">
+                      <button
+                        onClick={() => {
+                          setShowConfirmModal(false);
+                          setSelectedCategory(null);
+                        }}
+                        className="flex-1 px-4 py-3 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-all font-medium"
+                        disabled={isSending}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={confirmSend}
+                        disabled={isSending}
+                        className="flex-1 flex items-center justify-center space-x-2 px-6 py-3 bg-gray-900 text-white rounded-xl hover:bg-gray-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed font-medium shadow-lg hover:shadow-xl"
+                      >
+                        {isSending ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white"></div>
+                            <span>Sending...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Send className="h-4 w-4" />
+                            <span>Send Alert</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
                 ) : null;
               })()}
-            </div>
-
-            <div className="p-6 border-t border-gray-100 flex justify-end space-x-3">
-              <button
-                onClick={() => {
-                  setShowConfirmModal(false);
-                  setSelectedCategory(null);
-                }}
-                className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-xl transition-colors"
-                disabled={isSending}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={confirmSend}
-                disabled={isSending}
-                className="flex items-center space-x-2 px-6 py-2 bg-orange-600 text-white rounded-xl hover:bg-orange-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isSending ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white"></div>
-                    <span>Sending...</span>
-                  </>
-                ) : (
-                  <>
-                    <Send className="h-4 w-4" />
-                    <span>Send Alert</span>
-                  </>
-                )}
-              </button>
             </div>
           </div>
         </div>
