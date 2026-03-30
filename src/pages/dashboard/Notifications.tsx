@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Bell, Send, RefreshCw, Users, CircleCheck as CheckCircle, Circle as XCircle, Search, Filter, Clock, CircleAlert as AlertCircle, TrendingUp, Activity, ChevronDown, ChevronUp, Copy } from 'lucide-react';
+import { Send, RefreshCw, Search, ChevronDown, ChevronUp } from 'lucide-react';
 import { useNotifications, useNotificationSegments, useNotificationStats, useNotificationDispatchLogs, useRealtimeDispatch, useReengagementStats, useReengagementUsers, useDispatchStats } from '@/hooks/queries/useNotifications';
 import { useRefreshData } from '@/hooks/mutations/useRefreshData';
 import { useToast } from '@/contexts/ToastContext';
 import { supabase } from '@/lib/supabase';
 import { format } from 'date-fns';
-import StatCard from '@/components/StatCard';
 import { REENGAGEMENT_CATEGORIES, getCategoryDisplayName } from '@/lib/notificationTemplates';
 
 interface NotificationFormData {
@@ -212,12 +211,12 @@ export default function Notifications() {
   const getStatusBadge = (status: string) => {
     const badges: Record<string, { bg: string; text: string; label: string }> = {
       draft: { bg: 'bg-gray-100', text: 'text-gray-800', label: 'Draft' },
-      sending: { bg: 'bg-yellow-100', text: 'text-yellow-800', label: 'Sending' },
-      sent: { bg: 'bg-green-100', text: 'text-green-800', label: 'Sent' },
-      delivered: { bg: 'bg-green-100', text: 'text-green-800', label: 'Delivered' },
-      failed: { bg: 'bg-red-100', text: 'text-red-800', label: 'Failed' },
+      sending: { bg: 'bg-gray-100', text: 'text-gray-800', label: 'Sending' },
+      sent: { bg: 'bg-gray-100', text: 'text-gray-800', label: 'Sent' },
+      delivered: { bg: 'bg-gray-100', text: 'text-gray-800', label: 'Delivered' },
+      failed: { bg: 'bg-gray-100', text: 'text-gray-800', label: 'Failed' },
       cancelled: { bg: 'bg-gray-100', text: 'text-gray-800', label: 'Cancelled' },
-      pending: { bg: 'bg-yellow-100', text: 'text-yellow-800', label: 'Pending' },
+      pending: { bg: 'bg-gray-100', text: 'text-gray-800', label: 'Pending' },
     };
 
     const badge = badges[status] || badges.draft;
@@ -230,10 +229,10 @@ export default function Notifications() {
 
   const getTypeBadge = (type: string) => {
     const badges: Record<string, { bg: string; text: string; label: string }> = {
-      system: { bg: 'bg-blue-100', text: 'text-blue-800', label: 'System' },
-      manual: { bg: 'bg-green-100', text: 'text-green-800', label: 'Manual' },
-      reengagement: { bg: 'bg-orange-100', text: 'text-orange-800', label: 'Re-engagement' },
-      marketing: { bg: 'bg-purple-100', text: 'text-purple-800', label: 'Marketing' },
+      system: { bg: 'bg-gray-100', text: 'text-gray-800', label: 'System' },
+      manual: { bg: 'bg-gray-100', text: 'text-gray-800', label: 'Manual' },
+      reengagement: { bg: 'bg-gray-100', text: 'text-gray-800', label: 'Re-engagement' },
+      marketing: { bg: 'bg-gray-100', text: 'text-gray-800', label: 'Marketing' },
     };
 
     const badge = badges[type] || badges.manual;
@@ -242,11 +241,6 @@ export default function Notifications() {
         {badge.label}
       </span>
     );
-  };
-
-  const copyToClipboard = (text: string, label: string) => {
-    navigator.clipboard.writeText(text);
-    showToast(`${label} copied to clipboard`, 'success');
   };
 
   const filteredNotifications = notifications?.filter((notification) => {
@@ -287,85 +281,86 @@ export default function Notifications() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
+    <div className="w-full min-w-0">
+      <div className="flex justify-between items-center mb-6 md:mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Push Notifications</h1>
-          <p className="text-gray-500 mt-1">Send push notifications to mobile app users</p>
+          <h1 className="text-2xl md:text-2xl font-bold text-gray-900 mb-1">Push Notifications</h1>
+          <p className="text-sm md:text-base text-gray-500">Send push notifications to mobile app users</p>
         </div>
         <div className="flex space-x-3">
           <button
             onClick={handleRefresh}
-            className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-colors"
-            title="Refresh"
+            className="p-2.5 md:p-3 rounded-xl bg-white hover:bg-gray-50 transition-colors shadow-soft border border-gray-100"
+            disabled={refreshData.isPending}
           >
-            <RefreshCw className="h-5 w-5" />
+            <RefreshCw className={`h-5 w-5 text-gray-600 ${refreshData.isPending ? 'animate-spin' : ''}`} />
           </button>
           <button
             onClick={() => setShowCreateModal(true)}
-            className="flex items-center space-x-2 px-4 py-2 bg-gray-900 text-white rounded-xl hover:bg-gray-800 transition-colors"
+            className="px-4 py-2 bg-gray-900 text-white rounded-xl hover:bg-gray-800 transition-colors"
           >
-            <Send className="h-5 w-5" />
-            <span>Send Notification</span>
+            <span className="hidden sm:inline">Send Notification</span>
+            <span className="sm:hidden">Send</span>
           </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard
-          title="Total Sent"
-          value={String(stats?.total_sent || 0)}
-          icon={<Send className="h-6 w-6 text-gray-600" />}
-          trend={0}
-        />
-        <StatCard
-          title="Delivered"
-          value={String(stats?.total_delivered || 0)}
-          icon={<CheckCircle className="h-6 w-6 text-green-600" />}
-          trend={0}
-        />
-        <StatCard
-          title="Failed"
-          value={String(stats?.total_failed || 0)}
-          icon={<XCircle className="h-6 w-6 text-red-600" />}
-          trend={0}
-        />
-        <StatCard
-          title="Delivery Rate"
-          value={`${stats?.delivery_rate || 0}%`}
-          icon={<Bell className="h-6 w-6 text-blue-600" />}
-          trend={0}
-        />
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5 mb-6 md:mb-8">
+        <div className="bg-white rounded-2xl p-5 md:p-6 shadow-soft border border-gray-100">
+          <div className="flex justify-between items-start mb-3 md:mb-4">
+            <div className="flex-1">
+              <p className="text-sm font-medium text-gray-500 mb-1">Total Sent</p>
+              <p className="text-2xl md:text-2xl font-bold text-gray-900">{stats?.total_sent || 0}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl p-5 md:p-6 shadow-soft border border-gray-100">
+          <div className="flex justify-between items-start mb-3 md:mb-4">
+            <div className="flex-1">
+              <p className="text-sm font-medium text-gray-500 mb-1">Delivered</p>
+              <p className="text-2xl md:text-2xl font-bold text-gray-900">{stats?.total_delivered || 0}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl p-5 md:p-6 shadow-soft border border-gray-100">
+          <div className="flex justify-between items-start mb-3 md:mb-4">
+            <div className="flex-1">
+              <p className="text-sm font-medium text-gray-500 mb-1">Failed</p>
+              <p className="text-2xl md:text-2xl font-bold text-gray-900">{stats?.total_failed || 0}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl p-5 md:p-6 shadow-soft border border-gray-100">
+          <div className="flex justify-between items-start mb-3 md:mb-4">
+            <div className="flex-1">
+              <p className="text-sm font-medium text-gray-500 mb-1">Delivery Rate</p>
+              <p className="text-2xl md:text-2xl font-bold text-gray-900">{stats?.delivery_rate || 0}%</p>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div className="bg-gradient-to-r from-orange-50 to-yellow-50 border border-orange-100 rounded-xl p-6">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900 flex items-center space-x-2">
-              <TrendingUp className="h-5 w-5 text-orange-600" />
-              <span>Re-engagement Alerts</span>
-            </h3>
-            <p className="text-sm text-gray-600 mt-1">Send targeted notifications to bring users back</p>
-          </div>
+      <div className="bg-white rounded-2xl p-6 shadow-soft border border-gray-100 mb-6">
+        <div className="mb-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-1">Re-engagement Alerts</h3>
+          <p className="text-sm text-gray-500">Send targeted notifications to bring users back</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {REENGAGEMENT_CATEGORIES.map((category) => {
             const count = getReengagementCount(category.id);
             return (
-              <div key={category.id} className="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-center space-x-2">
-                    <span className="text-2xl">{category.icon}</span>
-                    <div>
-                      <h4 className="text-sm font-semibold text-gray-900">{category.title}</h4>
-                      <p className="text-xs text-gray-600">{category.description}</p>
-                    </div>
-                  </div>
+              <div key={category.id} className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                <div className="mb-3">
+                  <h4 className="text-sm font-semibold text-gray-900 mb-1">{category.title}</h4>
+                  <p className="text-xs text-gray-600">{category.description}</p>
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="text-sm">
-                    <span className="font-bold text-2xl text-gray-900">{count}</span>
+                    <span className="font-bold text-xl text-gray-900">{count}</span>
                     <span className="text-gray-600 ml-1">eligible</span>
                   </div>
                   <div className="flex space-x-2">
@@ -374,7 +369,7 @@ export default function Notifications() {
                         setSelectedReengagement(category.id);
                         setShowRecipientsModal(true);
                       }}
-                      className="px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                      className="px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-100 rounded-lg transition-colors border border-gray-200"
                       disabled={count === 0}
                     >
                       Preview
@@ -384,10 +379,10 @@ export default function Notifications() {
                         setSelectedReengagement(category.id);
                         setShowReengagementModal(true);
                       }}
-                      className="px-3 py-1.5 text-xs bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="px-3 py-1.5 text-xs bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       disabled={count === 0}
                     >
-                      Send Alert
+                      Send
                     </button>
                   </div>
                 </div>
@@ -397,12 +392,12 @@ export default function Notifications() {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100">
-        <div className="border-b border-gray-100">
-          <div className="flex space-x-1 p-1">
+      <div className="bg-white rounded-2xl shadow-soft border border-gray-100">
+        <div className="border-b border-gray-100 p-4">
+          <div className="flex flex-wrap gap-2">
             <button
               onClick={() => setActiveTab('history')}
-              className={`flex-1 px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+              className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
                 activeTab === 'history'
                   ? 'bg-gray-900 text-white'
                   : 'text-gray-600 hover:bg-gray-50'
@@ -412,15 +407,14 @@ export default function Notifications() {
             </button>
             <button
               onClick={() => setActiveTab('dispatch')}
-              className={`flex-1 px-4 py-2 text-sm font-medium rounded-lg transition-colors flex items-center justify-center space-x-2 ${
+              className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors flex items-center space-x-2 ${
                 activeTab === 'dispatch'
                   ? 'bg-gray-900 text-white'
                   : 'text-gray-600 hover:bg-gray-50'
               }`}
             >
-              <Activity className="h-4 w-4" />
               <span>Live Dispatch</span>
-              {realtimeEnabled && <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>}
+              {realtimeEnabled && <span className="w-2 h-2 bg-green-500 rounded-full"></span>}
             </button>
           </div>
         </div>
@@ -439,20 +433,17 @@ export default function Notifications() {
                     className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
                   />
                 </div>
-                <div className="flex items-center space-x-2">
-                  <Filter className="h-5 w-5 text-gray-400" />
-                  <select
-                    value={statusFilter}
-                    onChange={(e) => setStatusFilter(e.target.value)}
-                    className="px-4 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
-                  >
-                    <option value="all">All Status</option>
-                    <option value="sent">Sent</option>
-                    <option value="sending">Sending</option>
-                    <option value="failed">Failed</option>
-                    <option value="draft">Draft</option>
-                  </select>
-                </div>
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="px-4 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                >
+                  <option value="all">All Status</option>
+                  <option value="sent">Sent</option>
+                  <option value="sending">Sending</option>
+                  <option value="failed">Failed</option>
+                  <option value="draft">Draft</option>
+                </select>
               </div>
             </div>
 
@@ -507,18 +498,13 @@ export default function Notifications() {
                             {getStatusBadge(notification.status)}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center space-x-1">
-                              <Users className="h-4 w-4 text-gray-400" />
-                              <span className="text-sm text-gray-900">{notification.total_recipients}</span>
-                            </div>
+                            <span className="text-sm text-gray-900">{notification.total_recipients}</span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center space-x-2">
-                              <div className="flex-1">
-                                <div className="text-sm text-gray-900">{deliveryRate}%</div>
-                                <div className="text-xs text-gray-500">
-                                  {notification.delivered_count} / {notification.total_recipients}
-                                </div>
+                            <div className="flex-1">
+                              <div className="text-sm text-gray-900">{deliveryRate}%</div>
+                              <div className="text-xs text-gray-500">
+                                {notification.delivered_count} / {notification.total_recipients}
                               </div>
                             </div>
                           </td>
@@ -533,8 +519,7 @@ export default function Notifications() {
                   ) : (
                     <tr>
                       <td colSpan={6} className="px-6 py-12 text-center">
-                        <Bell className="mx-auto h-12 w-12 text-gray-400" />
-                        <p className="mt-2 text-sm text-gray-500">No notifications found</p>
+                        <p className="text-sm text-gray-500">No notifications found</p>
                       </td>
                     </tr>
                   )}
@@ -548,7 +533,7 @@ export default function Notifications() {
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900">Live Notification Dispatch</h3>
-                  <p className="text-sm text-gray-600">Real-time view of notifications being sent to users</p>
+                  <p className="text-sm text-gray-600">Real-time view of notifications being sent</p>
                 </div>
                 <label className="flex items-center space-x-2 cursor-pointer">
                   <input
@@ -562,41 +547,21 @@ export default function Notifications() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-                <div className="bg-blue-50 border border-blue-100 rounded-lg p-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-xs text-blue-600 font-medium">Dispatched Today</p>
-                      <p className="text-2xl font-bold text-blue-900">{dispatchStatsData?.total_dispatched || 0}</p>
-                    </div>
-                    <Send className="h-8 w-8 text-blue-600 opacity-50" />
-                  </div>
+                <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                  <p className="text-xs text-gray-600 mb-1">Dispatched Today</p>
+                  <p className="text-2xl font-bold text-gray-900">{dispatchStatsData?.total_dispatched || 0}</p>
                 </div>
-                <div className="bg-green-50 border border-green-100 rounded-lg p-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-xs text-green-600 font-medium">Success Rate</p>
-                      <p className="text-2xl font-bold text-green-900">{dispatchStatsData?.success_rate || 0}%</p>
-                    </div>
-                    <CheckCircle className="h-8 w-8 text-green-600 opacity-50" />
-                  </div>
+                <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                  <p className="text-xs text-gray-600 mb-1">Success Rate</p>
+                  <p className="text-2xl font-bold text-gray-900">{dispatchStatsData?.success_rate || 0}%</p>
                 </div>
-                <div className="bg-red-50 border border-red-100 rounded-lg p-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-xs text-red-600 font-medium">Failed</p>
-                      <p className="text-2xl font-bold text-red-900">{dispatchStatsData?.total_failed || 0}</p>
-                    </div>
-                    <AlertCircle className="h-8 w-8 text-red-600 opacity-50" />
-                  </div>
+                <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                  <p className="text-xs text-gray-600 mb-1">Failed</p>
+                  <p className="text-2xl font-bold text-gray-900">{dispatchStatsData?.total_failed || 0}</p>
                 </div>
-                <div className="bg-purple-50 border border-purple-100 rounded-lg p-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-xs text-purple-600 font-medium">Avg. Delivery</p>
-                      <p className="text-2xl font-bold text-purple-900">{dispatchStatsData?.avg_delivery_time || 0}s</p>
-                    </div>
-                    <Clock className="h-8 w-8 text-purple-600 opacity-50" />
-                  </div>
+                <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                  <p className="text-xs text-gray-600 mb-1">Avg. Delivery</p>
+                  <p className="text-2xl font-bold text-gray-900">{dispatchStatsData?.avg_delivery_time || 0}s</p>
                 </div>
               </div>
 
@@ -677,14 +642,11 @@ export default function Notifications() {
                         <>
                           <tr
                             key={log.id}
-                            className={`hover:bg-gray-50 transition-colors ${isNew ? 'bg-green-50 animate-pulse' : ''}`}
+                            className={`hover:bg-gray-50 transition-colors ${isNew ? 'bg-green-50' : ''}`}
                           >
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                              <div className="flex items-center space-x-2">
-                                <Clock className="h-4 w-4 text-gray-400" />
-                                <span>{format(new Date(log.sent_at), 'HH:mm:ss')}</span>
-                              </div>
-                              <div className="text-xs text-gray-500 mt-1">
+                              <div>{format(new Date(log.sent_at), 'HH:mm:ss')}</div>
+                              <div className="text-xs text-gray-500">
                                 {format(new Date(log.sent_at), 'MMM dd, yyyy')}
                               </div>
                             </td>
@@ -736,27 +698,11 @@ export default function Notifications() {
                                   <div className="grid grid-cols-2 gap-4">
                                     <div>
                                       <p className="text-xs font-medium text-gray-600 mb-1">User ID</p>
-                                      <div className="flex items-center space-x-2">
-                                        <code className="text-xs bg-white px-2 py-1 rounded border border-gray-200">{log.user_id}</code>
-                                        <button
-                                          onClick={() => copyToClipboard(log.user_id, 'User ID')}
-                                          className="text-gray-400 hover:text-gray-600"
-                                        >
-                                          <Copy className="h-4 w-4" />
-                                        </button>
-                                      </div>
+                                      <code className="text-xs bg-white px-2 py-1 rounded border border-gray-200">{log.user_id}</code>
                                     </div>
                                     <div>
                                       <p className="text-xs font-medium text-gray-600 mb-1">Notification ID</p>
-                                      <div className="flex items-center space-x-2">
-                                        <code className="text-xs bg-white px-2 py-1 rounded border border-gray-200">{log.push_notification_id}</code>
-                                        <button
-                                          onClick={() => copyToClipboard(log.push_notification_id, 'Notification ID')}
-                                          className="text-gray-400 hover:text-gray-600"
-                                        >
-                                          <Copy className="h-4 w-4" />
-                                        </button>
-                                      </div>
+                                      <code className="text-xs bg-white px-2 py-1 rounded border border-gray-200">{log.push_notification_id}</code>
                                     </div>
                                   </div>
                                   {log.error_message && (
@@ -783,8 +729,7 @@ export default function Notifications() {
                   ) : (
                     <tr>
                       <td colSpan={6} className="px-6 py-12 text-center">
-                        <Activity className="mx-auto h-12 w-12 text-gray-400" />
-                        <p className="mt-2 text-sm text-gray-500">No dispatch logs found</p>
+                        <p className="text-sm text-gray-500">No dispatch logs found</p>
                         <p className="text-xs text-gray-400 mt-1">Notifications will appear here as they are sent</p>
                       </td>
                     </tr>
@@ -847,8 +792,8 @@ export default function Notifications() {
                     <span className="text-sm font-medium text-gray-900">Add personalized greeting</span>
                     <p className="text-xs text-gray-500 mt-1">
                       {formData.personalize
-                        ? 'Message will start with "Hello [FirstName], ..." Users without a first name will see "Hello there, ..."'
-                        : 'Your message will be sent exactly as written without personalization'}
+                        ? 'Message will start with "Hello [FirstName], ..."'
+                        : 'Your message will be sent exactly as written'}
                     </p>
                   </div>
                 </label>
@@ -864,15 +809,10 @@ export default function Notifications() {
                   className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
                 >
                   <option value="all">
-                    All Users {allUsersCount !== null ? `(${allUsersCount} users with push tokens)` : ''}
+                    All Users {allUsersCount !== null ? `(${allUsersCount} users)` : ''}
                   </option>
                   <option value="segment">User Segment</option>
                 </select>
-                {formData.target_type === 'all' && allUsersCount !== null && (
-                  <p className="text-xs text-gray-500 mt-1">
-                    {allUsersCount} users have active push tokens and will receive this notification
-                  </p>
-                )}
               </div>
 
               {formData.target_type === 'segment' && (
@@ -895,29 +835,19 @@ export default function Notifications() {
                 </div>
               )}
 
-              <div className="bg-blue-50 border border-blue-100 rounded-xl p-4">
-                <div className="flex">
-                  <Bell className="h-5 w-5 text-blue-600 mt-0.5" />
-                  <div className="ml-3 flex-1">
-                    <h3 className="text-sm font-medium text-blue-900">Preview</h3>
-                    <div className="mt-2 text-sm text-blue-800">
-                      <p className="font-semibold">{formData.title || 'Notification title'}</p>
-                      <p className="mt-1">
-                        {formData.personalize ? (
-                          formData.body
-                            ? `Hello John, ${formData.body}`
-                            : 'Hello John, your notification message will appear here'
-                        ) : (
-                          formData.body || 'Your notification message will appear here'
-                        )}
-                      </p>
-                    </div>
-                    {formData.personalize && (
-                      <p className="mt-2 text-xs text-blue-700">
-                        "John" is shown as example. Each user will see their own first name. Users without a first name will see "Hello there" instead.
-                      </p>
+              <div className="bg-gray-50 border border-gray-100 rounded-xl p-4">
+                <h3 className="text-sm font-medium text-gray-900 mb-2">Preview</h3>
+                <div className="text-sm text-gray-800">
+                  <p className="font-semibold">{formData.title || 'Notification title'}</p>
+                  <p className="mt-1">
+                    {formData.personalize ? (
+                      formData.body
+                        ? `Hello John, ${formData.body}`
+                        : 'Hello John, your notification message will appear here'
+                    ) : (
+                      formData.body || 'Your notification message will appear here'
                     )}
-                  </div>
+                  </p>
                 </div>
               </div>
             </div>
@@ -976,36 +906,24 @@ export default function Notifications() {
                 const count = getReengagementCount(selectedReengagement);
                 return category ? (
                   <>
-                    <div className="flex items-center space-x-3">
-                      <span className="text-3xl">{category.icon}</span>
-                      <div>
-                        <h3 className="text-lg font-semibold text-gray-900">{category.title}</h3>
-                        <p className="text-sm text-gray-600">{category.description}</p>
-                      </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900">{category.title}</h3>
+                      <p className="text-sm text-gray-600">{category.description}</p>
                     </div>
 
-                    <div className="bg-orange-50 border border-orange-200 rounded-xl p-4">
+                    <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
                       <p className="text-sm text-gray-900">
-                        This will send a notification to <span className="font-bold text-orange-600">{count} eligible users</span>.
+                        This will send a notification to <span className="font-bold">{count} eligible users</span>.
                       </p>
                     </div>
 
-                    <div className="bg-blue-50 border border-blue-100 rounded-xl p-4">
-                      <div className="flex">
-                        <Bell className="h-5 w-5 text-blue-600 mt-0.5" />
-                        <div className="ml-3 flex-1">
-                          <h4 className="text-sm font-medium text-blue-900">Preview</h4>
-                          <div className="mt-2 text-sm text-blue-800">
-                            <p className="font-semibold">{category.template.title}</p>
-                            <p className="mt-1">{category.template.body}</p>
-                          </div>
-                        </div>
+                    <div className="bg-gray-50 border border-gray-100 rounded-xl p-4">
+                      <h4 className="text-sm font-medium text-gray-900 mb-2">Preview</h4>
+                      <div className="text-sm text-gray-800">
+                        <p className="font-semibold">{category.template.title}</p>
+                        <p className="mt-1">{category.template.body}</p>
                       </div>
                     </div>
-
-                    <p className="text-xs text-gray-500">
-                      Only users who have opted in to {category.preferenceKey} notifications will receive this alert.
-                    </p>
                   </>
                 ) : null;
               })()}
@@ -1025,7 +943,7 @@ export default function Notifications() {
               <button
                 onClick={() => handleSendReengagement(selectedReengagement)}
                 disabled={isSending}
-                className="flex items-center space-x-2 px-6 py-2 bg-orange-600 text-white rounded-xl hover:bg-orange-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center space-x-2 px-6 py-2 bg-gray-900 text-white rounded-xl hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isSending ? (
                   <>
@@ -1073,8 +991,7 @@ export default function Notifications() {
                 </div>
               ) : (
                 <div className="text-center py-12">
-                  <Users className="mx-auto h-12 w-12 text-gray-400" />
-                  <p className="mt-2 text-sm text-gray-500">No eligible users found</p>
+                  <p className="text-sm text-gray-500">No eligible users found</p>
                 </div>
               )}
             </div>
