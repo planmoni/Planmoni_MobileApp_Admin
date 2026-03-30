@@ -51,7 +51,7 @@ export const REENGAGEMENT_TEMPLATES: Record<string, NotificationTemplate> = {
   },
   [NOTIFICATION_CATEGORIES.VAULT_UNFUNDED_REMINDER]: {
     title: '🏦 Your Vault is Waiting',
-    body: 'Fund your vault to activate automatic savings and watch your money grow!',
+    body: 'Fund your vault to activate your savings and reach your financial goals!',
     data: {
       type: 'vault_unfunded_reminder',
       screen: 'Vaults',
@@ -62,7 +62,7 @@ export const REENGAGEMENT_TEMPLATES: Record<string, NotificationTemplate> = {
   },
   [NOTIFICATION_CATEGORIES.DEPOSIT_NO_PLAN]: {
     title: '📋 Complete Your Setup',
-    body: "You've deposited funds but haven't created a savings plan yet. Create one now to start earning!",
+    body: "You've deposited funds but haven't created a plan yet. Create one now to start!",
     data: {
       type: 'deposit_no_plan',
       screen: 'CreatePlan',
@@ -84,7 +84,7 @@ export const REENGAGEMENT_TEMPLATES: Record<string, NotificationTemplate> = {
   },
   [NOTIFICATION_CATEGORIES.RE_ENGAGEMENT]: {
     title: '🌟 We Miss You!',
-    body: "It's been a while since your last visit. Come back and continue your savings journey with PlanMoni!",
+    body: "It's been a while since your last visit. Come back and continue your savings journey with Planmoni!",
     data: {
       type: 're_engagement',
       screen: 'Dashboard',
