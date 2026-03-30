@@ -8,6 +8,9 @@ The re-engagement notification system was showing 0 eligible users for all categ
 ### Issue 2: Individual Notifications Not Working Properly
 When sending notifications from the User Details page, the system would show "success" even when the user had no push tokens or delivery failed.
 
+### Issue 3: Dispatch Logs Not Displaying
+The Notifications page showed "Dispatched Today: 8" but the dispatch logs table was empty with a database error.
+
 ## Fixes Applied
 
 ### 1. Zero Balance Users (`get_zero_balance_users`)
@@ -127,6 +130,30 @@ Enhanced error handling and user feedback:
    - If tokens found: Sends to Expo Push API
    - Logs delivery status for each token
 5. Frontend now properly handles all response scenarios
+
+## Issue 3 Fix: Dispatch Logs Database Function
+
+### Root Cause
+The `get_notification_dispatch_logs()` function had a critical bug - it referenced `p.full_name` which doesn't exist in the profiles table. The profiles table uses `first_name` and `last_name` columns instead.
+
+### Error Message
+```
+ERROR: column p.full_name does not exist
+```
+
+### Fix Applied
+Created migration: `fix_notification_dispatch_logs_full_name.sql`
+
+**Changes:**
+1. Replaced `p.full_name` with `CONCAT(p.first_name, ' ', p.last_name)` in SELECT clause
+2. Updated search filter to use concatenated name instead of full_name
+3. Function now properly returns user names in dispatch logs
+
+**Result:**
+- Dispatch logs now display correctly with user names
+- Search by user name functionality works
+- Stats ("Dispatched Today: 8") and logs are now in sync
+- No more database errors when viewing notifications
 
 ## Known Issues & Notes
 
