@@ -131,7 +131,15 @@ export default function UserDetails() {
   const userBalance = user.wallets?.[0]?.balance || 0;
   const hasDeposits = totalDeposits > 0;
   const hasUnfundedVaults = (userVaults || []).some((v: any) => v.is_active && (!v.plan_wallets?.[0]?.balance || v.plan_wallets[0].balance === 0));
-  const isInactive = false;
+
+  // Calculate if user is inactive (14+ days since last seen)
+  const isInactive = (() => {
+    if (!user.last_seen_at) return true; // Never logged in = inactive
+    const lastSeen = new Date(user.last_seen_at);
+    const fourteenDaysAgo = new Date();
+    fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
+    return lastSeen < fourteenDaysAgo;
+  })();
 
   return (
     <div>

@@ -165,6 +165,7 @@ export const useUserDetails = (userId: string) => {
           email: userInfo.email,
           created_at: userInfo.date_joined,
           is_admin: userInfo.is_admin,
+          last_seen_at: userInfo.last_seen_at,
           wallets: [{
             balance: userInfo.available_balance || 0,
             locked_balance: userInfo.locked_balance || 0
