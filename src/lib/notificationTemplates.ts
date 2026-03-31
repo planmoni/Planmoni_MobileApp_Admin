@@ -73,7 +73,7 @@ export const REENGAGEMENT_TEMPLATES: Record<string, NotificationTemplate> = {
   },
   [NOTIFICATION_CATEGORIES.NO_PLAN_YET]: {
     title: '👋 Start using Planmoni today!',
-    body: 'Create your first Vault or Payout Plan.',
+    body: 'Deposit funds & create your Vault or a Daily, Weekly or Monthly Payout Plan.',
     data: {
       type: 'no_plan_yet',
       screen: 'CreatePlan',
