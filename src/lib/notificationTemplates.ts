@@ -72,8 +72,8 @@ export const REENGAGEMENT_TEMPLATES: Record<string, NotificationTemplate> = {
     priority: 'high',
   },
   [NOTIFICATION_CATEGORIES.NO_PLAN_YET]: {
-    title: '👋 Welcome to Planmoni!',
-    body: 'Start by creating your first Vault or Payout Plan',
+    title: '👋 Start using Planmoni today!',
+    body: 'Create your first Vault or Payout Plan.',
     data: {
       type: 'no_plan_yet',
       screen: 'CreatePlan',
