@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Wallet, Calendar, Building2, ArrowUpRight, ArrowDownRight, RefreshCw, Shield, Lock, TrendingUp, Clock, CircleCheck as CheckCircle2, Circle as XCircle, User, Phone, MapPin, FileText, CreditCard, CircleCheck as CheckCircle, Circle as XCircleIcon, CircleAlert as AlertCircle, Zap, Camera, ExternalLink } from 'lucide-react';
+import { ArrowLeft, Wallet, Calendar, Building2, ArrowUpRight, ArrowDownRight, RefreshCw, Shield, Lock, TrendingUp, Clock, CircleCheck as CheckCircle2, Circle as XCircle, User, Phone, MapPin, FileText, CreditCard, CircleCheck as CheckCircle, Circle as XCircleIcon, CircleAlert as AlertCircle, Zap, Camera, ExternalLink, ListChecks } from 'lucide-react';
 import { format, addDays, addWeeks, addMonths } from 'date-fns';
 import { useUserDetails } from '@/hooks/queries/useUsersData';
 import { useRefreshData } from '@/hooks/mutations/useRefreshData';
 import { PayoutCountdown } from '@/components/PayoutCountdown';
 import SendReengagementButton from '@/components/SendReengagementButton';
 import TransactionDetailsModal from '@/components/TransactionDetailsModal';
+import PlanBreakdownModal from '@/components/PlanBreakdownModal';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 
@@ -17,6 +18,7 @@ export default function UserDetails() {
   const refreshData = useRefreshData();
   const [selectedTransaction, setSelectedTransaction] = useState<any>(null);
   const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
+  const [breakdownPlan, setBreakdownPlan] = useState<any>(null);
 
   const { data: userActivity } = useQuery({
     queryKey: ['user-activity', id],
@@ -795,6 +797,14 @@ export default function UserDetails() {
                         ></div>
                       </div>
                     </div>
+
+                    <button
+                      onClick={() => setBreakdownPlan(plan)}
+                      className="mt-4 inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gray-900 text-white text-sm font-semibold hover:bg-gray-800 transition-colors"
+                    >
+                      <ListChecks className="h-4 w-4" />
+                      Plan Breakdown
+                    </button>
                   </div>
                 );
               })}
@@ -1098,6 +1108,14 @@ export default function UserDetails() {
         onClose={handleCloseTransactionModal}
         showViewProfile={false}
       />
+      {breakdownPlan && (
+        <PlanBreakdownModal
+          planId={breakdownPlan.id}
+          planName={breakdownPlan.name}
+          userName={`${user.first_name || ''} ${user.last_name || ''}`.trim() || user.email}
+          onClose={() => setBreakdownPlan(null)}
+        />
+      )}
     </div>
   );
 }
