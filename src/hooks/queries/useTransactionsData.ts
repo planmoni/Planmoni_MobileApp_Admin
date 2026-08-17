@@ -13,6 +13,7 @@ interface Profile {
 
 interface Transaction {
   id: string;
+  user_id?: string | null;
   type: string;
   amount: number;
   status: string;
@@ -67,6 +68,7 @@ const fetchTransactionsData = async (params: TransactionsQueryParams = {}) => {
     // Transform the data to match expected format
     const transformedTransactions: Transaction[] = transactionData?.map((t: any) => ({
       id: t.id,
+      user_id: t.user_id,
       type: t.type,
       amount: t.amount,
       status: t.status,
@@ -78,7 +80,7 @@ const fetchTransactionsData = async (params: TransactionsQueryParams = {}) => {
       bank_account_id: t.bank_account_id,
       created_at: t.created_at,
       profiles: [{
-        id: '',
+        id: t.user_id || '',
         first_name: t.user_name?.split(' ')[0] || null,
         last_name: t.user_name?.split(' ')[1] || null,
         email: t.user_email
