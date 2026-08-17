@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { Search, RefreshCw, Users as UsersIcon, TrendingUp } from 'lucide-react';
 import { useUsersData } from '@/hooks/queries/useUsersData';
 import { useRefreshData } from '@/hooks/mutations/useRefreshData';
@@ -7,9 +7,10 @@ import { useRefreshData } from '@/hooks/mutations/useRefreshData';
 type FilterType = 'all' | 'admin' | 'with_balance' | 'with_plans';
 
 export default function Users() {
+  const [searchParams] = useSearchParams();
   const { data: usersData, isLoading, error } = useUsersData();
   const refreshData = useRefreshData();
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(() => searchParams.get('search') || '');
   const [filterType, setFilterType] = useState<FilterType>('all');
   const [filteredUsers, setFilteredUsers] = useState<any[]>([]);
 
@@ -20,6 +21,14 @@ export default function Users() {
     filterUsers();
   }, [searchQuery, users, filterType]);
 
+  useEffect(() => {
+    const urlSearch = searchParams.get('search') || '';
+    if (urlSearch && urlSearch !== searchQuery) {
+      setSearchQuery(urlSearch);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
   const handleRefresh = () => {
     refreshData.mutate(['users']);
   };
@@ -27,14 +36,17 @@ export default function Users() {
   const filterUsers = () => {
     let filtered = [...users];
 
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
+    if (searchQuery.trim()) {
+      const terms = searchQuery.trim().toLowerCase().split(/\s+/).filter(Boolean);
       filtered = filtered.filter(user => {
         const fullName = `${user.first_name || ''} ${user.last_name || ''}`.trim().toLowerCase();
-        return fullName.includes(query) ||
-          user.first_name?.toLowerCase().includes(query) ||
-          user.last_name?.toLowerCase().includes(query) ||
-          user.email?.toLowerCase().includes(query);
+        const email = (user.email || '').toLowerCase();
+        return terms.every(term =>
+          fullName.includes(term) ||
+          (user.first_name || '').toLowerCase().includes(term) ||
+          (user.last_name || '').toLowerCase().includes(term) ||
+          email.includes(term)
+        );
       });
     }
 
