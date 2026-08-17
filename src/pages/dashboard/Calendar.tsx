@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChevronLeft, ChevronRight, Clock, CheckCircle2, XCircle, Calendar as CalendarIcon, ArrowDownCircle, ArrowUpCircle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Clock, CircleCheck as CheckCircle2, Circle as XCircle, Calendar as CalendarIcon, CircleArrowDown as ArrowDownCircle, CircleArrowUp as ArrowUpCircle } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek, addWeeks, subWeeks } from 'date-fns';
 import { useCalendarEvents } from '@/hooks/queries/useCalendarEvents';
 
@@ -137,7 +137,7 @@ export default function Calendar() {
     return Object.entries(grouped)
       .sort(([dateA], [dateB]) => new Date(dateB).getTime() - new Date(dateA).getTime())
       .map(([date, events]) => ({
-        date: new Date(date),
+        date: new Date(`${date}T12:00:00`),
         events: events.sort((a, b) => b.date.getTime() - a.date.getTime()),
       }));
   };

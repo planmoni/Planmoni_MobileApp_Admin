@@ -1,6 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
-import { startOfMonth, endOfMonth } from 'date-fns';
+import { startOfMonth, addMonths } from 'date-fns';
+
+const parseCalendarDate = (value: string) =>
+  /^\d{4}-\d{2}-\d{2}$/.test(value)
+    ? new Date(`${value}T12:00:00`)
+    : new Date(value);
 
 interface CalendarEvent {
   id: string;
@@ -18,7 +23,7 @@ export function useCalendarEvents(currentDate: Date) {
     queryKey: ['calendar-events', currentDate.toISOString()],
     queryFn: async () => {
       const monthStart = startOfMonth(currentDate);
-      const monthEnd = endOfMonth(currentDate);
+      const nextMonthStart = addMonths(monthStart, 1);
 
       const events: CalendarEvent[] = [];
 
@@ -42,7 +47,7 @@ export function useCalendarEvents(currentDate: Date) {
             )
           `)
           .gte('scheduled_date', monthStart.toISOString().split('T')[0])
-          .lte('scheduled_date', monthEnd.toISOString().split('T')[0])
+          .lt('scheduled_date', nextMonthStart.toISOString().split('T')[0])
           .order('scheduled_date', { ascending: true }),
 
         supabase
@@ -59,7 +64,7 @@ export function useCalendarEvents(currentDate: Date) {
             )
           `)
           .gte('created_at', monthStart.toISOString())
-          .lte('created_at', monthEnd.toISOString())
+          .lt('created_at', nextMonthStart.toISOString())
           .order('created_at', { ascending: true }),
 
         supabase
@@ -76,7 +81,7 @@ export function useCalendarEvents(currentDate: Date) {
             )
           `)
           .gte('next_payout_date', monthStart.toISOString())
-          .lte('next_payout_date', monthEnd.toISOString())
+          .lt('next_payout_date', nextMonthStart.toISOString())
           .eq('status', 'active')
           .order('next_payout_date', { ascending: true }),
 
@@ -99,7 +104,7 @@ export function useCalendarEvents(currentDate: Date) {
             )
           `)
           .gte('created_at', monthStart.toISOString())
-          .lte('created_at', monthEnd.toISOString())
+          .lt('created_at', nextMonthStart.toISOString())
           .in('type', ['deposit', 'withdrawal', 'payout'])
           .order('created_at', { ascending: true })
       ]);
@@ -138,7 +143,7 @@ export function useCalendarEvents(currentDate: Date) {
           events.push({
             id: payout.id,
             type: eventType,
-            date: new Date(payout.scheduled_date),
+            date: parseCalendarDate(payout.scheduled_date),
             title,
             description,
             amount: parseFloat(payout.amount),
@@ -159,7 +164,7 @@ export function useCalendarEvents(currentDate: Date) {
           events.push({
             id: `plan-${plan.id}`,
             type: 'payout_created',
-            date: new Date(plan.created_at),
+            date: parseCalendarDate(plan.created_at),
             title: 'Payout Created',
             description: `${userName} created "${plan.name}"`,
             amount: parseFloat(plan.total_amount),
@@ -180,7 +185,7 @@ export function useCalendarEvents(currentDate: Date) {
           events.push({
             id: `scheduled-${plan.id}`,
             type: 'scheduled_payout',
-            date: new Date(plan.next_payout_date),
+            date: parseCalendarDate(plan.next_payout_date),
             title: 'Scheduled Payout',
             description: `${userName} - ${plan.name}`,
             amount: parseFloat(plan.payout_amount),
@@ -202,7 +207,7 @@ export function useCalendarEvents(currentDate: Date) {
             events.push({
               id: `tx-${transaction.id}`,
               type: 'deposit',
-              date: new Date(transaction.created_at),
+              date: parseCalendarDate(transaction.created_at),
               title: 'Deposit Received',
               description: `${userName} deposited funds`,
               amount: parseFloat(transaction.amount),
@@ -212,7 +217,7 @@ export function useCalendarEvents(currentDate: Date) {
             events.push({
               id: `tx-${transaction.id}`,
               type: 'withdrawal',
-              date: new Date(transaction.created_at),
+              date: parseCalendarDate(transaction.created_at),
               title: 'Withdrawal Completed',
               description: `${userName} withdrew funds`,
               amount: parseFloat(transaction.amount),
@@ -225,7 +230,7 @@ export function useCalendarEvents(currentDate: Date) {
             events.push({
               id: `tx-${transaction.id}`,
               type: isCompleted ? 'payout_received' : 'payout_failed',
-              date: new Date(transaction.created_at),
+              date: parseCalendarDate(transaction.created_at),
               title: isCompleted ? 'Payout Completed' : 'Payout Failed',
               description: `${userName} - ${planName}`,
               amount: parseFloat(transaction.amount),
