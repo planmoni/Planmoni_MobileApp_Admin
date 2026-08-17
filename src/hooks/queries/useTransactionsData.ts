@@ -24,6 +24,7 @@ interface Transaction {
   reference?: string | null;
   description?: string | null;
   created_at: string;
+  metadata?: Record<string, any> | null;
   profiles: Profile[] | null;
 }
 
@@ -79,6 +80,7 @@ const fetchTransactionsData = async (params: TransactionsQueryParams = {}) => {
       payout_plan_id: t.payout_plan_id,
       bank_account_id: t.bank_account_id,
       created_at: t.created_at,
+      metadata: t.metadata,
       profiles: [{
         id: t.user_id || '',
         first_name: t.user_name?.split(' ')[0] || null,
@@ -132,6 +134,7 @@ const fetchTransactionsDataFallback = async (params: TransactionsQueryParams = {
       description,
       created_at,
       user_id,
+      metadata,
       profiles (
         id,
         first_name,

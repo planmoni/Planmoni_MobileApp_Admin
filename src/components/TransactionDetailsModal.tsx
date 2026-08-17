@@ -14,6 +14,7 @@ interface Transaction {
   description: string | null;
   created_at: string;
   updated_at?: string;
+  metadata?: Record<string, any> | null;
   profiles?: Array<{
     first_name: string | null;
     last_name: string | null;
@@ -74,6 +75,18 @@ export default function TransactionDetailsModal({ transaction, isOpen, onClose }
       onClose();
       navigate(`/users/${transaction.user_id}`);
     }
+  };
+
+  const getDestinationDisplay = () => {
+    if (transaction.type === 'payout' || transaction.type === 'withdrawal') {
+      const data = transaction.metadata?.response?.data || transaction.metadata?.data;
+      const accountNumber = data?.creditAccountNumber;
+      const accountName = data?.creditAccountName;
+      if (accountNumber) {
+        return accountName ? `${accountNumber} (${accountName})` : accountNumber;
+      }
+    }
+    return transaction.destination;
   };
 
   return (
@@ -186,7 +199,7 @@ export default function TransactionDetailsModal({ transaction, isOpen, onClose }
                     </div>
                     <div className="ml-3 flex-1">
                       <p className="text-sm font-medium text-gray-500">Destination</p>
-                      <p className="text-sm text-gray-900 break-words">{transaction.destination}</p>
+                      <p className="text-sm text-gray-900 break-words">{getDestinationDisplay()}</p>
                     </div>
                   </div>
                 </div>
