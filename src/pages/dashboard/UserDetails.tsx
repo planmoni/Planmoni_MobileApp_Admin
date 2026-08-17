@@ -69,9 +69,30 @@ export default function UserDetails() {
   };
 
   const handleTransactionClick = (transaction: any) => {
+    let destinationBankName = transaction.destination_bank_name || null;
+    let destinationAccountNumber = transaction.destination_account_number || null;
+    let destinationAccountName = transaction.destination_account_name || null;
+
+    if ((transaction.type === 'payout' || transaction.type === 'withdrawal') && !destinationBankName) {
+      const matchingAccount = bankAccounts.find((acc: any) =>
+        acc.id === transaction.payout_account_id ||
+        acc.id === transaction.bank_account_id
+      );
+      const fallbackAccount = bankAccounts.find((acc: any) => acc.is_default) || bankAccounts[0];
+      const account = matchingAccount || fallbackAccount;
+      if (account) {
+        destinationBankName = account.bank_name;
+        destinationAccountNumber = account.account_number;
+        destinationAccountName = account.account_name;
+      }
+    }
+
     const enrichedTransaction = {
       ...transaction,
       user_id: transaction.user_id || id,
+      destination_bank_name: destinationBankName,
+      destination_account_number: destinationAccountNumber,
+      destination_account_name: destinationAccountName,
       profiles: transaction.profiles || [{
         id: id || '',
         first_name: user?.first_name || null,
@@ -1075,6 +1096,7 @@ export default function UserDetails() {
         transaction={selectedTransaction}
         isOpen={isTransactionModalOpen}
         onClose={handleCloseTransactionModal}
+        showViewProfile={false}
       />
     </div>
   );

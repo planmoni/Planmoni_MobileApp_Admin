@@ -33,9 +33,10 @@ interface TransactionDetailsModalProps {
   transaction: Transaction | null;
   isOpen: boolean;
   onClose: () => void;
+  showViewProfile?: boolean;
 }
 
-export default function TransactionDetailsModal({ transaction, isOpen, onClose }: TransactionDetailsModalProps) {
+export default function TransactionDetailsModal({ transaction, isOpen, onClose, showViewProfile = true }: TransactionDetailsModalProps) {
   const navigate = useNavigate();
 
   if (!isOpen || !transaction) return null;
@@ -265,7 +266,7 @@ export default function TransactionDetailsModal({ transaction, isOpen, onClose }
           </div>
 
           <div className="bg-gray-50 px-6 py-4 flex justify-end gap-3">
-            {transaction.user_id && (
+            {showViewProfile && transaction.user_id && (
               <button
                 onClick={handleUserClick}
                 className="px-6 py-2.5 bg-white text-gray-700 rounded-xl hover:bg-gray-100 transition-colors font-medium border border-gray-200 flex items-center gap-2"
