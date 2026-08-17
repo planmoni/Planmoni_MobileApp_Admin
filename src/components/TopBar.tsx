@@ -78,8 +78,7 @@ export default function TopBar({ isMobileMenuOpen, toggleMobileMenu }: TopBarPro
             email,
             kyc_data!inner(phone_number)
           `)
-          .or(`first_name.ilike.${searchTerm},last_name.ilike.${searchTerm},email.ilike.${searchTerm},kyc_data.phone_number.ilike.${searchTerm}`)
-          .limit(10);
+          .or(`first_name.ilike.${searchTerm},last_name.ilike.${searchTerm},email.ilike.${searchTerm},kyc_data.phone_number.ilike.${searchTerm}`);
 
         if (!error && data) {
           const suggestions = data.map(user => ({
@@ -99,8 +98,7 @@ export default function TopBar({ isMobileMenuOpen, toggleMobileMenu }: TopBarPro
           const { data: profilesOnly } = await supabase
             .from('profiles')
             .select('id, first_name, last_name, email')
-            .or(`first_name.ilike.${searchTerm},last_name.ilike.${searchTerm},email.ilike.${searchTerm}`)
-            .limit(10);
+            .or(`first_name.ilike.${searchTerm},last_name.ilike.${searchTerm},email.ilike.${searchTerm}`);
 
           if (profilesOnly) {
             const suggestions = profilesOnly.map(user => ({
@@ -307,7 +305,7 @@ export default function TopBar({ isMobileMenuOpen, toggleMobileMenu }: TopBarPro
               />
 
               {showSuggestions && suggestions.length > 0 && (
-                <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50 max-h-80 overflow-y-auto">
+                <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50 max-h-96 overflow-y-auto">
                   {suggestions.map((user, index) => (
                     <button
                       key={user.id}
@@ -338,6 +336,9 @@ export default function TopBar({ isMobileMenuOpen, toggleMobileMenu }: TopBarPro
                       </div>
                     </button>
                   ))}
+                  <div className="px-4 py-2 text-xs text-gray-400 border-t border-gray-100">
+                    {suggestions.length} result{suggestions.length === 1 ? '' : 's'}
+                  </div>
                 </div>
               )}
             </div>
