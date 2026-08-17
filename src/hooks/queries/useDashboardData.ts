@@ -431,9 +431,6 @@ const fetchDashboardData = async (): Promise<DashboardStats> => {
           description,
           created_at,
           metadata,
-          destination_bank_name,
-          destination_account_number,
-          destination_account_name,
           profiles (
             id,
             first_name,
@@ -519,9 +516,6 @@ const fetchDashboardData = async (): Promise<DashboardStats> => {
           description,
           created_at,
           metadata,
-          destination_bank_name,
-          destination_account_number,
-          destination_account_name,
           profiles (
             id,
             first_name,
@@ -940,9 +934,6 @@ const fetchDashboardDataFallback = async (): Promise<DashboardStats> => {
       description,
       created_at,
       metadata,
-      destination_bank_name,
-      destination_account_number,
-      destination_account_name,
       profiles (
         id,
         first_name,
@@ -1161,9 +1152,6 @@ const getRecentTransactions = async () => {
       description,
       created_at,
       metadata,
-      destination_bank_name,
-      destination_account_number,
-      destination_account_name,
       profiles (
         id,
         first_name,
