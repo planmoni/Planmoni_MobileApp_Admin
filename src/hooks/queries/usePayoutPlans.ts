@@ -21,6 +21,11 @@ export interface PayoutPlan {
     first_name?: string;
     last_name?: string;
   };
+  payout_account?: {
+    account_name: string;
+    account_number: string;
+    bank_name: string;
+  } | null;
 }
 
 export interface PayoutPlansStats {
@@ -69,6 +74,11 @@ export function usePayoutPlans(searchQuery?: string, statusFilter?: string, freq
                 email,
                 first_name,
                 last_name
+              ),
+              payout_accounts!payout_plans_payout_account_id_fkey (
+                account_name,
+                account_number,
+                bank_name
               )
             `, { count: 'exact' })
             .order('created_at', { ascending: false })
@@ -133,7 +143,8 @@ export function usePayoutPlans(searchQuery?: string, statusFilter?: string, freq
 
       const plans = (plansResult.data || []).map((plan: any) => ({
         ...plan,
-        user: plan.profiles
+        user: plan.profiles,
+        payout_account: plan.payout_accounts
       }));
 
       return {

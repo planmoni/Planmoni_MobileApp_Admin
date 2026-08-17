@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Filter, RefreshCw, CheckCircle, XCircle, Clock, Calendar, User, ChevronLeft, ChevronRight, TrendingUp, DollarSign, ListChecks } from 'lucide-react';
+import { Search, Filter, RefreshCw, CircleCheck as CheckCircle, Circle as XCircle, Clock, Calendar, User, ChevronLeft, ChevronRight, TrendingUp, DollarSign, ListChecks } from 'lucide-react';
 import { usePayoutPlans } from '@/hooks/queries/usePayoutPlans';
 import { useRefreshData } from '@/hooks/mutations/useRefreshData';
 import { format } from 'date-fns';
@@ -597,6 +597,9 @@ export default function PayoutPlans() {
                       Payout Amount
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      Destination
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                       Status
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
@@ -675,6 +678,18 @@ export default function PayoutPlans() {
                             currency: 'NGN'
                           }).format(plan.payout_amount || 0)}
                         </div>
+                      </td>
+
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {plan.payout_account ? (
+                          <div className="text-sm">
+                            <div className="font-medium text-gray-900">{plan.payout_account.bank_name}</div>
+                            <div className="text-xs text-gray-500">{plan.payout_account.account_number}</div>
+                            <div className="text-xs text-gray-400">{plan.payout_account.account_name}</div>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-gray-400">No account</span>
+                        )}
                       </td>
 
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -807,6 +822,16 @@ export default function PayoutPlans() {
                         <div className="text-xs text-gray-500 mb-0.5">Start Date</div>
                         <div className="text-sm text-gray-900 truncate">
                           {plan.start_date ? format(new Date(plan.start_date), 'MMM d, yy') : 'N/A'}
+                        </div>
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-xs text-gray-500 mb-0.5">Destination</div>
+                        <div className="text-sm text-gray-900 truncate">
+                          {plan.payout_account ? (
+                            <span>{plan.payout_account.bank_name} • {plan.payout_account.account_number}</span>
+                          ) : (
+                            <span className="text-gray-400">No account</span>
+                          )}
                         </div>
                       </div>
                     </div>
