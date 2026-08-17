@@ -163,13 +163,47 @@ export default function UserDetails() {
     const startDate = new Date(plan.start_date);
     if (isNaN(startDate.getTime())) return null;
 
+    const remaining = plan.duration - 1;
+
     switch (plan.frequency) {
       case 'daily':
-        return addDays(startDate, plan.duration - 1);
+      case 'specific_days':
+        return addDays(startDate, remaining);
       case 'weekly':
-        return addWeeks(startDate, plan.duration - 1);
+      case 'weekly_specific':
+        return addWeeks(startDate, remaining);
+      case 'biweekly':
+      case 'bi-weekly':
+        return addWeeks(startDate, remaining * 2);
       case 'monthly':
-        return addMonths(startDate, plan.duration - 1);
+        return addMonths(startDate, remaining);
+      case 'end_of_month':
+      case 'month_end': {
+        const d = addMonths(startDate, remaining);
+        return new Date(d.getFullYear(), d.getMonth() + 1, 0);
+      }
+      case 'quarterly':
+        return addMonths(startDate, remaining * 3);
+      case 'biannually':
+      case 'bi-annually':
+        return addMonths(startDate, remaining * 6);
+      case 'annually':
+        return addMonths(startDate, remaining * 12);
+      case 'custom': {
+        if (plan.next_payout_date && plan.completed_payouts > 0) {
+          const nextDate = new Date(plan.next_payout_date);
+          const intervalDays = Math.round(
+            (nextDate.getTime() - startDate.getTime()) / (plan.completed_payouts * 86400000)
+          );
+          if (intervalDays > 0) {
+            return addDays(startDate, intervalDays * remaining);
+          }
+        }
+        if (plan.next_payout_date && plan.completed_payouts === plan.duration - 1) {
+          return new Date(plan.next_payout_date);
+        }
+        return startDate;
+      }
       default:
         return startDate;
     }
