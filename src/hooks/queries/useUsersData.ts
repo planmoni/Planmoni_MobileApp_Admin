@@ -29,6 +29,7 @@ type UserStats = {
   verified_users: number;
   total_wallet_balance: number;
   total_locked_balance: number;
+  total_plans_amount: number;
   user_growth_trend: any[];
 };
 

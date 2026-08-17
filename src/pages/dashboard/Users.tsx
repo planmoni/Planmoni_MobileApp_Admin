@@ -153,7 +153,7 @@ export default function Users() {
               </div>
             </div>
             <div className="flex items-center gap-2 pt-2 md:pt-3 border-t border-gray-100">
-              <span className="text-xs text-gray-400">Active payout plans</span>
+              <span className="text-xs text-gray-500">{formatCurrency(userStats.total_plans_amount || 0)} total</span>
             </div>
           </div>
         </div>
