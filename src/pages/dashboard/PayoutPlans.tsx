@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Filter, RefreshCw, CheckCircle, XCircle, Clock, Calendar, User, ChevronLeft, ChevronRight, TrendingUp, DollarSign } from 'lucide-react';
+import { Search, Filter, RefreshCw, CheckCircle, XCircle, Clock, Calendar, User, ChevronLeft, ChevronRight, TrendingUp, DollarSign, ListChecks } from 'lucide-react';
 import { usePayoutPlans } from '@/hooks/queries/usePayoutPlans';
 import { useRefreshData } from '@/hooks/mutations/useRefreshData';
 import { format } from 'date-fns';
+import PlanBreakdownModal from '@/components/PlanBreakdownModal';
 import { Pie, Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -32,6 +33,7 @@ export default function PayoutPlans() {
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'completed' | 'cancelled'>('all');
   const [frequencyFilter, setFrequencyFilter] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
+  const [breakdownPlan, setBreakdownPlan] = useState<{ id: string; name: string; userName: string } | null>(null);
   const pageSize = 50;
   const { data, isLoading, error } = usePayoutPlans(searchQuery, statusFilter, frequencyFilter, currentPage, pageSize);
   const refreshData = useRefreshData();
@@ -603,6 +605,9 @@ export default function PayoutPlans() {
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                       Progress
                     </th>
+                    <th className="px-6 py-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      Actions
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
@@ -703,6 +708,24 @@ export default function PayoutPlans() {
                             ></div>
                           </div>
                         </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setBreakdownPlan({
+                              id: plan.id,
+                              name: plan.name,
+                              userName: plan.user?.first_name && plan.user?.last_name
+                                ? `${plan.user.first_name} ${plan.user.last_name}`
+                                : plan.user?.email || 'Unknown',
+                            });
+                          }}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 transition-colors"
+                        >
+                          <ListChecks className="h-3.5 w-3.5" />
+                          Breakdown
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -807,6 +830,25 @@ export default function PayoutPlans() {
                         </div>
                       )}
                     </div>
+
+                    <div className="pt-2 border-t border-gray-100">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setBreakdownPlan({
+                            id: plan.id,
+                            name: plan.name,
+                            userName: plan.user?.first_name && plan.user?.last_name
+                              ? `${plan.user.first_name} ${plan.user.last_name}`
+                              : plan.user?.email || 'Unknown',
+                          });
+                        }}
+                        className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 transition-colors"
+                      >
+                        <ListChecks className="h-3.5 w-3.5" />
+                        Plan Breakdown
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -879,6 +921,15 @@ export default function PayoutPlans() {
           </div>
         )}
       </div>
+
+      {breakdownPlan && (
+        <PlanBreakdownModal
+          planId={breakdownPlan.id}
+          planName={breakdownPlan.name}
+          userName={breakdownPlan.userName}
+          onClose={() => setBreakdownPlan(null)}
+        />
+      )}
     </div>
   );
 }
