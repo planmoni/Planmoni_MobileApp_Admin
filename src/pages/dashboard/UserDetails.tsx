@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Wallet, Calendar, Building2, ArrowUpRight, ArrowDownRight, RefreshCw, Shield, Lock, TrendingUp, Clock, CircleCheck as CheckCircle2, Circle as XCircle, User, Phone, MapPin, FileText, CreditCard, CircleCheck as CheckCircle, Circle as XCircleIcon, CircleAlert as AlertCircle, Zap } from 'lucide-react';
+import { ArrowLeft, Wallet, Calendar, Building2, ArrowUpRight, ArrowDownRight, RefreshCw, Shield, Lock, TrendingUp, Clock, CircleCheck as CheckCircle2, Circle as XCircle, User, Phone, MapPin, FileText, CreditCard, CircleCheck as CheckCircle, Circle as XCircleIcon, CircleAlert as AlertCircle, Zap, Camera, ExternalLink } from 'lucide-react';
 import { format, addDays, addWeeks, addMonths } from 'date-fns';
 import { useUserDetails } from '@/hooks/queries/useUsersData';
 import { useRefreshData } from '@/hooks/mutations/useRefreshData';
@@ -620,6 +620,33 @@ export default function UserDetails() {
                   )}
                 </div>
               </div>
+
+              {kycData.selfie_url && (
+                <div className="mt-6 pt-6 border-t border-gray-100">
+                  <p className="text-sm font-medium text-gray-500 mb-3 flex items-center gap-2">
+                    <Camera className="h-4 w-4" />
+                    Verification Selfie
+                  </p>
+                  <div className="relative group inline-block">
+                    <img
+                      src={kycData.selfie_url}
+                      alt="KYC Selfie"
+                      className="w-32 h-32 object-cover rounded-xl border border-gray-200 shadow-sm"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = 'none';
+                      }}
+                    />
+                    <a
+                      href={kycData.selfie_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all rounded-xl flex items-center justify-center"
+                    >
+                      <ExternalLink className="h-5 w-5 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </a>
+                  </div>
+                </div>
+              )}
 
               {kycData.created_at && (
                 <div className="mt-6 pt-6 border-t border-gray-100">
