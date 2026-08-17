@@ -28,11 +28,14 @@ export default function Users() {
     let filtered = [...users];
 
     if (searchQuery) {
-      filtered = filtered.filter(user =>
-        user.first_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        user.last_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        user.email?.toLowerCase().includes(searchQuery.toLowerCase())
-      );
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(user => {
+        const fullName = `${user.first_name || ''} ${user.last_name || ''}`.trim().toLowerCase();
+        return fullName.includes(query) ||
+          user.first_name?.toLowerCase().includes(query) ||
+          user.last_name?.toLowerCase().includes(query) ||
+          user.email?.toLowerCase().includes(query);
+      });
     }
 
     switch (filterType) {
