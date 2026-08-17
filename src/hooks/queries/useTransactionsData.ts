@@ -25,6 +25,9 @@ interface Transaction {
   description?: string | null;
   created_at: string;
   metadata?: Record<string, any> | null;
+  destination_bank_name?: string | null;
+  destination_account_number?: string | null;
+  destination_account_name?: string | null;
   profiles: Profile[] | null;
 }
 
@@ -81,6 +84,9 @@ const fetchTransactionsData = async (params: TransactionsQueryParams = {}) => {
       bank_account_id: t.bank_account_id,
       created_at: t.created_at,
       metadata: t.metadata,
+      destination_bank_name: t.destination_bank_name,
+      destination_account_number: t.destination_account_number,
+      destination_account_name: t.destination_account_name,
       profiles: [{
         id: t.user_id || '',
         first_name: t.user_name?.split(' ')[0] || null,

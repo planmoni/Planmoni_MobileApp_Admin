@@ -15,6 +15,9 @@ interface Transaction {
   created_at: string;
   updated_at?: string;
   metadata?: Record<string, any> | null;
+  destination_bank_name?: string | null;
+  destination_account_number?: string | null;
+  destination_account_name?: string | null;
   profiles?: Array<{
     first_name: string | null;
     last_name: string | null;
@@ -79,11 +82,19 @@ export default function TransactionDetailsModal({ transaction, isOpen, onClose }
 
   const getDestinationDisplay = () => {
     if (transaction.type === 'payout' || transaction.type === 'withdrawal') {
+      const bankName = transaction.destination_bank_name;
+      const accountNumber = transaction.destination_account_number;
+      const accountName = transaction.destination_account_name;
+
+      if (bankName && accountNumber) {
+        return `${bankName} - ${accountNumber}${accountName ? ` (${accountName})` : ''}`;
+      }
+
       const data = transaction.metadata?.response?.data || transaction.metadata?.data;
-      const accountNumber = data?.creditAccountNumber;
-      const accountName = data?.creditAccountName;
-      if (accountNumber) {
-        return accountName ? `${accountNumber} (${accountName})` : accountNumber;
+      const metaAccountNumber = data?.creditAccountNumber;
+      const metaAccountName = data?.creditAccountName;
+      if (metaAccountNumber) {
+        return metaAccountName ? `${metaAccountNumber} (${metaAccountName})` : metaAccountNumber;
       }
     }
     return transaction.destination;
