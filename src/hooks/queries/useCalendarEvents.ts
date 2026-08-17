@@ -9,7 +9,7 @@ const parseCalendarDate = (value: string) =>
 
 interface CalendarEvent {
   id: string;
-  type: 'payout_received' | 'payout_created' | 'scheduled_payout' | 'payout_failed' | 'deposit' | 'withdrawal';
+  type: 'payout_received' | 'payout_created' | 'plan_created' | 'scheduled_payout' | 'payout_failed' | 'deposit' | 'withdrawal';
   date: Date;
   title: string;
   description: string;
@@ -163,9 +163,9 @@ export function useCalendarEvents(currentDate: Date) {
 
           events.push({
             id: `plan-${plan.id}`,
-            type: 'payout_created',
+            type: 'plan_created',
             date: parseCalendarDate(plan.created_at),
-            title: 'Payout Created',
+            title: 'Plan Created',
             description: `${userName} created "${plan.name}"`,
             amount: parseFloat(plan.total_amount),
             user_name: userName,

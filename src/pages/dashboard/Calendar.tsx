@@ -4,7 +4,7 @@ import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSam
 import { useCalendarEvents } from '@/hooks/queries/useCalendarEvents';
 
 type ViewMode = 'month' | 'week' | 'list';
-type EventType = 'payout_received' | 'payout_created' | 'scheduled_payout' | 'payout_failed' | 'deposit' | 'withdrawal';
+type EventType = 'payout_received' | 'payout_created' | 'plan_created' | 'scheduled_payout' | 'payout_failed' | 'deposit' | 'withdrawal';
 
 interface CalendarEvent {
   id: string;
@@ -28,6 +28,14 @@ const eventTypeConfig = {
   },
   payout_created: {
     label: 'Payout created',
+    color: 'bg-blue-500',
+    textColor: 'text-blue-600',
+    bgColor: 'bg-blue-50',
+    borderColor: 'border-blue-100',
+    icon: CalendarIcon,
+  },
+  plan_created: {
+    label: 'Plan created',
     color: 'bg-blue-500',
     textColor: 'text-blue-600',
     bgColor: 'bg-blue-50',
