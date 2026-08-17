@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Wallet, Calendar, Building2, ArrowUpRight, ArrowDownRight, RefreshCw, Shield, Lock, TrendingUp, Clock, CircleCheck as CheckCircle2, Circle as XCircle, User, Phone, MapPin, FileText, CreditCard, CircleCheck as CheckCircle, Circle as XCircleIcon, CircleAlert as AlertCircle, Zap } from 'lucide-react';
 import { format, addDays, addWeeks, addMonths } from 'date-fns';
@@ -5,6 +6,7 @@ import { useUserDetails } from '@/hooks/queries/useUsersData';
 import { useRefreshData } from '@/hooks/mutations/useRefreshData';
 import { PayoutCountdown } from '@/components/PayoutCountdown';
 import SendReengagementButton from '@/components/SendReengagementButton';
+import TransactionDetailsModal from '@/components/TransactionDetailsModal';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 
@@ -13,6 +15,8 @@ export default function UserDetails() {
   const navigate = useNavigate();
   const { data: userDetailsData, isLoading, error } = useUserDetails(id!);
   const refreshData = useRefreshData();
+  const [selectedTransaction, setSelectedTransaction] = useState<any>(null);
+  const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
 
   const { data: userActivity } = useQuery({
     queryKey: ['user-activity', id],
@@ -62,6 +66,26 @@ export default function UserDetails() {
     if (id) {
       refreshData.mutate(['user', id]);
     }
+  };
+
+  const handleTransactionClick = (transaction: any) => {
+    const enrichedTransaction = {
+      ...transaction,
+      user_id: transaction.user_id || id,
+      profiles: transaction.profiles || [{
+        id: id || '',
+        first_name: user?.first_name || null,
+        last_name: user?.last_name || null,
+        email: user?.email || '',
+      }],
+    };
+    setSelectedTransaction(enrichedTransaction);
+    setIsTransactionModalOpen(true);
+  };
+
+  const handleCloseTransactionModal = () => {
+    setIsTransactionModalOpen(false);
+    setSelectedTransaction(null);
   };
 
   const getEventIcon = (type: string) => {
@@ -889,7 +913,11 @@ export default function UserDetails() {
             <>
               <div className="divide-y divide-gray-100">
                 {transactions.slice(0, 5).map((transaction: any) => (
-                  <div key={transaction.id} className="p-5 hover:bg-gray-50 transition-colors flex justify-between items-center">
+                  <div
+                    key={transaction.id}
+                    onClick={() => handleTransactionClick(transaction)}
+                    className="p-5 hover:bg-gray-50 transition-colors flex justify-between items-center cursor-pointer"
+                  >
                     <div className="flex items-center gap-4">
                       <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
                         transaction.type === 'deposit' ? 'bg-green-50' : 'bg-red-50'
@@ -1016,6 +1044,11 @@ export default function UserDetails() {
           </div>
         )}
       </div>
+      <TransactionDetailsModal
+        transaction={selectedTransaction}
+        isOpen={isTransactionModalOpen}
+        onClose={handleCloseTransactionModal}
+      />
     </div>
   );
 }
