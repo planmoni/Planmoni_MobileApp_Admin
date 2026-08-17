@@ -421,10 +421,19 @@ const fetchDashboardData = async (): Promise<DashboardStats> => {
         .from('transactions')
         .select(`
           id,
+          user_id,
           type,
           amount,
           status,
+          source,
+          destination,
+          reference,
+          description,
           created_at,
+          metadata,
+          destination_bank_name,
+          destination_account_number,
+          destination_account_name,
           profiles (
             id,
             first_name,
@@ -500,10 +509,19 @@ const fetchDashboardData = async (): Promise<DashboardStats> => {
         .from('transactions')
         .select(`
           id,
+          user_id,
           type,
           amount,
           status,
+          source,
+          destination,
+          reference,
+          description,
           created_at,
+          metadata,
+          destination_bank_name,
+          destination_account_number,
+          destination_account_name,
           profiles (
             id,
             first_name,
@@ -912,10 +930,19 @@ const fetchDashboardDataFallback = async (): Promise<DashboardStats> => {
     .from('transactions')
     .select(`
       id,
+      user_id,
       type,
       amount,
       status,
+      source,
+      destination,
+      reference,
+      description,
       created_at,
+      metadata,
+      destination_bank_name,
+      destination_account_number,
+      destination_account_name,
       profiles (
         id,
         first_name,
@@ -1124,10 +1151,19 @@ const getRecentTransactions = async () => {
     .from('transactions')
     .select(`
       id,
+      user_id,
       type,
       amount,
       status,
+      source,
+      destination,
+      reference,
+      description,
       created_at,
+      metadata,
+      destination_bank_name,
+      destination_account_number,
+      destination_account_name,
       profiles (
         id,
         first_name,
