@@ -67,9 +67,9 @@ export default function TopBar({ isMobileMenuOpen, toggleMobileMenu }: TopBarPro
       }
 
       try {
-        const searchTerm = `%${searchQuery}%`;
+        const searchTerms = searchQuery.trim().split(/\s+/).filter(Boolean);
 
-        const { data, error } = await supabase
+        let profilesQuery = supabase
           .from('profiles')
           .select(`
             id,
@@ -77,8 +77,16 @@ export default function TopBar({ isMobileMenuOpen, toggleMobileMenu }: TopBarPro
             last_name,
             email,
             kyc_data!inner(phone_number)
-          `)
-          .or(`first_name.ilike.${searchTerm},last_name.ilike.${searchTerm},email.ilike.${searchTerm},kyc_data.phone_number.ilike.${searchTerm}`);
+          `);
+
+        for (const term of searchTerms) {
+          const searchTerm = `%${term}%`;
+          profilesQuery = profilesQuery.or(
+            `first_name.ilike.${searchTerm},last_name.ilike.${searchTerm},email.ilike.${searchTerm},kyc_data.phone_number.ilike.${searchTerm}`
+          );
+        }
+
+        const { data, error } = await profilesQuery;
 
         if (!error && data) {
           const suggestions = data.map(user => ({
@@ -95,10 +103,18 @@ export default function TopBar({ isMobileMenuOpen, toggleMobileMenu }: TopBarPro
           setShowSuggestions(true);
           setSelectedIndex(-1);
         } else if (error) {
-          const { data: profilesOnly } = await supabase
+          let profilesOnlyQuery = supabase
             .from('profiles')
-            .select('id, first_name, last_name, email')
-            .or(`first_name.ilike.${searchTerm},last_name.ilike.${searchTerm},email.ilike.${searchTerm}`);
+            .select('id, first_name, last_name, email');
+
+          for (const term of searchTerms) {
+            const searchTerm = `%${term}%`;
+            profilesOnlyQuery = profilesOnlyQuery.or(
+              `first_name.ilike.${searchTerm},last_name.ilike.${searchTerm},email.ilike.${searchTerm}`
+            );
+          }
+
+          const { data: profilesOnly } = await profilesOnlyQuery;
 
           if (profilesOnly) {
             const suggestions = profilesOnly.map(user => ({
