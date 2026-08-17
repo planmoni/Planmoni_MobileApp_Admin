@@ -23,6 +23,7 @@ type UserStats = {
   active_users_today: number;
   active_users_this_week: number;
   active_users_this_month: number;
+  active_users_all_time: number;
   users_with_balance: number;
   users_with_plans: number;
   admin_users: number;

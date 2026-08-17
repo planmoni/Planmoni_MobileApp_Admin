@@ -125,11 +125,11 @@ export default function Users() {
             <div className="flex justify-between items-start mb-3 md:mb-4">
               <div className="flex-1">
                 <p className="text-sm font-medium text-gray-500 mb-1">Active Users</p>
-                <p className="text-2xl md:text-2xl font-bold text-gray-900">{userStats.active_users_this_month}</p>
+                <p className="text-2xl md:text-2xl font-bold text-gray-900">{userStats.active_users_all_time}</p>
               </div>
             </div>
             <div className="flex items-center gap-2 pt-2 md:pt-3 border-t border-gray-100">
-              <span className="text-xs text-gray-400">This month</span>
+              <span className="text-xs text-gray-400">All time</span>
             </div>
           </div>
 
