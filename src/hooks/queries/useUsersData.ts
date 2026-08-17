@@ -32,27 +32,29 @@ type UserStats = {
   user_growth_trend: any[];
 };
 
-const fetchUsersData = async (): Promise<{ users: UserData[]; stats: UserStats | null }> => {
+const fetchUsersData = async (searchQuery?: string): Promise<{ users: UserData[]; stats: UserStats | null }> => {
   try {
-    // Fetch all users data using the optimized RPC function
-    const { data: usersData, error: usersError } = await supabase.rpc('get_all_users_info');
-    
-    if (usersError) {
-      console.error('Error fetching users:', usersError);
-      // Fallback to individual queries if RPC fails
-      const fallbackData = await fetchUsersDataFallback();
-      return { users: fallbackData, stats: null };
+    let usersResult: UserData[];
+
+    if (searchQuery && searchQuery.trim()) {
+      const { data: searchData, error: searchError } = await supabase
+        .rpc('search_users_info', { search_query: searchQuery.trim() });
+
+      if (searchError) throw searchError;
+      usersResult = (searchData as UserData[]) || [];
+    } else {
+      const { data: usersData, error: usersError } = await supabase.rpc('get_all_users_info');
+      if (usersError) throw usersError;
+      usersResult = (usersData as UserData[]) || [];
     }
-    
-    // Fetch user management statistics
+
     const { data: statsData, error: statsError } = await supabase.rpc('get_user_management_data');
-    
     if (statsError) {
       console.error('Error fetching user stats:', statsError);
     }
-    
+
     return {
-      users: usersData || [],
+      users: usersResult,
       stats: statsData?.[0] || null
     };
   } catch (error) {
@@ -97,12 +99,12 @@ const fetchUsersDataFallback = async (): Promise<UserData[]> => {
   })) || [];
 };
 
-export const useUsersData = () => {
+export const useUsersData = (searchQuery?: string) => {
   return useQuery({
-    queryKey: ['users'],
-    queryFn: fetchUsersData,
-    staleTime: 3 * 60 * 1000, // 3 minutes
-    gcTime: 10 * 60 * 1000, // 10 minutes
+    queryKey: ['users', searchQuery || ''],
+    queryFn: () => fetchUsersData(searchQuery),
+    staleTime: 3 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 };
 

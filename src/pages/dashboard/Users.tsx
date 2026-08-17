@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Search, RefreshCw, Users as UsersIcon, TrendingUp } from 'lucide-react';
 import { useUsersData } from '@/hooks/queries/useUsersData';
@@ -8,23 +8,27 @@ type FilterType = 'all' | 'admin' | 'with_balance' | 'with_plans';
 
 export default function Users() {
   const [searchParams] = useSearchParams();
-  const { data: usersData, isLoading, error } = useUsersData();
+  const [searchInput, setSearchInput] = useState(() => searchParams.get('search') || '');
+  const [debouncedSearch, setDebouncedSearch] = useState(() => searchParams.get('search') || '');
+  const { data: usersData, isLoading, isFetching, error } = useUsersData(debouncedSearch);
   const refreshData = useRefreshData();
-  const [searchQuery, setSearchQuery] = useState(() => searchParams.get('search') || '');
   const [filterType, setFilterType] = useState<FilterType>('all');
-  const [filteredUsers, setFilteredUsers] = useState<any[]>([]);
 
   const users = usersData?.users || [];
   const userStats = usersData?.stats;
 
   useEffect(() => {
-    filterUsers();
-  }, [searchQuery, users, filterType]);
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchInput);
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
 
   useEffect(() => {
     const urlSearch = searchParams.get('search') || '';
-    if (urlSearch && urlSearch !== searchQuery) {
-      setSearchQuery(urlSearch);
+    if (urlSearch && urlSearch !== searchInput) {
+      setSearchInput(urlSearch);
+      setDebouncedSearch(urlSearch);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
@@ -33,22 +37,8 @@ export default function Users() {
     refreshData.mutate(['users']);
   };
 
-  const filterUsers = () => {
+  const filteredUsers = useMemo(() => {
     let filtered = [...users];
-
-    if (searchQuery.trim()) {
-      const terms = searchQuery.trim().toLowerCase().split(/\s+/).filter(Boolean);
-      filtered = filtered.filter(user => {
-        const fullName = `${user.first_name || ''} ${user.last_name || ''}`.trim().toLowerCase();
-        const email = (user.email || '').toLowerCase();
-        return terms.every(term =>
-          fullName.includes(term) ||
-          (user.first_name || '').toLowerCase().includes(term) ||
-          (user.last_name || '').toLowerCase().includes(term) ||
-          email.includes(term)
-        );
-      });
-    }
 
     switch (filterType) {
       case 'admin':
@@ -64,8 +54,8 @@ export default function Users() {
         break;
     }
 
-    setFilteredUsers(filtered);
-  };
+    return filtered;
+  }, [users, filterType]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-NG', {
@@ -176,11 +166,16 @@ export default function Users() {
           </div>
           <input
             type="text"
-            placeholder="Filter users..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="block w-full pl-10 md:pl-11 pr-3 md:pr-4 py-2.5 md:py-3 text-sm md:text-base border border-gray-200 rounded-xl bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all"
+            placeholder="Search users by name or email..."
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            className="block w-full pl-10 md:pl-11 pr-10 md:pr-12 py-2.5 md:py-3 text-sm md:text-base border border-gray-200 rounded-xl bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all"
           />
+          {isFetching && (
+            <div className="absolute inset-y-0 right-0 pr-3 md:pr-4 flex items-center">
+              <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-gray-400"></div>
+            </div>
+          )}
         </div>
         <div className="flex overflow-x-auto pb-2 -mx-1 px-1 space-x-2 scrollbar-hide">
           <button
@@ -394,12 +389,13 @@ export default function Users() {
           <div className="text-center py-12">
             <UsersIcon className="mx-auto h-12 w-12 text-gray-300 mb-4" />
             <p className="text-gray-500">
-              {searchQuery || filterType !== 'all' ? 'No users match your filters' : 'No users found'}
+              {debouncedSearch || filterType !== 'all' ? 'No users match your filters' : 'No users found'}
             </p>
-            {(searchQuery || filterType !== 'all') && (
+            {(debouncedSearch || filterType !== 'all') && (
               <button
                 onClick={() => {
-                  setSearchQuery('');
+                  setSearchInput('');
+                  setDebouncedSearch('');
                   setFilterType('all');
                 }}
                 className="mt-4 px-4 py-2 text-sm font-medium text-primary bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
