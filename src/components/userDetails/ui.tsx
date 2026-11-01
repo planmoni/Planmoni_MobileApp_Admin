@@ -10,6 +10,7 @@ export function Panel({
   action,
   children,
   flush = false,
+  allowOverflow = false,
   className = '',
 }: {
   title?: string;
@@ -18,10 +19,12 @@ export function Panel({
   children: ReactNode;
   /** no inner padding (for lists that draw their own dividers) */
   flush?: boolean;
+  /** don't clip children, so dropdown menus can hang over the edge */
+  allowOverflow?: boolean;
   className?: string;
 }) {
   return (
-    <section className={`bg-white rounded-2xl shadow-soft border border-gray-100 overflow-hidden ${className}`}>
+    <section className={`bg-white rounded-2xl shadow-soft border border-gray-100 ${allowOverflow ? '' : 'overflow-hidden'} ${className}`}>
       {(title || action) && (
         <header className="flex items-center justify-between gap-3 px-4 md:px-5 py-3.5 border-b border-gray-100">
           <div className="min-w-0">

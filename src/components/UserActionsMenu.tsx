@@ -59,7 +59,7 @@ export default function UserActionsMenu({ userId, userName, canRestrict, canDele
         {menuOpen && (
           <div
             role="menu"
-            className="absolute right-0 mt-2 w-72 bg-white rounded-xl shadow-large border border-gray-100 py-1 z-20"
+            className="absolute right-0 mt-2 w-72 bg-white rounded-xl shadow-large border border-gray-100 py-1 z-50"
           >
             {canRestrict && (
               <button

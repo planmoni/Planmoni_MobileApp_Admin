@@ -137,10 +137,10 @@ export default function SendReengagementButton({
       {showDropdown && (
         <>
           <div
-            className="fixed inset-0 z-10"
+            className="fixed inset-0 z-40"
             onClick={() => setShowDropdown(false)}
           />
-          <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-lg border border-gray-200 z-20 overflow-hidden">
+          <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-lg border border-gray-200 z-50 overflow-hidden">
             <div className="p-3 border-b border-gray-100 bg-gray-50">
               <h3 className="text-sm font-semibold text-gray-900">Send Re-engagement Alert</h3>
               <p className="text-xs text-gray-600 mt-1">Choose an alert type to send</p>

@@ -476,7 +476,8 @@ export default function UserDetails() {
         Users
       </Link>
 
-      <Panel>
+      {/* not clipped, so the Send Alert / Actions menus can open over the cards below */}
+      <Panel allowOverflow>
         <div className="flex flex-col md:flex-row md:items-start gap-4">
           <div className="w-14 h-14 rounded-2xl bg-gray-900 flex items-center justify-center text-white text-lg font-semibold flex-shrink-0">
             {user.first_name?.[0]}
