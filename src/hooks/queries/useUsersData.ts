@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import type { KycTier } from '@/hooks/queries/useKycData';
 
@@ -227,5 +227,81 @@ export const useUserTiers = () => {
     queryFn: fetchUserTiers,
     staleTime: 3 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
+  });
+};
+
+/**
+ * Post No Debit (PND): profiles.post_no_debit blocks new payout plans and fund
+ * locks (enforced server-side in create_payout_plan_atomic / lock_funds).
+ */
+export type UserRestriction = {
+  post_no_debit: boolean;
+  post_no_debit_reason: string | null;
+  post_no_debit_at: string | null;
+  post_no_debit_by: string | null;
+};
+
+export const useUserRestriction = (userId: string) => {
+  return useQuery({
+    queryKey: ['user', userId, 'restriction'],
+    queryFn: async (): Promise<UserRestriction> => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('post_no_debit, post_no_debit_reason, post_no_debit_at, post_no_debit_by')
+        .eq('id', userId)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      return {
+        post_no_debit: data?.post_no_debit ?? false,
+        post_no_debit_reason: data?.post_no_debit_reason ?? null,
+        post_no_debit_at: data?.post_no_debit_at ?? null,
+        post_no_debit_by: data?.post_no_debit_by ?? null,
+      };
+    },
+    enabled: !!userId,
+    staleTime: 30 * 1000,
+  });
+};
+
+type SetPostNoDebitInput =
+  | { userId: string; enable: true; reason: string; adminEmail: string }
+  | { userId: string; enable: false };
+
+export const useSetPostNoDebit = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (input: SetPostNoDebitInput) => {
+      const changes = input.enable
+        ? {
+            post_no_debit: true,
+            post_no_debit_reason: input.reason.trim(),
+            post_no_debit_at: new Date().toISOString(),
+            post_no_debit_by: input.adminEmail,
+          }
+        : {
+            post_no_debit: false,
+            post_no_debit_reason: null,
+            post_no_debit_at: null,
+            post_no_debit_by: null,
+          };
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .update(changes)
+        .eq('id', input.userId)
+        .select('id');
+
+      if (error) throw error;
+      // RLS filters rows silently, so an empty result means nothing was updated
+      if (!data || data.length === 0) {
+        throw new Error('You do not have permission to change this restriction.');
+      }
+    },
+    onSuccess: (_data, input) => {
+      queryClient.invalidateQueries({ queryKey: ['user', input.userId, 'restriction'] });
+    },
   });
 };

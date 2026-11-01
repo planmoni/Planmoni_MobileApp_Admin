@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Wallet, Calendar, Building2, ArrowUpRight, ArrowDownRight, RefreshCw, Shield, Lock, TrendingUp, Clock, CircleCheck as CheckCircle2, Circle as XCircle, User, Phone, MapPin, FileText, CreditCard, CircleCheck as CheckCircle, Circle as XCircleIcon, Zap, Camera, ExternalLink, ListChecks } from 'lucide-react';
+import { ArrowLeft, Wallet, Calendar, Building2, ArrowUpRight, ArrowDownRight, RefreshCw, Shield, Lock, TrendingUp, Clock, CircleCheck as CheckCircle2, Circle as XCircle, User, Phone, MapPin, FileText, CreditCard, CircleCheck as CheckCircle, Circle as XCircleIcon, Zap, Camera, ExternalLink, ListChecks, Ban } from 'lucide-react';
 import { format, addDays, addWeeks, addMonths } from 'date-fns';
-import { useUserDetails } from '@/hooks/queries/useUsersData';
+import { useUserDetails, useUserRestriction } from '@/hooks/queries/useUsersData';
+import { usePermissions } from '@/contexts/PermissionsContext';
 import { useRefreshData } from '@/hooks/mutations/useRefreshData';
 import { PayoutCountdown } from '@/components/PayoutCountdown';
 import SendReengagementButton from '@/components/SendReengagementButton';
+import PostNoDebitButton from '@/components/PostNoDebitButton';
 import TransactionDetailsModal from '@/components/TransactionDetailsModal';
 import PlanBreakdownModal from '@/components/PlanBreakdownModal';
 import { TierIcon } from '@/components/TierIcon';
@@ -17,6 +19,9 @@ export default function UserDetails() {
   const navigate = useNavigate();
   const { data: userDetailsData, isLoading, error } = useUserDetails(id!);
   const refreshData = useRefreshData();
+  const { isSuperAdmin, hasPermission } = usePermissions();
+  const canRestrict = isSuperAdmin || hasPermission('users', 'details');
+  const { data: restriction } = useUserRestriction(id!);
   const [selectedTransaction, setSelectedTransaction] = useState<any>(null);
   const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
   const [breakdownPlan, setBreakdownPlan] = useState<any>(null);
@@ -239,6 +244,9 @@ export default function UserDetails() {
           </div>
         </div>
         <div className="flex items-center gap-3">
+          {canRestrict && (
+            <PostNoDebitButton userId={id!} userName={`${user.first_name || ''} ${user.last_name || ''}`} />
+          )}
           <SendReengagementButton
             userId={id!}
             userBalance={userBalance}
@@ -277,6 +285,25 @@ export default function UserDetails() {
               <Calendar className="h-4 w-4" />
               Joined {format(new Date(user.created_at), 'MMMM d, yyyy')}
             </p>
+            {restriction?.post_no_debit && (
+              <div className="mt-3 inline-flex items-start gap-2 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700">
+                <Ban className="h-4 w-4 mt-0.5 flex-shrink-0 text-gray-900" />
+                <div>
+                  <p className="font-semibold text-gray-900">Post No Debit</p>
+                  <p className="text-gray-600">
+                    Cannot create payout plans or lock funds.
+                    {restriction.post_no_debit_reason && ` Reason: ${restriction.post_no_debit_reason}.`}
+                  </p>
+                  {(restriction.post_no_debit_by || restriction.post_no_debit_at) && (
+                    <p className="text-xs text-gray-400 mt-0.5">
+                      {restriction.post_no_debit_by && `Applied by ${restriction.post_no_debit_by}`}
+                      {restriction.post_no_debit_at &&
+                        `${restriction.post_no_debit_by ? ' on ' : 'Applied '}${format(new Date(restriction.post_no_debit_at), 'MMM d, yyyy')}`}
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
