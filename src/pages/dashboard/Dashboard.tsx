@@ -1,6 +1,7 @@
-import { Users, ArrowUpRight, ArrowDownRight, CircleCheck as CheckCircle2, Clock, ClipboardCheck } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight, ClipboardCheck } from 'lucide-react';
 import { PayoutCountdown } from '@/components/PayoutCountdown';
 import TransactionDetailsModal from '@/components/TransactionDetailsModal';
+import TodaysActivities from '@/components/TodaysActivities';
 import { Pie, Line } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -797,56 +798,7 @@ export default function Dashboard() {
         {(isSuperAdmin || hasPermission('dashboard', 'lists.todays_activities')) && (
         <div>
           <h2 className="text-base md:text-lg font-semibold text-gray-900 mb-4">Today's Activities</h2>
-          <div className="bg-white rounded-2xl shadow-soft border border-gray-100 overflow-hidden">
-            {stats.todayActivities.length > 0 ? (
-              <div>
-                {stats.todayActivities.slice(0, 5).map((activity, index) => (
-                  <div
-                    key={index}
-                    className={`flex items-start p-4 md:p-5 hover:bg-gray-50 transition-colors ${
-                      index !== Math.min(stats.todayActivities.length, 5) - 1 ? 'border-b border-gray-100' : ''
-                    }`}
-                  >
-                    <div className={`w-8 h-8 md:w-10 md:h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                      activity.type === 'user_joined' ? 'bg-blue-50' :
-                      activity.type === 'deposit' ? 'bg-green-50' :
-                      activity.type === 'payout' ? 'bg-red-50' :
-                      activity.type === 'kyc_submission' ? 'bg-gray-50' :
-                      'bg-gray-50'
-                    }`}>
-                      {activity.type === 'user_joined' ? (
-                        <Users className="h-4 w-4 md:h-5 md:w-5 text-blue-600" />
-                      ) : activity.type === 'deposit' ? (
-                        <ArrowUpRight className="h-4 w-4 md:h-5 md:w-5 text-green-600" />
-                      ) : activity.type === 'payout' ? (
-                        <ArrowDownRight className="h-4 w-4 md:h-5 md:w-5 text-red-600" />
-                      ) : activity.type === 'kyc_submission' ? (
-                        <CheckCircle2 className="h-4 w-4 md:h-5 md:w-5 text-gray-600" />
-                      ) : (
-                        <Clock className="h-4 w-4 md:h-5 md:w-5 text-gray-600" />
-                      )}
-                    </div>
-                    <div className="ml-3 md:ml-4 flex-1 min-w-0">
-                      <p className="text-xs md:text-sm text-gray-900 break-words">{activity.description}</p>
-                      <p className="text-xs text-gray-400 mt-1">
-                        {new Date(activity.timestamp).toLocaleTimeString()}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-center py-8 text-gray-500 text-sm">No activities today</p>
-            )}
-            <div className="border-t border-gray-100 p-3 md:p-4 text-center bg-gray-50">
-              <Link
-                to="/activity"
-                className="text-primary hover:text-primary-light text-xs md:text-sm font-medium transition-colors"
-              >
-                View All Activities
-              </Link>
-            </div>
-          </div>
+          <TodaysActivities />
         </div>
         )}
       </div>

@@ -92,6 +92,7 @@ export type PeriodKey =
   | 'this_week'
   | 'this_month'
   | 'last_month'
+  | 'last_7'
   | 'last_30'
   | 'all'
   | 'custom';
@@ -154,6 +155,8 @@ export function resolvePeriod(
       const first = startOfMonth(subMonths(today, 1));
       return window(first, endOfMonth(first));
     }
+    case 'last_7':
+      return window(subDays(today, 6), today);
     case 'last_30':
       return window(subDays(today, 29), today);
     case 'custom':
