@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
+import type { KycTier } from '@/hooks/queries/useKycData';
 
 type UserData = {
   id: string;
@@ -187,5 +188,44 @@ export const useUserDetails = (userId: string) => {
     enabled: !!userId,
     staleTime: 2 * 60 * 1000, // 2 minutes
     gcTime: 5 * 60 * 1000, // 5 minutes
+  });
+};
+/**
+ * Tier per user id, derived from kyc_progress flags (same rule as the KYC pages:
+ * tier_3 -> 3, tier_2 -> 2, tier_1 -> 1). Users absent from the map are Tier 0.
+ * Only rows with at least one tier flag are fetched, paged to stay under the
+ * PostgREST row limit.
+ */
+const TIER_PAGE_SIZE = 1000;
+
+const fetchUserTiers = async (): Promise<Record<string, KycTier>> => {
+  const tiers: Record<string, KycTier> = {};
+
+  for (let from = 0; ; from += TIER_PAGE_SIZE) {
+    const { data, error } = await supabase
+      .from('kyc_progress')
+      .select('user_id, tier_1_completed, tier_2_completed, tier_3_completed')
+      .or('tier_1_completed.eq.true,tier_2_completed.eq.true,tier_3_completed.eq.true')
+      .order('user_id', { ascending: true })
+      .range(from, from + TIER_PAGE_SIZE - 1);
+
+    if (error) throw error;
+
+    for (const row of data || []) {
+      tiers[row.user_id] = row.tier_3_completed ? 3 : row.tier_2_completed ? 2 : 1;
+    }
+
+    if (!data || data.length < TIER_PAGE_SIZE) break;
+  }
+
+  return tiers;
+};
+
+export const useUserTiers = () => {
+  return useQuery({
+    queryKey: ['users', 'tiers'],
+    queryFn: fetchUserTiers,
+    staleTime: 3 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 };
