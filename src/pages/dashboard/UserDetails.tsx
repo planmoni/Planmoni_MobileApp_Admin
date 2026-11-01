@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Wallet, Calendar, Building2, ArrowUpRight, ArrowDownRight, RefreshCw, Shield, Lock, TrendingUp, Clock, CircleCheck as CheckCircle2, Circle as XCircle, User, Phone, MapPin, FileText, CreditCard, CircleCheck as CheckCircle, Circle as XCircleIcon, CircleAlert as AlertCircle, Zap, Camera, ExternalLink, ListChecks } from 'lucide-react';
+import { ArrowLeft, Wallet, Calendar, Building2, ArrowUpRight, ArrowDownRight, RefreshCw, Shield, Lock, TrendingUp, Clock, CircleCheck as CheckCircle2, Circle as XCircle, User, Phone, MapPin, FileText, CreditCard, CircleCheck as CheckCircle, Circle as XCircleIcon, Zap, Camera, ExternalLink, ListChecks } from 'lucide-react';
 import { format, addDays, addWeeks, addMonths } from 'date-fns';
 import { useUserDetails } from '@/hooks/queries/useUsersData';
 import { useRefreshData } from '@/hooks/mutations/useRefreshData';
@@ -8,6 +8,7 @@ import { PayoutCountdown } from '@/components/PayoutCountdown';
 import SendReengagementButton from '@/components/SendReengagementButton';
 import TransactionDetailsModal from '@/components/TransactionDetailsModal';
 import PlanBreakdownModal from '@/components/PlanBreakdownModal';
+import { TierIcon } from '@/components/TierIcon';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 
@@ -461,28 +462,17 @@ export default function UserDetails() {
           <div className="bg-white rounded-2xl shadow-soft border border-gray-100 overflow-hidden">
             <div className="p-6">
               <div className="flex items-center gap-3 mb-6">
-                <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                  kycProgress?.tier_3_completed ? 'bg-purple-50' :
-                  kycProgress?.tier_2_completed ? 'bg-green-50' :
-                  kycProgress?.tier_1_completed ? 'bg-blue-50' : 'bg-gray-50'
-                }`}>
-                  {kycProgress?.tier_3_completed ? (
-                    <CheckCircle className="h-6 w-6 text-purple-600" />
-                  ) : kycProgress?.tier_2_completed ? (
-                    <CheckCircle className="h-6 w-6 text-green-600" />
-                  ) : kycProgress?.tier_1_completed ? (
-                    <CheckCircle className="h-6 w-6 text-blue-600" />
-                  ) : (
-                    <AlertCircle className="h-6 w-6 text-gray-600" />
-                  )}
-                </div>
+                <TierIcon
+                  tier={
+                    kycProgress?.tier_3_completed ? 3 :
+                    kycProgress?.tier_2_completed ? 2 :
+                    kycProgress?.tier_1_completed ? 1 : 0
+                  }
+                  className="h-12 w-12"
+                />
                 <div>
                   <p className="text-sm font-medium text-gray-500">Verification Status</p>
-                  <p className={`text-lg font-bold ${
-                    kycProgress?.tier_3_completed ? 'text-purple-600' :
-                    kycProgress?.tier_2_completed ? 'text-green-600' :
-                    kycProgress?.tier_1_completed ? 'text-blue-600' : 'text-gray-600'
-                  }`}>
+                  <p className="text-lg font-bold text-gray-900">
                     {kycProgress?.tier_3_completed ? 'Tier 3' :
                      kycProgress?.tier_2_completed ? 'Tier 2' :
                      kycProgress?.tier_1_completed ? 'Tier 1' : 'Unverified'}
@@ -643,7 +633,7 @@ export default function UserDetails() {
                         <div className="flex items-center justify-between">
                           <span className="text-xs text-gray-600">Personal Info</span>
                           {kycProgress.personal_info_completed ? (
-                            <CheckCircle className="h-4 w-4 text-green-600" />
+                            <CheckCircle className="h-4 w-4 text-gray-900" />
                           ) : (
                             <XCircleIcon className="h-4 w-4 text-gray-300" />
                           )}
@@ -651,7 +641,7 @@ export default function UserDetails() {
                         <div className="flex items-center justify-between">
                           <span className="text-xs text-gray-600">BVN Verification</span>
                           {kycProgress.bvn_verified ? (
-                            <CheckCircle className="h-4 w-4 text-green-600" />
+                            <CheckCircle className="h-4 w-4 text-gray-900" />
                           ) : (
                             <XCircleIcon className="h-4 w-4 text-gray-300" />
                           )}
@@ -659,7 +649,7 @@ export default function UserDetails() {
                         <div className="flex items-center justify-between">
                           <span className="text-xs text-gray-600">Documents Verified</span>
                           {kycProgress.documents_verified ? (
-                            <CheckCircle className="h-4 w-4 text-green-600" />
+                            <CheckCircle className="h-4 w-4 text-gray-900" />
                           ) : (
                             <XCircleIcon className="h-4 w-4 text-gray-300" />
                           )}
@@ -667,7 +657,7 @@ export default function UserDetails() {
                         <div className="flex items-center justify-between">
                           <span className="text-xs text-gray-600">Address Completed</span>
                           {kycProgress.address_completed ? (
-                            <CheckCircle className="h-4 w-4 text-green-600" />
+                            <CheckCircle className="h-4 w-4 text-gray-900" />
                           ) : (
                             <XCircleIcon className="h-4 w-4 text-gray-300" />
                           )}

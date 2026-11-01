@@ -1,124 +1,244 @@
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 
-export interface KycData {
+export type KycTier = 0 | 1 | 2 | 3;
+export type KycReviewStatus = 'pending' | 'approved' | 'rejected';
+
+/** Light row returned by the admin_list_kyc RPC (no document bodies, no raw BVN/NIN). */
+export interface KycListRow {
   id: string;
   user_id: string;
-  first_name: string;
-  last_name: string;
-  middle_name?: string;
-  date_of_birth: string;
-  phone_number: string;
-  address: string;
-  address_no?: string;
-  lga: string;
-  state: string;
-  bvn?: string;
-  nin?: string;
-  document_type?: string;
-  document_number?: string;
-  document_front_url?: string;
-  document_back_url?: string;
-  selfie_url?: string;
-  utility_bill_url?: string;
-  house_url?: string;
-  bank_name?: string;
-  account_number?: string;
-  bank_code?: string;
-  approved: boolean;
-  utility_bill_verified: boolean;
-  utility_bill_validated: boolean;
+  first_name: string | null;
+  last_name: string | null;
+  email: string | null;
+  phone_number: string | null;
+  state: string | null;
+  has_bvn: boolean;
+  has_nin: boolean;
+  document_type: { document_name?: string } | string | null;
+  has_selfie: boolean;
+  has_document_front: boolean;
+  has_document_back: boolean;
+  has_utility_bill: boolean;
+  has_house_photo: boolean;
+  review_status: KycReviewStatus | null;
+  bill_type_label: string | null;
+  submitted_at: string;
+  reviewed_at: string | null;
+  rejection_reason: string | null;
   created_at: string;
   updated_at: string;
-  user?: {
-    email: string;
-  };
-  kyc_progress?: {
-    current_step: string;
-    personal_info_completed: boolean;
-    bvn_verified: boolean;
-    documents_verified: boolean;
-    address_completed: boolean;
-    overall_completed: boolean;
-    tier_1_completed: boolean;
-    tier_2_completed: boolean;
-    tier_3_completed: boolean;
-  };
+  tier: KycTier;
+  current_step: string | null;
+  liveness_done: boolean;
+  bvn_verified: boolean;
+  id_face_verified: boolean;
+  personal_info_completed: boolean;
+  documents_verified: boolean;
+  address_completed: boolean;
+  utility_bill_verified: boolean;
 }
 
-export interface KycStats {
+export interface KycTierStats {
   total: number;
-  approved: number;
-  pending: number;
-  rejected: number;
-  completed: number;
+  tier0: number;
+  tier1: number;
+  tier2: number;
+  tier3: number;
+  tier3_pending: number;
+  tier3_rejected: number;
 }
 
-export function useKycData(searchQuery?: string, statusFilter?: string) {
+export interface KycListFilters {
+  search?: string;
+  tier?: KycTier | null;
+  /** 'none' = never submitted Tier 3 documents */
+  reviewStatus?: KycReviewStatus | 'none' | null;
+  page?: number;
+  pageSize?: number;
+}
+
+export interface KycListResult {
+  rows: KycListRow[];
+  total: number;
+}
+
+/** Full kyc_data row as returned by admin_get_kyc_detail. */
+export interface KycDetailRecord {
+  id: string;
+  user_id: string;
+  first_name: string | null;
+  last_name: string | null;
+  middle_name: string | null;
+  date_of_birth: string | null;
+  phone_number: string | null;
+  address: string | null;
+  address_no: string | null;
+  lga: string | null;
+  state: string | null;
+  bvn: string | null;
+  nin: string | null;
+  document_type: { document_name?: string; document_country_name?: string } | string | null;
+  document_number: string | null;
+  document_front_url: string | null;
+  document_back_url: string | null;
+  selfie_url: string | null;
+  utility_bill_url: string | null;
+  house_url: string | null;
+  bank_name: string | null;
+  account_number: string | null;
+  approved: boolean | null;
+  utility_bill_verified: boolean | null;
+  utility_bill_validated: boolean | null;
+  utility_bill_validation_result: {
+    bill_type?: string;
+    bill_type_label?: string;
+    submitted_at?: string;
+  } | null;
+  utility_bill_review_status: KycReviewStatus | null;
+  utility_bill_reviewed_by: string | null;
+  utility_bill_reviewed_at: string | null;
+  utility_bill_rejection_reason: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface KycDetail {
+  kyc: KycDetailRecord;
+  progress: {
+    current_step: string | null;
+    liveness_test_completed: boolean | null;
+    bvn_verified: boolean | null;
+    id_face_verified: boolean | null;
+    personal_info_completed: boolean | null;
+    documents_verified: boolean | null;
+    address_completed: boolean | null;
+    utility_bill_verified: boolean | null;
+    tier_1_completed: boolean | null;
+    tier_2_completed: boolean | null;
+    tier_3_completed: boolean | null;
+  } | null;
+  email: string | null;
+  tier: KycTier;
+  reviewer_name: string | null;
+}
+
+export const KYC_PAGE_SIZE = 25;
+
+const KYC_QUERY_KEYS = ['kyc-data', 'kyc-tier-stats', 'kyc-tier3-queue', 'dashboard'] as const;
+
+export function useKycData(filters: KycListFilters = {}) {
+  const { search = '', tier = null, reviewStatus = null, page = 0, pageSize = KYC_PAGE_SIZE } = filters;
+
   return useQuery({
-    queryKey: ['kyc-data', searchQuery, statusFilter],
-    queryFn: async () => {
-      let kycQuery = supabase
-        .from('kyc_data')
-        .select(`
-          *,
-          profiles!kyc_data_user_id_fkey (
-            email
-          )
-        `)
-        .order('created_at', { ascending: false });
+    queryKey: ['kyc-data', 'list', search, tier, reviewStatus, page, pageSize],
+    queryFn: async (): Promise<KycListResult> => {
+      const { data, error } = await supabase.rpc('admin_list_kyc', {
+        p_search: search.trim() || null,
+        p_tier: tier,
+        p_review_status: reviewStatus,
+        p_limit: pageSize,
+        p_offset: page * pageSize,
+      });
 
-      if (statusFilter && statusFilter !== 'all') {
-        if (statusFilter === 'approved') {
-          kycQuery = kycQuery.eq('approved', true);
-        } else if (statusFilter === 'pending') {
-          kycQuery = kycQuery.eq('approved', false);
-        }
-      }
+      if (error) throw error;
 
-      const [kycResult, progressResult] = await Promise.all([
-        kycQuery,
-        supabase
-          .from('kyc_progress')
-          .select('*')
-      ]);
-
-      if (kycResult.error) throw kycResult.error;
-      if (progressResult.error) throw progressResult.error;
-
-      const progressMap = new Map(
-        (progressResult.data || []).map((progress: any) => [progress.user_id, progress])
-      );
-
-      let kycData = (kycResult.data || []).map((item: any) => ({
-        ...item,
-        user: item.profiles,
-        kyc_progress: progressMap.get(item.user_id) || null
-      }));
-
-      if (searchQuery) {
-        const query = searchQuery.toLowerCase();
-        kycData = kycData.filter((item: any) =>
-          item.first_name?.toLowerCase().includes(query) ||
-          item.last_name?.toLowerCase().includes(query) ||
-          item.email?.toLowerCase().includes(query) ||
-          item.phone_number?.toLowerCase().includes(query) ||
-          item.bvn?.toLowerCase().includes(query) ||
-          item.nin?.toLowerCase().includes(query) ||
-          item.user?.email?.toLowerCase().includes(query)
-        );
-      }
-
-      const stats: KycStats = {
-        total: kycData.length,
-        approved: kycData.filter((item: any) => item.approved === true).length,
-        pending: kycData.filter((item: any) => item.approved === false).length,
-        rejected: 0,
-        completed: kycData.filter((item: any) => item.kyc_progress?.overall_completed === true).length,
+      return {
+        rows: (data?.rows ?? []) as KycListRow[],
+        total: Number(data?.total ?? 0),
       };
-
-      return { kycData, stats };
     },
+    placeholderData: keepPreviousData,
     staleTime: 30 * 1000,
+  });
+}
+
+export function useKycTierStats(enabled = true) {
+  return useQuery({
+    queryKey: ['kyc-tier-stats'],
+    queryFn: async (): Promise<KycTierStats> => {
+      const { data, error } = await supabase.rpc('admin_kyc_tier_stats');
+      if (error) throw error;
+
+      const stats = (data ?? {}) as Partial<KycTierStats>;
+      return {
+        total: Number(stats.total ?? 0),
+        tier0: Number(stats.tier0 ?? 0),
+        tier1: Number(stats.tier1 ?? 0),
+        tier2: Number(stats.tier2 ?? 0),
+        tier3: Number(stats.tier3 ?? 0),
+        tier3_pending: Number(stats.tier3_pending ?? 0),
+        tier3_rejected: Number(stats.tier3_rejected ?? 0),
+      };
+    },
+    enabled,
+    staleTime: 60 * 1000,
+  });
+}
+
+/** Oldest-first queue of users awaiting Tier 3 manual review. */
+export function useTier3Queue(limit = 8, enabled = true) {
+  return useQuery({
+    queryKey: ['kyc-tier3-queue', limit],
+    queryFn: async (): Promise<KycListResult> => {
+      const { data, error } = await supabase.rpc('admin_list_kyc', {
+        p_search: null,
+        p_tier: null,
+        p_review_status: 'pending',
+        p_limit: limit,
+        p_offset: 0,
+      });
+
+      if (error) throw error;
+
+      return {
+        rows: (data?.rows ?? []) as KycListRow[],
+        total: Number(data?.total ?? 0),
+      };
+    },
+    enabled,
+    staleTime: 30 * 1000,
+  });
+}
+
+export function useKycDetail(userId: string | null) {
+  return useQuery({
+    queryKey: ['kyc-data', 'detail', userId],
+    queryFn: async (): Promise<KycDetail | null> => {
+      const { data, error } = await supabase.rpc('admin_get_kyc_detail', { p_user_id: userId });
+      if (error) throw error;
+      return (data as KycDetail | null) ?? null;
+    },
+    enabled: !!userId,
+    staleTime: 0,
+  });
+}
+
+export function useReviewTier3() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      userId,
+      decision,
+      reason,
+    }: {
+      userId: string;
+      decision: 'approve' | 'reject';
+      reason?: string;
+    }) => {
+      const { data, error } = await supabase.rpc('admin_review_tier3', {
+        p_user_id: userId,
+        p_decision: decision,
+        p_reason: reason ?? null,
+      });
+      if (error) throw error;
+      return data as { user_id: string; decision: string; review_status: KycReviewStatus; tier: number };
+    },
+    onSuccess: async () => {
+      await Promise.all(
+        KYC_QUERY_KEYS.map((key) => queryClient.invalidateQueries({ queryKey: [key] }))
+      );
+    },
   });
 }

@@ -1,4 +1,4 @@
-import { Users, ArrowUpRight, ArrowDownRight, CircleCheck as CheckCircle2, Clock } from 'lucide-react';
+import { Users, ArrowUpRight, ArrowDownRight, CircleCheck as CheckCircle2, Clock, ClipboardCheck } from 'lucide-react';
 import { PayoutCountdown } from '@/components/PayoutCountdown';
 import TransactionDetailsModal from '@/components/TransactionDetailsModal';
 import { Pie, Line } from 'react-chartjs-2';
@@ -14,9 +14,12 @@ import {
   Legend,
   ArcElement,
 } from 'chart.js';
-import { format } from 'date-fns';
+import { format, formatDistanceToNow } from 'date-fns';
 import { Link } from 'react-router-dom';
 import { useDashboardData } from '@/hooks/queries/useDashboardData';
+import { useKycTierStats, useTier3Queue } from '@/hooks/queries/useKycData';
+import { TierBadge } from '@/components/KycBadges';
+import { TierIcon } from '@/components/TierIcon';
 import { useRefreshData } from '@/hooks/mutations/useRefreshData';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePermissions } from '@/contexts/PermissionsContext';
@@ -30,6 +33,17 @@ export default function Dashboard() {
   const refreshData = useRefreshData();
   const { session } = useAuth();
   const { hasPermission, isSuperAdmin } = usePermissions();
+
+  const canSeeKycStats =
+    isSuperAdmin || hasPermission('dashboard', 'stats.kyc_completed') || hasPermission('kyc', 'stats');
+  const canReviewKyc = isSuperAdmin || hasPermission('kyc', 'approve') || hasPermission('kyc', 'reject');
+  const { data: kycStats, isLoading: kycStatsLoading } = useKycTierStats(canSeeKycStats);
+  const {
+    data: tier3Queue,
+    isLoading: tier3QueueLoading,
+    error: tier3QueueError,
+  } = useTier3Queue(6, canReviewKyc);
+
   const [userProfile, setUserProfile] = useState<any>(null);
   const [selectedTransaction, setSelectedTransaction] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -51,7 +65,7 @@ export default function Dashboard() {
   }, [session]);
 
   const handleRefresh = () => {
-    refreshData.mutate(['dashboard']);
+    refreshData.mutate(['dashboard', 'kyc-tier-stats', 'kyc-tier3-queue']);
   };
 
   const formatCurrency = (amount: number) => {
@@ -341,20 +355,6 @@ export default function Dashboard() {
           </Link>
           )}
 
-          {(isSuperAdmin || hasPermission('dashboard', 'stats.kyc_completed')) && (
-          <Link to="/kyc-data">
-            <div className="bg-white rounded-2xl p-4 md:p-6 shadow-soft border border-gray-100 hover:shadow-md transition-shadow cursor-pointer">
-              <div className="flex justify-between items-start mb-2">
-                <div className="flex-1">
-                  <p className="text-xs md:text-sm font-medium text-gray-500 mb-1">KYC Completed</p>
-                  <p className="text-xl md:text-2xl font-bold text-gray-900">{stats.todayKyc}</p>
-                  {renderComparison(stats.todayKyc, stats.yesterdayKyc, true)}
-                </div>
-              </div>
-            </div>
-          </Link>
-          )}
-
           {(isSuperAdmin || hasPermission('dashboard', 'stats.locked_balance')) && (
           <Link to="/analytics">
             <div className="bg-white rounded-2xl p-4 md:p-6 shadow-soft border border-gray-100 hover:shadow-md transition-shadow cursor-pointer">
@@ -369,6 +369,7 @@ export default function Dashboard() {
           </Link>
           )}
 
+          {/* Hidden for now: Cancelled Plans
           {(isSuperAdmin || hasPermission('dashboard', 'stats.cancelled_plans')) && (
           <Link to="/payout-plans">
             <div className="bg-white rounded-2xl p-4 md:p-6 shadow-soft border border-gray-100 hover:shadow-md transition-shadow cursor-pointer">
@@ -381,8 +382,9 @@ export default function Dashboard() {
               </div>
             </div>
           </Link>
-          )}
+          )} */}
 
+          {/* Hidden for now: Withdrawals
           {(isSuperAdmin || hasPermission('dashboard', 'stats.withdrawals')) && (
           <Link to="/transactions" state={{ filterType: 'withdrawal' }}>
             <div className="bg-white rounded-2xl p-4 md:p-6 shadow-soft border border-gray-100 hover:shadow-md transition-shadow cursor-pointer">
@@ -395,7 +397,7 @@ export default function Dashboard() {
               </div>
             </div>
           </Link>
-          )}
+          )} */}
 
           {(isSuperAdmin || hasPermission('dashboard', 'stats.payout_due_today')) && (
           <Link to="/payout-events">
@@ -483,6 +485,114 @@ export default function Dashboard() {
           </Link>
         </div>
       </div>
+
+      {canSeeKycStats && (
+        <div className="mb-6 md:mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg md:text-xl font-semibold text-gray-900">KYC Verification</h2>
+            <Link to="/kyc-data" className="text-sm font-medium text-primary hover:underline">
+              View all
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-5">
+            {([
+              { tier: 0, label: 'Unverified', value: kycStats?.tier0, hint: 'Started KYC, not yet Tier 1' },
+              { tier: 1, label: 'Tier 1', value: kycStats?.tier1, hint: 'BVN, liveness and ID match' },
+              { tier: 2, label: 'Tier 2', value: kycStats?.tier2, hint: 'Personal info and ID documents' },
+              { tier: 3, label: 'Tier 3', value: kycStats?.tier3, hint: 'Proof of address, manually reviewed' },
+            ] as const).map((card) => (
+              <Link key={card.tier} to={`/kyc-data?tier=${card.tier}`}>
+                <div className="bg-white rounded-2xl p-4 md:p-6 shadow-soft border border-gray-100 hover:shadow-md transition-shadow cursor-pointer">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="text-xs md:text-sm font-medium text-gray-500 mb-1">
+                        {card.tier === 0 ? 'Unverified users' : `${card.label} users`}
+                      </p>
+                      <p className="text-xl md:text-2xl font-bold text-gray-900">
+                        {kycStatsLoading ? '...' : (card.value ?? 0).toLocaleString()}
+                      </p>
+                      <p className="text-xs text-gray-400 mt-1">{card.hint}</p>
+                    </div>
+                    <TierIcon tier={card.tier} className="h-11 w-11" />
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+
+          {canReviewKyc && (
+            <div className="mt-4 bg-white rounded-2xl shadow-soft border border-gray-100 overflow-hidden">
+              <div className="flex items-center justify-between px-4 md:px-6 py-4 border-b border-gray-100">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center">
+                    <ClipboardCheck className="h-5 w-5 text-gray-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-gray-900">Tier 3 awaiting review</h3>
+                    <p className="text-xs text-gray-500">
+                      {tier3Queue
+                        ? `${tier3Queue.total} submission${tier3Queue.total === 1 ? '' : 's'} to verify manually`
+                        : 'Users who submitted proof of address'}
+                    </p>
+                  </div>
+                </div>
+                {tier3Queue && tier3Queue.total > tier3Queue.rows.length && (
+                  <Link to="/kyc-data?tab=review" className="text-sm font-medium text-primary hover:underline">
+                    See all {tier3Queue.total}
+                  </Link>
+                )}
+              </div>
+
+              {tier3QueueError ? (
+                <div className="px-6 py-6 text-sm">
+                  <p className="text-error">Could not load the review queue.</p>
+                  <p className="mt-1 text-xs text-gray-500 break-words">
+                    {(tier3QueueError as { message?: string })?.message ?? 'Unknown error'}
+                  </p>
+                </div>
+              ) : tier3QueueLoading ? (
+                <p className="px-6 py-6 text-sm text-gray-500">Loading...</p>
+              ) : !tier3Queue || tier3Queue.rows.length === 0 ? (
+                <p className="px-6 py-6 text-sm text-gray-500">No Tier 3 submissions are waiting for review.</p>
+              ) : (
+                <ul className="divide-y divide-gray-100">
+                  {tier3Queue.rows.map((row) => (
+                    <li key={row.id}>
+                      <Link
+                        to={`/kyc-data?tab=review&review=${row.user_id}`}
+                        className="flex items-center justify-between gap-3 px-4 md:px-6 py-3 hover:bg-gray-50 transition-colors"
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="flex-shrink-0 w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-primary-light flex items-center justify-center text-white">
+                            <span className="text-xs font-semibold">
+                              {row.first_name?.[0]}
+                              {row.last_name?.[0]}
+                            </span>
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-gray-900 truncate">
+                              {row.first_name} {row.last_name}
+                            </p>
+                            <p className="text-xs text-gray-500 truncate">
+                              {row.bill_type_label || 'Proof of address'} · submitted{' '}
+                              {formatDistanceToNow(new Date(row.submitted_at), { addSuffix: true })}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3 flex-shrink-0">
+                          <TierBadge tier={row.tier} size="sm" />
+                          <span className="text-sm font-medium text-primary">Review</span>
+                        </div>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         {(isSuperAdmin || hasPermission('dashboard', 'charts.transaction_volume')) && (
@@ -701,7 +811,7 @@ export default function Dashboard() {
                       activity.type === 'user_joined' ? 'bg-blue-50' :
                       activity.type === 'deposit' ? 'bg-green-50' :
                       activity.type === 'payout' ? 'bg-red-50' :
-                      activity.type === 'kyc_submission' ? 'bg-purple-50' :
+                      activity.type === 'kyc_submission' ? 'bg-gray-50' :
                       'bg-gray-50'
                     }`}>
                       {activity.type === 'user_joined' ? (
@@ -711,7 +821,7 @@ export default function Dashboard() {
                       ) : activity.type === 'payout' ? (
                         <ArrowDownRight className="h-4 w-4 md:h-5 md:w-5 text-red-600" />
                       ) : activity.type === 'kyc_submission' ? (
-                        <CheckCircle2 className="h-4 w-4 md:h-5 md:w-5 text-purple-600" />
+                        <CheckCircle2 className="h-4 w-4 md:h-5 md:w-5 text-gray-600" />
                       ) : (
                         <Clock className="h-4 w-4 md:h-5 md:w-5 text-gray-600" />
                       )}
