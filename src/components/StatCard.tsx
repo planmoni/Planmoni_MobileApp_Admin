@@ -21,7 +21,7 @@ const deltaStyle = {
 
 /**
  * Compact dashboard stat tile: icon chip on the left, small label, a modest bold value, and a
- * today-vs-yesterday pill. Meant to be scanned quickly, so the value is semibold at text-base, not a hero number.
+ * today-vs-yesterday pill. Meant to be scanned quickly, so the value is semibold at text-base/lg, not a hero number.
  */
 export default function StatCard({
   to,
@@ -54,7 +54,7 @@ export default function StatCard({
         <p className="text-xs text-gray-500 truncate">{label}</p>
         {children ?? (
           <>
-            <p className="mt-0.5 text-sm md:text-base font-semibold text-gray-900 tabular-nums break-words leading-snug">
+            <p className="mt-0.5 text-base md:text-2xl font-semibold text-gray-900 break-words leading-snug">
               {value}
             </p>
             {delta &&

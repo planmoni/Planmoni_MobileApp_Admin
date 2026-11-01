@@ -331,7 +331,7 @@ export default function Dashboard() {
               {stats.nextPayoutDate ? (
                 <>
                   <p className="mt-0.5">
-                    <PayoutCountdown targetDate={stats.nextPayoutDate} className="font-mono text-sm md:text-base font-semibold text-gray-900" />
+                    <PayoutCountdown targetDate={stats.nextPayoutDate} className="text-base md:text-xl font-semibold text-gray-900" />
                   </p>
                   <p className="mt-1.5 text-[11px] text-gray-500">
                     {formatCurrency(stats.nextPayoutAmount)} · {format(new Date(stats.nextPayoutDate), 'MMM d, h:mm a')}
@@ -375,7 +375,7 @@ export default function Dashboard() {
                   <p className="text-xs text-gray-500 truncate">
                     {card.tier === 0 ? 'Unverified users' : `${card.label} users`}
                   </p>
-                  <p className="mt-0.5 text-sm md:text-base font-semibold text-gray-900 tabular-nums">
+                  <p className="mt-0.5 text-base md:text-lg font-semibold text-gray-900 tabular-nums">
                     {kycStatsLoading ? '...' : (card.value ?? 0).toLocaleString()}
                   </p>
                   <p className="mt-1.5 text-[11px] text-gray-400 leading-snug">{card.hint}</p>
