@@ -1,55 +1,82 @@
-import { ReactNode } from 'react';
-import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import type { ReactNode } from 'react';
+import { Link } from 'react-router-dom';
+import { Minus, TrendingDown, TrendingUp, type LucideIcon } from 'lucide-react';
 
-type StatCardProps = {
-  title: string;
-  value: string;
-  icon: ReactNode;
-  trend?: number;
-  className?: string;
-};
+export type StatDelta = { tone: 'up' | 'down' | 'flat'; text: string };
 
-export default function StatCard({ title, value, icon, trend = 0, className = '' }: StatCardProps) {
-  const formatTrendValue = (trendValue: number) => {
-    if (Math.abs(trendValue) >= 1000000) {
-      return `${(trendValue / 1000000).toFixed(1)}M`;
-    } else if (Math.abs(trendValue) >= 1000) {
-      return `${(trendValue / 1000).toFixed(1)}K`;
-    }
-    return trendValue.toString();
-  };
+/** Today vs yesterday as a short label: "+12", "-₦4,000" or flat. */
+export function compareDays(today: number, yesterday: number, format?: (n: number) => string): StatDelta {
+  const diff = (Number(today) || 0) - (Number(yesterday) || 0);
+  if (diff === 0) return { tone: 'flat', text: 'Same as yesterday' };
+  const abs = Math.abs(diff);
+  const shown = format ? format(abs) : abs.toLocaleString();
+  return { tone: diff > 0 ? 'up' : 'down', text: `${diff > 0 ? '+' : '-'}${shown}` };
+}
 
+const deltaStyle = {
+  up: { cls: 'bg-green-50 text-green-700', Icon: TrendingUp },
+  down: { cls: 'bg-red-50 text-red-700', Icon: TrendingDown },
+  flat: { cls: '', Icon: Minus },
+} as const;
+
+/**
+ * Compact dashboard stat tile: icon chip on the left, small label, a modest bold value, and a
+ * today-vs-yesterday pill. Meant to be scanned quickly, so the value is semibold at text-base, not a hero number.
+ */
+export default function StatCard({
+  to,
+  state,
+  icon: Icon,
+  label,
+  value,
+  delta,
+  children,
+}: {
+  to: string;
+  state?: unknown;
+  icon: LucideIcon;
+  label: string;
+  value?: ReactNode;
+  delta?: StatDelta;
+  /** replaces the value / delta (used by tiles with their own content, e.g. the countdown) */
+  children?: ReactNode;
+}) {
   return (
-    <div className={`relative bg-white rounded-2xl p-6 shadow-soft hover:shadow-medium transition-all duration-300 border border-gray-100 ${className}`}>
-      <div className="flex justify-between items-start mb-4">
-        <div className="flex-1">
-          <p className="text-sm font-medium text-gray-500 mb-1">{title}</p>
-          <p className="text-3xl font-bold text-gray-900">{value}</p>
-        </div>
-        <div className="w-12 h-12 rounded-xl bg-gray-50 flex items-center justify-center">
-          {icon}
-        </div>
+    <Link
+      to={to}
+      state={state}
+      className="group flex items-start gap-3 bg-white rounded-2xl p-3.5 md:p-4 shadow-soft border border-gray-100 hover:border-gray-200 hover:shadow-md transition-all min-w-0"
+    >
+      <div className="flex-shrink-0 w-9 h-9 rounded-xl bg-gray-50 text-gray-600 group-hover:bg-gray-100 flex items-center justify-center transition-colors">
+        <Icon className="h-[18px] w-[18px]" />
       </div>
-
-      <div className="flex items-center gap-2 pt-3 border-t border-gray-100">
-        <div className={`flex items-center gap-1 px-2 py-1 rounded-lg ${
-          trend > 0 ? 'bg-green-50' : trend < 0 ? 'bg-red-50' : 'bg-gray-50'
-        }`}>
-          {trend > 0 ? (
-            <TrendingUp size={14} className="text-green-600" />
-          ) : trend < 0 ? (
-            <TrendingDown size={14} className="text-red-600" />
-          ) : (
-            <Minus size={14} className="text-gray-400" />
-          )}
-          <span className={`text-xs font-semibold ${
-            trend > 0 ? 'text-green-600' : trend < 0 ? 'text-red-600' : 'text-gray-400'
-          }`}>
-            {trend > 0 ? '+' : ''}{formatTrendValue(trend)}
-          </span>
-        </div>
-        <span className="text-xs text-gray-400">vs last month</span>
+      <div className="min-w-0 flex-1">
+        <p className="text-xs text-gray-500 truncate">{label}</p>
+        {children ?? (
+          <>
+            <p className="mt-0.5 text-sm md:text-base font-semibold text-gray-900 tabular-nums break-words leading-snug">
+              {value}
+            </p>
+            {delta &&
+              (delta.tone === 'flat' ? (
+                <p className="mt-1.5 text-[11px] text-gray-400">{delta.text}</p>
+              ) : (
+                <p className="mt-1.5 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[11px] text-gray-400">
+                  <span
+                    className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 font-medium ${deltaStyle[delta.tone].cls}`}
+                  >
+                    {(() => {
+                      const D = deltaStyle[delta.tone].Icon;
+                      return <D className="h-3 w-3" />;
+                    })()}
+                    {delta.text}
+                  </span>
+                  vs yesterday
+                </p>
+              ))}
+          </>
+        )}
       </div>
-    </div>
+    </Link>
   );
 }

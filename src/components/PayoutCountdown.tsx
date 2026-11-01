@@ -2,9 +2,10 @@ import { useEffect, useState } from 'react';
 
 interface PayoutCountdownProps {
   targetDate: string;
+  className?: string;
 }
 
-export function PayoutCountdown({ targetDate }: PayoutCountdownProps) {
+export function PayoutCountdown({ targetDate, className = 'font-mono text-lg md:text-xl font-bold text-gray-900' }: PayoutCountdownProps) {
   const [timeLeft, setTimeLeft] = useState<string>('');
 
   useEffect(() => {
@@ -41,7 +42,7 @@ export function PayoutCountdown({ targetDate }: PayoutCountdownProps) {
   }, [targetDate]);
 
   return (
-    <span className="font-mono text-lg md:text-xl font-bold text-gray-900">
+    <span className={className}>
       {timeLeft || 'Calculating...'}
     </span>
   );

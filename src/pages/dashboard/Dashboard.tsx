@@ -1,4 +1,20 @@
-import { ArrowUpRight, ArrowDownRight, ClipboardCheck } from 'lucide-react';
+import {
+  ArrowUpRight,
+  ArrowDownRight,
+  ArrowDownToLine,
+  Banknote,
+  CalendarClock,
+  CalendarPlus,
+  ClipboardCheck,
+  Lock,
+  LockOpen,
+  PiggyBank,
+  Send,
+  Timer,
+  Users,
+  Vault,
+} from 'lucide-react';
+import StatCard, { compareDays } from '@/components/StatCard';
 import { PayoutCountdown } from '@/components/PayoutCountdown';
 import TransactionDetailsModal from '@/components/TransactionDetailsModal';
 import TodaysActivities from '@/components/TodaysActivities';
@@ -84,28 +100,6 @@ export default function Dashboard() {
     if (hour < 12) return 'Good morning';
     if (hour < 18) return 'Good afternoon';
     return 'Good evening';
-  };
-
-  const getDifference = (today: number, yesterday: number) => {
-    const diff = today - yesterday;
-    const isPositive = diff >= 0;
-    return { diff, isPositive };
-  };
-
-  const renderComparison = (today: number, yesterday: number, isCount: boolean = true) => {
-    const { diff, isPositive } = getDifference(today, yesterday);
-
-    if (diff === 0) {
-      return <p className="text-xs text-gray-400 mt-1">Same as yesterday</p>;
-    }
-
-    const displayValue = isCount ? Math.abs(diff) : formatCurrency(Math.abs(diff));
-
-    return (
-      <p className={`text-xs mt-1 font-medium ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
-        {isPositive ? '+' : '-'}{displayValue} vs yesterday
-      </p>
-    );
   };
 
   const transactionVolumeData = {
@@ -301,191 +295,57 @@ export default function Dashboard() {
 
       <div className="mb-6 md:mb-8">
         <h2 className="text-lg md:text-xl font-semibold text-gray-900 mb-4">Today's Overview</h2>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-5">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
           {(isSuperAdmin || hasPermission('dashboard', 'stats.new_users')) && (
-          <Link to="/users">
-            <div className="bg-white rounded-2xl p-4 md:p-6 shadow-soft border border-gray-100 hover:shadow-md transition-shadow cursor-pointer">
-              <div className="flex justify-between items-start mb-2">
-                <div className="flex-1">
-                  <p className="text-xs md:text-sm font-medium text-gray-500 mb-1">New Users</p>
-                  <p className="text-xl md:text-2xl font-bold text-gray-900">{stats.todayUsers}</p>
-                  {renderComparison(stats.todayUsers, stats.yesterdayUsers, true)}
-                </div>
-              </div>
-            </div>
-          </Link>
+            <StatCard to="/users" icon={Users} label="New Users" value={stats.todayUsers.toLocaleString()} delta={compareDays(stats.todayUsers, stats.yesterdayUsers)} />
           )}
 
           {(isSuperAdmin || hasPermission('dashboard', 'stats.deposits')) && (
-          <Link to="/transactions" state={{ filterType: 'deposit' }}>
-            <div className="bg-white rounded-2xl p-4 md:p-6 shadow-soft border border-gray-100 hover:shadow-md transition-shadow cursor-pointer">
-              <div className="flex justify-between items-start mb-2">
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs md:text-sm font-medium text-gray-500 mb-1">Deposits</p>
-                  <p className="text-lg md:text-2xl font-bold text-gray-900 break-words">{formatCurrency(stats.todayDeposits)}</p>
-                  {renderComparison(stats.todayDeposits, stats.yesterdayDeposits, false)}
-                </div>
-              </div>
-            </div>
-          </Link>
+            <StatCard to="/transactions" state={{ filterType: 'deposit' }} icon={ArrowDownToLine} label="Deposits" value={formatCurrency(stats.todayDeposits)} delta={compareDays(stats.todayDeposits, stats.yesterdayDeposits, formatCurrency)} />
           )}
 
           {(isSuperAdmin || hasPermission('dashboard', 'stats.payouts')) && (
-          <Link to="/transactions" state={{ filterType: 'payout' }}>
-            <div className="bg-white rounded-2xl p-4 md:p-6 shadow-soft border border-gray-100 hover:shadow-md transition-shadow cursor-pointer">
-              <div className="flex justify-between items-start mb-2">
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs md:text-sm font-medium text-gray-500 mb-1">Payouts</p>
-                  <p className="text-lg md:text-2xl font-bold text-gray-900 break-words">{formatCurrency(stats.todayPayouts)}</p>
-                  {renderComparison(stats.todayPayouts, stats.yesterdayPayouts, false)}
-                </div>
-              </div>
-            </div>
-          </Link>
+            <StatCard to="/transactions" state={{ filterType: 'payout' }} icon={Send} label="Payouts" value={formatCurrency(stats.todayPayouts)} delta={compareDays(stats.todayPayouts, stats.yesterdayPayouts, formatCurrency)} />
           )}
 
           {(isSuperAdmin || hasPermission('dashboard', 'stats.new_plans')) && (
-          <Link to="/payout-plans">
-            <div className="bg-white rounded-2xl p-4 md:p-6 shadow-soft border border-gray-100 hover:shadow-md transition-shadow cursor-pointer">
-              <div className="flex justify-between items-start mb-2">
-                <div className="flex-1">
-                  <p className="text-xs md:text-sm font-medium text-gray-500 mb-1">New Plans</p>
-                  <p className="text-xl md:text-2xl font-bold text-gray-900">{stats.todayPlans}</p>
-                  {renderComparison(stats.todayPlans, stats.yesterdayPlans, true)}
-                </div>
-              </div>
-            </div>
-          </Link>
+            <StatCard to="/payout-plans" icon={CalendarPlus} label="New Plans" value={stats.todayPlans.toLocaleString()} delta={compareDays(stats.todayPlans, stats.yesterdayPlans)} />
           )}
 
           {(isSuperAdmin || hasPermission('dashboard', 'stats.locked_balance')) && (
-          <Link to="/analytics">
-            <div className="bg-white rounded-2xl p-4 md:p-6 shadow-soft border border-gray-100 hover:shadow-md transition-shadow cursor-pointer">
-              <div className="flex justify-between items-start mb-2">
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs md:text-sm font-medium text-gray-500 mb-1">Locked Balance</p>
-                  <p className="text-lg md:text-2xl font-bold text-gray-900 break-words">{formatCurrency(stats.todayLockedBalance)}</p>
-                  {renderComparison(stats.todayLockedBalance, stats.yesterdayLockedBalance, false)}
-                </div>
-              </div>
-            </div>
-          </Link>
+            <StatCard to="/analytics" icon={Lock} label="Locked Balance" value={formatCurrency(stats.todayLockedBalance)} delta={compareDays(stats.todayLockedBalance, stats.yesterdayLockedBalance, formatCurrency)} />
           )}
 
-          {/* Hidden for now: Cancelled Plans
-          {(isSuperAdmin || hasPermission('dashboard', 'stats.cancelled_plans')) && (
-          <Link to="/payout-plans">
-            <div className="bg-white rounded-2xl p-4 md:p-6 shadow-soft border border-gray-100 hover:shadow-md transition-shadow cursor-pointer">
-              <div className="flex justify-between items-start mb-2">
-                <div className="flex-1">
-                  <p className="text-xs md:text-sm font-medium text-gray-500 mb-1">Cancelled Plans</p>
-                  <p className="text-xl md:text-2xl font-bold text-gray-900">{stats.todayCancelledPlans}</p>
-                  {renderComparison(stats.todayCancelledPlans, stats.yesterdayCancelledPlans, true)}
-                </div>
-              </div>
-            </div>
-          </Link>
-          )} */}
-
-          {/* Hidden for now: Withdrawals
-          {(isSuperAdmin || hasPermission('dashboard', 'stats.withdrawals')) && (
-          <Link to="/transactions" state={{ filterType: 'withdrawal' }}>
-            <div className="bg-white rounded-2xl p-4 md:p-6 shadow-soft border border-gray-100 hover:shadow-md transition-shadow cursor-pointer">
-              <div className="flex justify-between items-start mb-2">
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs md:text-sm font-medium text-gray-500 mb-1">Withdrawals</p>
-                  <p className="text-lg md:text-2xl font-bold text-gray-900 break-words">{formatCurrency(stats.todayWithdrawals)}</p>
-                  {renderComparison(stats.todayWithdrawals, stats.yesterdayWithdrawals, false)}
-                </div>
-              </div>
-            </div>
-          </Link>
-          )} */}
+          {/* Hidden for now: Cancelled Plans (stats.cancelled_plans) -> /payout-plans, Withdrawals (stats.withdrawals) -> /transactions {filterType: 'withdrawal'} */}
 
           {(isSuperAdmin || hasPermission('dashboard', 'stats.payout_due_today')) && (
-          <Link to="/payout-events">
-            <div className="bg-white rounded-2xl p-4 md:p-6 shadow-soft border border-gray-100 hover:shadow-md transition-shadow cursor-pointer">
-              <div className="flex justify-between items-start mb-2">
-                <div className="flex-1">
-                  <p className="text-xs md:text-sm font-medium text-gray-500 mb-1">Payouts Due Today</p>
-                  <p className="text-xl md:text-2xl font-bold text-gray-900">{stats.todayPayoutsDueCount}</p>
-                  {renderComparison(stats.todayPayoutsDueCount, stats.yesterdayPayoutsDueCount, true)}
-                </div>
-              </div>
-            </div>
-          </Link>
+            <StatCard to="/payout-events" icon={CalendarClock} label="Payouts Due Today" value={stats.todayPayoutsDueCount.toLocaleString()} delta={compareDays(stats.todayPayoutsDueCount, stats.yesterdayPayoutsDueCount)} />
           )}
 
           {(isSuperAdmin || hasPermission('dashboard', 'stats.payout_due_today')) && (
-          <Link to="/payout-events">
-            <div className="bg-white rounded-2xl p-4 md:p-6 shadow-soft border border-gray-100 hover:shadow-md transition-shadow cursor-pointer">
-              <div className="flex justify-between items-start mb-2">
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs md:text-sm font-medium text-gray-500 mb-1">Payouts Due Amount</p>
-                  <p className="text-lg md:text-2xl font-bold text-gray-900 break-words">{formatCurrency(stats.todayPayoutsDueAmount)}</p>
-                  {renderComparison(stats.todayPayoutsDueAmount, stats.yesterdayPayoutsDueAmount, false)}
-                </div>
-              </div>
-            </div>
-          </Link>
+            <StatCard to="/payout-events" icon={Banknote} label="Payouts Due Amount" value={formatCurrency(stats.todayPayoutsDueAmount)} delta={compareDays(stats.todayPayoutsDueAmount, stats.yesterdayPayoutsDueAmount, formatCurrency)} />
           )}
 
           {(isSuperAdmin || hasPermission('dashboard', 'stats.payout_due_today')) && (
-          <Link to="/payout-events">
-            <div className="bg-white rounded-2xl p-4 md:p-6 shadow-soft border border-gray-100 hover:shadow-md transition-shadow cursor-pointer">
-              <div className="flex justify-between items-start mb-2">
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs md:text-sm font-medium text-gray-500 mb-1">Next Payout</p>
-                  {stats.nextPayoutDate ? (
-                    <div className="space-y-2">
-                      <PayoutCountdown targetDate={stats.nextPayoutDate} />
-                      <p className="text-sm text-gray-600">{formatCurrency(stats.nextPayoutAmount)}</p>
-                      <p className="text-xs text-gray-400">{format(new Date(stats.nextPayoutDate), 'MMM d, yyyy h:mm a')}</p>
-                    </div>
-                  ) : (
-                    <p className="text-lg md:text-xl font-medium text-gray-400">No upcoming payouts</p>
-                  )}
-                </div>
-              </div>
-            </div>
-          </Link>
+            <StatCard to="/payout-events" icon={Timer} label="Next Payout">
+              {stats.nextPayoutDate ? (
+                <>
+                  <p className="mt-0.5">
+                    <PayoutCountdown targetDate={stats.nextPayoutDate} className="font-mono text-sm md:text-base font-semibold text-gray-900" />
+                  </p>
+                  <p className="mt-1.5 text-[11px] text-gray-500">
+                    {formatCurrency(stats.nextPayoutAmount)} · {format(new Date(stats.nextPayoutDate), 'MMM d, h:mm a')}
+                  </p>
+                </>
+              ) : (
+                <p className="mt-0.5 text-sm font-medium text-gray-400">No upcoming payouts</p>
+              )}
+            </StatCard>
           )}
 
-          <Link to="/vaults">
-            <div className="bg-white rounded-2xl p-4 md:p-6 shadow-soft border border-gray-100 hover:shadow-md transition-shadow cursor-pointer">
-              <div className="flex justify-between items-start mb-2">
-                <div className="flex-1">
-                  <p className="text-xs md:text-sm font-medium text-gray-500 mb-1">New Vaults</p>
-                  <p className="text-xl md:text-2xl font-bold text-gray-900">{stats.todayNewVaults}</p>
-                  {renderComparison(stats.todayNewVaults, stats.yesterdayNewVaults, true)}
-                </div>
-              </div>
-            </div>
-          </Link>
-
-          <Link to="/vaults">
-            <div className="bg-white rounded-2xl p-4 md:p-6 shadow-soft border border-gray-100 hover:shadow-md transition-shadow cursor-pointer">
-              <div className="flex justify-between items-start mb-2">
-                <div className="flex-1">
-                  <p className="text-xs md:text-sm font-medium text-gray-500 mb-1">Funded Vaults</p>
-                  <p className="text-xl md:text-2xl font-bold text-gray-900">{stats.todayFundedVaults}</p>
-                  {renderComparison(stats.todayFundedVaults, stats.yesterdayFundedVaults, true)}
-                </div>
-              </div>
-            </div>
-          </Link>
-
-          <Link to="/vaults">
-            <div className="bg-white rounded-2xl p-4 md:p-6 shadow-soft border border-gray-100 hover:shadow-md transition-shadow cursor-pointer">
-              <div className="flex justify-between items-start mb-2">
-                <div className="flex-1">
-                  <p className="text-xs md:text-sm font-medium text-gray-500 mb-1">Unlocked Vaults</p>
-                  <p className="text-xl md:text-2xl font-bold text-gray-900">{stats.todayUnlockedVaults}</p>
-                  {renderComparison(stats.todayUnlockedVaults, stats.yesterdayUnlockedVaults, true)}
-                </div>
-              </div>
-            </div>
-          </Link>
+          <StatCard to="/vaults" icon={Vault} label="New Vaults" value={stats.todayNewVaults.toLocaleString()} delta={compareDays(stats.todayNewVaults, stats.yesterdayNewVaults)} />
+          <StatCard to="/vaults" icon={PiggyBank} label="Funded Vaults" value={stats.todayFundedVaults.toLocaleString()} delta={compareDays(stats.todayFundedVaults, stats.yesterdayFundedVaults)} />
+          <StatCard to="/vaults" icon={LockOpen} label="Unlocked Vaults" value={stats.todayUnlockedVaults.toLocaleString()} delta={compareDays(stats.todayUnlockedVaults, stats.yesterdayUnlockedVaults)} />
         </div>
       </div>
 
@@ -498,27 +358,27 @@ export default function Dashboard() {
             </Link>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-5">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
             {([
               { tier: 0, label: 'Unverified', value: kycStats?.tier0, hint: 'Started KYC, not yet Tier 1' },
               { tier: 1, label: 'Tier 1', value: kycStats?.tier1, hint: 'BVN, liveness and ID match' },
               { tier: 2, label: 'Tier 2', value: kycStats?.tier2, hint: 'Personal info and ID documents' },
               { tier: 3, label: 'Tier 3', value: kycStats?.tier3, hint: 'Proof of address, manually reviewed' },
             ] as const).map((card) => (
-              <Link key={card.tier} to={`/kyc-data?tier=${card.tier}`}>
-                <div className="bg-white rounded-2xl p-4 md:p-6 shadow-soft border border-gray-100 hover:shadow-md transition-shadow cursor-pointer">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <p className="text-xs md:text-sm font-medium text-gray-500 mb-1">
-                        {card.tier === 0 ? 'Unverified users' : `${card.label} users`}
-                      </p>
-                      <p className="text-xl md:text-2xl font-bold text-gray-900">
-                        {kycStatsLoading ? '...' : (card.value ?? 0).toLocaleString()}
-                      </p>
-                      <p className="text-xs text-gray-400 mt-1">{card.hint}</p>
-                    </div>
-                    <TierIcon tier={card.tier} className="h-11 w-11" />
-                  </div>
+              <Link
+                key={card.tier}
+                to={`/kyc-data?tier=${card.tier}`}
+                className="group flex items-start gap-3 bg-white rounded-2xl p-3.5 md:p-4 shadow-soft border border-gray-100 hover:border-gray-200 hover:shadow-md transition-all min-w-0"
+              >
+                <TierIcon tier={card.tier} className="h-9 w-9 flex-shrink-0" />
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs text-gray-500 truncate">
+                    {card.tier === 0 ? 'Unverified users' : `${card.label} users`}
+                  </p>
+                  <p className="mt-0.5 text-sm md:text-base font-semibold text-gray-900 tabular-nums">
+                    {kycStatsLoading ? '...' : (card.value ?? 0).toLocaleString()}
+                  </p>
+                  <p className="mt-1.5 text-[11px] text-gray-400 leading-snug">{card.hint}</p>
                 </div>
               </Link>
             ))}

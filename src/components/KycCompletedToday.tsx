@@ -22,7 +22,7 @@ export default function KycCompletedToday({ enabled = true }: { enabled?: boolea
           <h3 className="font-semibold text-gray-900">KYC Completed</h3>
           <p className="text-xs text-gray-500">Tiers completed today</p>
         </div>
-        <p className="text-2xl font-bold text-gray-900">{isLoading ? '...' : total.toLocaleString()}</p>
+        <p className="text-base font-semibold text-gray-900 tabular-nums">{isLoading ? '...' : total.toLocaleString()}</p>
       </div>
 
       {error && !data ? (
@@ -39,9 +39,9 @@ export default function KycCompletedToday({ enabled = true }: { enabled?: boolea
                 to={`/kyc-data?tier=${tier}`}
                 className="flex items-center gap-2.5 px-3 md:px-5 py-3 hover:bg-gray-50 transition-colors"
               >
-                <TierIcon tier={tier} className="h-8 w-8 flex-shrink-0" />
+                <TierIcon tier={tier} className="h-7 w-7 flex-shrink-0" />
                 <div className="min-w-0">
-                  <p className="text-lg font-bold leading-tight text-gray-900">
+                  <p className="text-sm md:text-base font-semibold leading-tight text-gray-900 tabular-nums">
                     {isLoading ? '...' : count.toLocaleString()}
                   </p>
                   <p className="text-xs text-gray-500">Tier {tier}</p>
