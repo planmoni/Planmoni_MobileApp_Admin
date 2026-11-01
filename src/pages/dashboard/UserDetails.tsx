@@ -13,12 +13,10 @@ import {
   ClipboardCheck,
   Clock,
   CreditCard,
-  Lock,
   RefreshCw,
   Shield,
   Ban,
   Vault,
-  Wallet,
   Zap,
   type LucideIcon,
 } from 'lucide-react';
@@ -61,18 +59,13 @@ const eventIcon = (type: string): LucideIcon => {
   return Zap;
 };
 
-function StatTile({ icon: Icon, label, value }: { icon: LucideIcon; label: string; value: string }) {
+function StatTile({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-start gap-3 bg-white rounded-2xl p-3.5 shadow-soft border border-gray-100 min-w-0">
-      <div className="flex-shrink-0 w-9 h-9 rounded-xl bg-gray-50 text-gray-600 flex items-center justify-center">
-        <Icon className="h-[18px] w-[18px]" />
-      </div>
-      <div className="min-w-0">
-        <p className="text-xs text-gray-500 truncate">{label}</p>
-        <p className="mt-0.5 text-sm md:text-base font-semibold text-gray-900 tabular-nums break-words leading-snug">
-          {value}
-        </p>
-      </div>
+    <div className="bg-white rounded-2xl px-4 py-3.5 shadow-soft border border-gray-100 min-w-0">
+      <p className="text-xs text-gray-500 truncate">{label}</p>
+      <p className="mt-1 text-base md:text-lg font-semibold text-gray-900 tabular-nums whitespace-nowrap leading-snug">
+        {value}
+      </p>
     </div>
   );
 }
@@ -557,17 +550,16 @@ export default function UserDetails() {
         )}
       </Panel>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
-        <StatTile icon={Wallet} label="Available balance" value={naira(wallet?.balance)} />
-        <StatTile icon={Lock} label="Locked balance" value={naira(wallet?.locked_balance)} />
+      <div className="grid grid-cols-2 md:grid-cols-3 2xl:grid-cols-6 gap-3">
+        <StatTile label="Available balance" value={naira(wallet?.balance)} />
+        <StatTile label="Locked balance" value={naira(wallet?.locked_balance)} />
         <StatTile
-          icon={Banknote}
           label="Total balance"
           value={naira((wallet?.balance || 0) + (wallet?.locked_balance || 0))}
         />
-        <StatTile icon={ArrowDownRight} label="Total deposits" value={naira(totalDeposits)} />
-        <StatTile icon={ArrowUpRight} label="Total payouts" value={naira(totalPayouts)} />
-        <StatTile icon={Calendar} label="Active plans" value={activePlans.toLocaleString()} />
+        <StatTile label="Total deposits" value={naira(totalDeposits)} />
+        <StatTile label="Total payouts" value={naira(totalPayouts)} />
+        <StatTile label="Active plans" value={activePlans.toLocaleString()} />
       </div>
 
       <div className="flex gap-1 border-b border-gray-200 overflow-x-auto">

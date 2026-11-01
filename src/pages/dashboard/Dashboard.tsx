@@ -244,8 +244,6 @@ export default function Dashboard() {
     yesterdayLockedBalance: 0,
     yesterdayCancelledPlans: 0,
     yesterdayWithdrawals: 0,
-    yesterdayPayoutsDueCount: 0,
-    yesterdayPayoutsDueAmount: 0,
     yesterdayNewVaults: 0,
     yesterdayFundedVaults: 0,
     yesterdayUnlockedVaults: 0,
@@ -319,11 +317,11 @@ export default function Dashboard() {
           {/* Hidden for now: Cancelled Plans (stats.cancelled_plans) -> /payout-plans, Withdrawals (stats.withdrawals) -> /transactions {filterType: 'withdrawal'} */}
 
           {(isSuperAdmin || hasPermission('dashboard', 'stats.payout_due_today')) && (
-            <StatCard to="/payout-events" icon={CalendarClock} label="Payouts Due Today" value={stats.todayPayoutsDueCount.toLocaleString()} delta={compareDays(stats.todayPayoutsDueCount, stats.yesterdayPayoutsDueCount)} />
+            <StatCard to="/payout-events" icon={CalendarClock} label="Payouts Due Today" value={stats.todayPayoutsDueCount.toLocaleString()} />
           )}
 
           {(isSuperAdmin || hasPermission('dashboard', 'stats.payout_due_today')) && (
-            <StatCard to="/payout-events" icon={Banknote} label="Payouts Due Amount" value={formatCurrency(stats.todayPayoutsDueAmount)} delta={compareDays(stats.todayPayoutsDueAmount, stats.yesterdayPayoutsDueAmount, formatCurrency)} />
+            <StatCard to="/payout-events" icon={Banknote} label="Payouts Due Amount" value={formatCurrency(stats.todayPayoutsDueAmount)} />
           )}
 
           {(isSuperAdmin || hasPermission('dashboard', 'stats.payout_due_today')) && (

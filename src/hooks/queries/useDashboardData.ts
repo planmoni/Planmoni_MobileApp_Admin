@@ -29,8 +29,6 @@ type DashboardStats = {
   yesterdayLockedBalance: number;
   yesterdayCancelledPlans: number;
   yesterdayWithdrawals: number;
-  yesterdayPayoutsDueCount: number;
-  yesterdayPayoutsDueAmount: number;
   yesterdayNewVaults: number;
   yesterdayFundedVaults: number;
   yesterdayUnlockedVaults: number;
@@ -290,14 +288,6 @@ const fetchYesterdayStats = async () => {
     .gte('created_at', startOfYesterday.toISOString())
     .lte('created_at', endOfYesterday.toISOString());
 
-  // Payouts due yesterday (from payout_plans with next_payout_date yesterday)
-  const { data: yesterdayPayoutsDueData, count: yesterdayPayoutsDueCount } = await supabase
-    .from('payout_plans')
-    .select('payout_amount', { count: 'exact' })
-    .gte('next_payout_date', startOfYesterday.toISOString())
-    .lte('next_payout_date', endOfYesterday.toISOString())
-    .eq('status', 'active');
-
   // Yesterday's vaults (budget_plans created yesterday)
   const { count: yesterdayNewVaultsCount } = await supabase
     .from('budget_plans')
@@ -329,8 +319,6 @@ const fetchYesterdayStats = async () => {
     yesterdayCancelledPlans: yesterdayCancelledPlansCount || 0,
     yesterdayKyc: yesterdayKycCount || 0,
     yesterdayLockedBalance: yesterdayLockedBalanceData?.reduce((sum, p) => sum + Number(p.total_amount), 0) || 0,
-    yesterdayPayoutsDueCount: yesterdayPayoutsDueCount || 0,
-    yesterdayPayoutsDueAmount: yesterdayPayoutsDueData?.reduce((sum, p) => sum + Number(p.payout_amount), 0) || 0,
     yesterdayNewVaults: yesterdayNewVaultsCount || 0,
     yesterdayFundedVaults: new Set(yesterdayFundedVaultsData?.map(v => v.plan_id) || []).size,
     yesterdayUnlockedVaults: yesterdayUnlockedVaultsCount || 0,
