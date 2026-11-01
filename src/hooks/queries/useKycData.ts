@@ -176,6 +176,54 @@ export function useKycTierStats(enabled = true) {
   });
 }
 
+export interface KycCompletedRow {
+  user_id: string;
+  tier: 1 | 2 | 3;
+  completed_at: string;
+  first_name: string | null;
+  last_name: string | null;
+  email: string | null;
+}
+
+export interface KycCompleted {
+  total: number;
+  tier1: number;
+  tier2: number;
+  tier3: number;
+  rows: KycCompletedRow[];
+}
+
+/** Tier 1 / 2 / 3 completions since local midnight (counts per tier plus the latest ones), for the dashboard. */
+export function useKycCompletedToday(limit = 6, enabled = true) {
+  return useQuery({
+    // starts with 'dashboard' so the dashboard's refresh button and Tier 3 reviews reload it
+    queryKey: ['dashboard', 'kyc-completed-today', limit],
+    queryFn: async (): Promise<KycCompleted> => {
+      const start = new Date();
+      start.setHours(0, 0, 0, 0);
+
+      const { data, error } = await supabase.rpc('admin_kyc_completed', {
+        p_from: start.toISOString(),
+        p_to: null,
+        p_limit: limit,
+      });
+      if (error) throw new Error(error.message);
+
+      const r = (data ?? {}) as Partial<KycCompleted>;
+      return {
+        total: Number(r.total ?? 0),
+        tier1: Number(r.tier1 ?? 0),
+        tier2: Number(r.tier2 ?? 0),
+        tier3: Number(r.tier3 ?? 0),
+        rows: (r.rows ?? []) as KycCompletedRow[],
+      };
+    },
+    enabled,
+    staleTime: 30 * 1000,
+    refetchInterval: 60 * 1000,
+  });
+}
+
 /** Oldest-first queue of users awaiting Tier 3 manual review. */
 export function useTier3Queue(limit = 8, enabled = true) {
   return useQuery({

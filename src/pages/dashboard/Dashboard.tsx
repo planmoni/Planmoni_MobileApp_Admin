@@ -21,6 +21,7 @@ import { Link } from 'react-router-dom';
 import { useDashboardData } from '@/hooks/queries/useDashboardData';
 import { useKycTierStats, useTier3Queue } from '@/hooks/queries/useKycData';
 import { TierBadge } from '@/components/KycBadges';
+import KycCompletedToday from '@/components/KycCompletedToday';
 import { TierIcon } from '@/components/TierIcon';
 import { useRefreshData } from '@/hooks/mutations/useRefreshData';
 import { useAuth } from '@/contexts/AuthContext';
@@ -523,8 +524,11 @@ export default function Dashboard() {
             ))}
           </div>
 
+          <div className={`mt-4 grid grid-cols-1 gap-4 items-start ${canReviewKyc ? 'lg:grid-cols-2' : ''}`}>
+          <KycCompletedToday enabled={canSeeKycStats} />
+
           {canReviewKyc && (
-            <div className="mt-4 bg-white rounded-2xl shadow-soft border border-gray-100 overflow-hidden">
+            <div className="bg-white rounded-2xl shadow-soft border border-gray-100 overflow-hidden">
               <div className="flex items-center justify-between px-4 md:px-6 py-4 border-b border-gray-100">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center">
@@ -593,6 +597,7 @@ export default function Dashboard() {
               )}
             </div>
           )}
+          </div>
         </div>
       )}
 
