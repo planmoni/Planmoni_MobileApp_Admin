@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { TriangleAlert } from 'lucide-react';
 import PayoutEventDetailsModal from '@/components/PayoutEventDetailsModal';
 import PayoutEventRow from '@/components/PayoutEventRow';
-import { usePayoutAttentionCount, useTodayPayoutEvents } from '@/hooks/queries/usePayoutEventsList';
+import { useTodayPayoutEvents } from '@/hooks/queries/usePayoutEventsList';
 import { formatNaira, formatNairaCompact } from '@/lib/calendarEvents';
 import { pickEventHighlights, summarizeEvents, type PayoutEventItem } from '@/lib/payoutEventsView';
 
@@ -13,12 +13,13 @@ const money = (amount: number) => (Math.abs(amount) >= 1_000_000 ? formatNairaCo
 /** The dashboard's "Today's Payout Events": what was paid out since midnight, problems first. */
 export default function TodaysPayoutEvents() {
   const { data, isLoading, error } = useTodayPayoutEvents();
-  const { data: attention = 0 } = usePayoutAttentionCount();
   const [selected, setSelected] = useState<PayoutEventItem | null>(null);
 
   const rows = useMemo(() => pickEventHighlights(data?.rows ?? [], SHOWN), [data?.rows]);
   const summary = useMemo(() => summarizeEvents(data?.facets ?? []), [data?.facets]);
   const total = data?.total ?? 0;
+  // only today's payouts: stuck, or failed with money held
+  const attention = summary.attention.count;
 
   const parts = [
     summary.completed.count ? `${summary.completed.count.toLocaleString()} paid · ${money(summary.completed.amount)}` : null,
@@ -57,11 +58,11 @@ export default function TodaysPayoutEvents() {
       {attention > 0 && (
         <Link
           to="/payout-events"
-          state={{ status: 'attention' }}
+          state={{ status: 'attention', period: 'today' }}
           className="flex items-center justify-center gap-2 border-t border-gray-100 px-4 py-2.5 text-xs md:text-sm font-medium text-amber-800 bg-warning-light hover:opacity-90 transition-opacity"
         >
           <TriangleAlert className="h-4 w-4" />
-          {attention.toLocaleString()} {attention === 1 ? 'payout needs' : 'payouts need'} attention
+          {attention.toLocaleString()} {attention === 1 ? 'payout needs' : 'payouts need'} attention today
         </Link>
       )}
 

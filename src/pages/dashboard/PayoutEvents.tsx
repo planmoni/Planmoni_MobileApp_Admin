@@ -96,11 +96,15 @@ export default function PayoutEvents() {
 
   // Arriving from the dashboard or a user's profile can preset the status and the user
   useEffect(() => {
-    const state = location.state as { status?: string; userId?: string; userName?: string } | null;
+    const state = location.state as { status?: string; period?: string; userId?: string; userName?: string } | null;
     if (!state) return;
     if (state.status && STATUS_FILTERS.some((s) => s.key === state.status)) {
       setStatus(state.status as StatusFilter);
+      // needs attention looks across all time unless the caller asked for a specific period
       if (state.status === 'attention') setPeriodKey('all');
+    }
+    if (state.period && EVENT_PERIODS.some((p) => p.key === state.period)) {
+      setPeriodKey(state.period as PeriodKey);
     }
     if (state.userId) {
       setUserId(state.userId);
