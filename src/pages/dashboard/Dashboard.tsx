@@ -2,6 +2,7 @@ import { ArrowUpRight, ArrowDownRight, ClipboardCheck } from 'lucide-react';
 import { PayoutCountdown } from '@/components/PayoutCountdown';
 import TransactionDetailsModal from '@/components/TransactionDetailsModal';
 import TodaysActivities from '@/components/TodaysActivities';
+import TodaysPayoutEvents from '@/components/TodaysPayoutEvents';
 import { Pie, Line } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -751,47 +752,7 @@ export default function Dashboard() {
         {(isSuperAdmin || hasPermission('dashboard', 'lists.todays_payout_events')) && (
         <div>
           <h2 className="text-base md:text-lg font-semibold text-gray-900 mb-4">Today's Payout Events</h2>
-          <div className="bg-white rounded-2xl shadow-soft border border-gray-100 overflow-hidden">
-            {stats.todayPayoutEvents.length > 0 ? (
-              <div>
-                {stats.todayPayoutEvents.slice(0, 5).map((event, index) => (
-                  <div
-                    key={event.id}
-                    className={`p-4 md:p-5 hover:bg-gray-50 transition-colors ${
-                      index !== Math.min(stats.todayPayoutEvents.length, 5) - 1 ? 'border-b border-gray-100' : ''
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <p className="text-xs md:text-sm font-semibold text-gray-900">
-                        {event.payout_plans?.profiles?.first_name} {event.payout_plans?.profiles?.last_name}
-                      </p>
-                      <span className={`px-2 py-1 text-xs font-medium rounded ${
-                        event.status === 'completed' ? 'bg-green-50 text-green-700' :
-                        event.status === 'pending' ? 'bg-yellow-50 text-yellow-700' :
-                        'bg-gray-50 text-gray-600'
-                      }`}>
-                        {event.status}
-                      </span>
-                    </div>
-                    <p className="text-xs md:text-sm font-semibold text-gray-900">{formatCurrency(event.amount)}</p>
-                    <p className="text-xs text-gray-400 mt-1">
-                      {new Date(event.scheduled_date).toLocaleTimeString()}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-center py-8 text-gray-500 text-sm">No payout events today</p>
-            )}
-            <div className="border-t border-gray-100 p-3 md:p-4 text-center bg-gray-50">
-              <Link
-                to="/payout-events"
-                className="text-primary hover:text-primary-light text-xs md:text-sm font-medium transition-colors"
-              >
-                View All Payout Events
-              </Link>
-            </div>
-          </div>
+          <TodaysPayoutEvents />
         </div>
         )}
 

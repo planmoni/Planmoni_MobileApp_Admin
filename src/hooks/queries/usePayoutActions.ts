@@ -92,6 +92,7 @@ function useRefreshAfterAction(userId: string) {
       queryClient.invalidateQueries({ queryKey: ['user', userId] }),
       queryClient.invalidateQueries({ queryKey: ['user-activity', userId] }),
       queryClient.invalidateQueries({ queryKey: ['transactions'] }),
+      queryClient.invalidateQueries({ queryKey: ['payout-events'] }),
       queryClient.invalidateQueries({ queryKey: ['payout-plans'] }),
       queryClient.invalidateQueries({ queryKey: ['calendar-events'] }),
       queryClient.invalidateQueries({ queryKey: ['dashboard'] }),
