@@ -597,6 +597,22 @@ export default function Dashboard() {
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        {(isSuperAdmin || hasPermission('dashboard', 'lists.todays_payout_events')) && (
+        <div>
+          <h2 className="text-base md:text-lg font-semibold text-gray-900 mb-4">Today's Payout Events</h2>
+          <TodaysPayoutEvents />
+        </div>
+        )}
+
+        {(isSuperAdmin || hasPermission('dashboard', 'lists.todays_activities')) && (
+        <div>
+          <h2 className="text-base md:text-lg font-semibold text-gray-900 mb-4">Today's Activities</h2>
+          <TodaysActivities />
+        </div>
+        )}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         {(isSuperAdmin || hasPermission('dashboard', 'charts.transaction_volume')) && (
         <div className="bg-white rounded-2xl p-4 md:p-6 shadow-soft border border-gray-100">
           <div className="mb-4 md:mb-6">
@@ -744,22 +760,6 @@ export default function Dashboard() {
               </Link>
             </div>
           </div>
-        </div>
-        )}
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {(isSuperAdmin || hasPermission('dashboard', 'lists.todays_payout_events')) && (
-        <div>
-          <h2 className="text-base md:text-lg font-semibold text-gray-900 mb-4">Today's Payout Events</h2>
-          <TodaysPayoutEvents />
-        </div>
-        )}
-
-        {(isSuperAdmin || hasPermission('dashboard', 'lists.todays_activities')) && (
-        <div>
-          <h2 className="text-base md:text-lg font-semibold text-gray-900 mb-4">Today's Activities</h2>
-          <TodaysActivities />
         </div>
         )}
       </div>
