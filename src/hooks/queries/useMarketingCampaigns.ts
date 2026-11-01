@@ -16,6 +16,10 @@ export interface MarketingCampaign {
   opened_count: number;
   clicked_count: number;
   failed_count: number;
+  queue_enabled?: boolean;
+  send_delay_seconds?: number;
+  batch_size?: number;
+  next_send_at?: string | null;
   metadata: Record<string, any>;
   created_by: string;
   created_at: string;
@@ -38,6 +42,9 @@ export function useMarketingCampaigns() {
     queryKey: ['marketing-campaigns'],
     queryFn: fetchMarketingCampaigns,
     staleTime: 30 * 1000,
+    // while a campaign is going out, keep the progress fresh
+    refetchInterval: (query) =>
+      query.state.data?.some((c) => c.status === 'sending') ? 15000 : false,
   });
 }
 

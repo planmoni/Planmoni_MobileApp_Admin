@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Plus, RefreshCw, Mail, TrendingUp, Send, Users, BarChart, Edit2, Eye, Save, CheckCircle, XCircle, Clock, Search, RotateCcw, Trash2, Filter, X } from 'lucide-react';
+import { Plus, RefreshCw, Mail, TrendingUp, Send, Users, BarChart, Edit2, Eye, Save, CheckCircle, XCircle, Clock, Search, RotateCcw, Trash2, Filter, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useMarketingCampaigns, useCampaignStats } from '@/hooks/queries/useMarketingCampaigns';
 import { useSegments } from '@/hooks/queries/useSegments';
 import { useSenderEmails } from '@/hooks/queries/useSenderEmails';
@@ -8,7 +8,7 @@ import { useToast } from '@/contexts/ToastContext';
 import { supabase } from '@/lib/supabase';
 import { format } from 'date-fns';
 import RichTextEditor from '@/components/RichTextEditor';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { EMAIL_TEMPLATES } from '@/lib/emailTemplates';
 
 export default function Marketing() {
@@ -416,12 +416,28 @@ export default function Marketing() {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center space-x-1 text-sm text-gray-900">
                       <Users className="w-4 h-4 text-gray-400" />
-                      <span>{campaign.recipient_count || 0}</span>
+                      <span>{(campaign.recipient_count || 0).toLocaleString('en-US')}</span>
                     </div>
+                    {campaign.status === 'sending' && campaign.queue_enabled && campaign.recipient_count > 0 && (
+                      <div className="mt-2 w-32">
+                        <div className="h-1.5 rounded-full bg-gray-100 overflow-hidden">
+                          <div
+                            className="h-full bg-gray-900 rounded-full transition-all"
+                            style={{
+                              width: `${Math.min(100, Math.round((((campaign.delivered_count || 0) + (campaign.failed_count || 0)) / campaign.recipient_count) * 100))}%`,
+                            }}
+                          />
+                        </div>
+                        <p className="mt-1 text-xs text-gray-500">
+                          {((campaign.delivered_count || 0) + (campaign.failed_count || 0)).toLocaleString('en-US')} of {campaign.recipient_count.toLocaleString('en-US')} sent
+                        </p>
+                      </div>
+                    )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-xs text-gray-500">
-                      <div>Delivered: {campaign.delivered_count || 0}</div>
+                      <div>Delivered: {(campaign.delivered_count || 0).toLocaleString('en-US')}</div>
+                      {(campaign.failed_count || 0) > 0 && <div className="text-red-600">Failed: {campaign.failed_count.toLocaleString('en-US')}</div>}
                       <div>Opened: {campaign.opened_count || 0}</div>
                       <div>Clicked: {campaign.clicked_count || 0}</div>
                     </div>
@@ -451,6 +467,18 @@ export default function Marketing() {
                           title="View Recipients"
                         >
                           <Users className="w-4 h-4" />
+                        </button>
+                      )}
+                      {(campaign.status === 'sent' || campaign.status === 'sending') && (
+                        <button
+                          onClick={() => {
+                            setSelectedCampaign(campaign);
+                            setShowSendModal(true);
+                          }}
+                          className="text-accent hover:text-accent-dark transition-colors"
+                          title="Send to users who have not received it yet"
+                        >
+                          <Send className="w-4 h-4" />
                         </button>
                       )}
                       {campaign.status === 'draft' && (
@@ -554,26 +582,88 @@ export default function Marketing() {
   );
 }
 
+const RECIPIENTS_PAGE_SIZE = 100;
+
 function RecipientsModal({ campaign, onClose }: { campaign: any; onClose: () => void }) {
+  const [searchInput, setSearchInput] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [page, setPage] = useState(0);
   const [retrying, setRetrying] = useState(false);
   const { showToast } = useToast();
+  const queryClient = useQueryClient();
 
-  const { data: recipients, isLoading, refetch } = useQuery({
-    queryKey: ['campaign-recipients', campaign.id],
+  // wait for a pause in typing before querying
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setSearchQuery(searchInput.trim());
+      setPage(0);
+    }, 300);
+    return () => clearTimeout(t);
+  }, [searchInput]);
+
+  // Counts come from the database (a plain table read stops at 1,000 rows, so it can't be used for totals).
+  const { data: counts, refetch: refetchCounts } = useQuery({
+    queryKey: ['campaign-recipient-counts', campaign.id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('campaign_recipients')
-        .select('*')
-        .eq('campaign_id', campaign.id)
-        .order('created_at', { ascending: false });
-
+      const { data, error } = await supabase.rpc('admin_marketing_recipient_counts', { p_campaign_id: campaign.id });
       if (error) throw error;
-      return data || [];
+      return (data || {}) as Record<string, number>;
     },
     enabled: !!campaign.id,
+    // keep watching while emails are still going out
+    refetchInterval: (query) => {
+      const c = query.state.data as Record<string, number> | undefined;
+      return c && ((c.pending || 0) > 0 || (c.sending || 0) > 0) && campaign.queue_enabled ? 10000 : false;
+    },
   });
+
+  const { data: list, isLoading, isFetching, refetch: refetchList } = useQuery({
+    queryKey: ['campaign-recipients', campaign.id, statusFilter, searchQuery, page],
+    queryFn: async () => {
+      let query = supabase
+        .from('campaign_recipients')
+        .select('*', { count: 'exact' })
+        .eq('campaign_id', campaign.id)
+        .order('created_at', { ascending: false })
+        .order('id', { ascending: false })
+        .range(page * RECIPIENTS_PAGE_SIZE, page * RECIPIENTS_PAGE_SIZE + RECIPIENTS_PAGE_SIZE - 1);
+
+      if (statusFilter !== 'all') query = query.eq('status', statusFilter);
+      if (searchQuery) {
+        // escape LIKE wildcards so "_" and "%" in an address are matched literally
+        const escaped = searchQuery.replace(/[\\%_]/g, (ch) => `\\${ch}`);
+        query = query.ilike('email', `%${escaped}%`);
+      }
+
+      const { data, error, count } = await query;
+      if (error) throw error;
+      return { rows: data || [], total: count ?? 0 };
+    },
+    enabled: !!campaign.id,
+    placeholderData: keepPreviousData,
+    refetchInterval: (query) => {
+      const total = query.state.data?.rows?.some((r: any) => r.status === 'pending' || r.status === 'sending');
+      return total && campaign.queue_enabled ? 10000 : false;
+    },
+  });
+
+  const recipients = list?.rows || [];
+  const filteredTotal = list?.total || 0;
+  const pageCount = Math.max(1, Math.ceil(filteredTotal / RECIPIENTS_PAGE_SIZE));
+
+  const failed = counts?.failed || 0;
+  const pending = counts?.pending || 0;
+  const sendingNow = counts?.sending || 0;
+  const waitingInQueue = pending + sendingNow;
+  // Queued campaigns keep recipients pending on purpose; only older, non-queued campaigns can have truly stuck ones.
+  const retryableCount = failed + (campaign.queue_enabled ? 0 : pending);
+
+  const refreshAll = () => {
+    refetchCounts();
+    refetchList();
+    queryClient.invalidateQueries({ queryKey: ['marketing-campaigns'] });
+  };
 
   const handleRetry = async (recipientIds?: string[]) => {
     setRetrying(true);
@@ -606,8 +696,8 @@ function RecipientsModal({ campaign, onClose }: { campaign: any; onClose: () => 
         throw new Error(result.message || 'Failed to retry campaign');
       }
 
-      showToast(result.message || 'Campaign retry initiated successfully', 'success');
-      refetch();
+      showToast(result.message || 'Emails re-queued', 'success');
+      refreshAll();
     } catch (error) {
       console.error('Error retrying campaign:', error);
       showToast(error instanceof Error ? error.message : 'Failed to retry campaign', 'error');
@@ -615,18 +705,6 @@ function RecipientsModal({ campaign, onClose }: { campaign: any; onClose: () => 
       setRetrying(false);
     }
   };
-
-  const filteredRecipients = recipients?.filter((r: any) => {
-    const matchesSearch = !searchQuery || 
-      r.email?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || r.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  }) || [];
-
-  const statusCounts = recipients?.reduce((acc: any, r: any) => {
-    acc[r.status] = (acc[r.status] || 0) + 1;
-    return acc;
-  }, {}) || {};
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -636,6 +714,8 @@ function RecipientsModal({ campaign, onClose }: { campaign: any; onClose: () => 
         return <XCircle className="w-4 h-4 text-red-600" />;
       case 'pending':
         return <Clock className="w-4 h-4 text-gray-400" />;
+      case 'sending':
+        return <RefreshCw className="w-4 h-4 text-blue-600 animate-spin" />;
       case 'sent':
         return <Mail className="w-4 h-4 text-blue-600" />;
       case 'bounced':
@@ -653,6 +733,8 @@ function RecipientsModal({ campaign, onClose }: { campaign: any; onClose: () => 
         return 'bg-red-50 text-red-700 border-red-200';
       case 'pending':
         return 'bg-gray-50 text-gray-700 border-gray-200';
+      case 'sending':
+        return 'bg-blue-50 text-blue-700 border-blue-200';
       case 'sent':
         return 'bg-blue-50 text-blue-700 border-blue-200';
       case 'bounced':
@@ -661,6 +743,8 @@ function RecipientsModal({ campaign, onClose }: { campaign: any; onClose: () => 
         return 'bg-gray-50 text-gray-700 border-gray-200';
     }
   };
+
+  const n = (v: number) => v.toLocaleString('en-US');
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
@@ -681,45 +765,55 @@ function RecipientsModal({ campaign, onClose }: { campaign: any; onClose: () => 
         </div>
 
         <div className="p-6 border-b border-gray-100">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center space-x-4">
+          <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+            <div className="flex items-center gap-4 flex-wrap">
               <div className="flex items-center space-x-2">
                 <span className="text-sm font-medium text-gray-700">Total:</span>
-                <span className="text-sm font-semibold text-gray-900">{recipients?.length || 0}</span>
+                <span className="text-sm font-semibold text-gray-900">{n(counts?.total || 0)}</span>
               </div>
               <div className="flex items-center space-x-2">
                 <CheckCircle className="w-4 h-4 text-green-600" />
-                <span className="text-sm text-gray-600">Delivered: {statusCounts.delivered || 0}</span>
+                <span className="text-sm text-gray-600">Delivered: {n(counts?.delivered || 0)}</span>
               </div>
               <div className="flex items-center space-x-2">
                 <XCircle className="w-4 h-4 text-red-600" />
-                <span className="text-sm text-gray-600">Failed: {statusCounts.failed || 0}</span>
+                <span className="text-sm text-gray-600">Failed: {n(failed)}</span>
               </div>
               <div className="flex items-center space-x-2">
                 <Clock className="w-4 h-4 text-gray-400" />
-                <span className="text-sm text-gray-600">Pending: {statusCounts.pending || 0}</span>
+                <span className="text-sm text-gray-600">
+                  {campaign.queue_enabled ? 'Waiting' : 'Pending'}: {n(campaign.queue_enabled ? waitingInQueue : pending)}
+                </span>
               </div>
             </div>
             <div className="flex items-center space-x-2">
-              {(statusCounts.failed > 0 || statusCounts.pending > 0) && (
+              {retryableCount > 0 && (
                 <button
                   onClick={() => handleRetry()}
                   disabled={retrying}
                   className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Queue them again; they go out in batches"
                 >
                   <RotateCcw className={`w-4 h-4 ${retrying ? 'animate-spin' : ''}`} />
-                  <span>{retrying ? 'Retrying...' : `Retry All (${(statusCounts.failed || 0) + (statusCounts.pending || 0)})`}</span>
+                  <span>{retrying ? 'Queuing...' : `Re-queue ${n(retryableCount)}`}</span>
                 </button>
               )}
               <button
-                onClick={() => refetch()}
+                onClick={refreshAll}
                 className="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center space-x-2"
               >
-                <RefreshCw className="w-4 h-4" />
+                <RefreshCw className={`w-4 h-4 ${isFetching ? 'animate-spin' : ''}`} />
                 <span>Refresh</span>
               </button>
             </div>
           </div>
+
+          {campaign.queue_enabled && waitingInQueue > 0 && (
+            <p className="text-sm text-gray-500 mb-4">
+              {n(waitingInQueue)} still waiting. Emails go out in batches of {campaign.batch_size || 50}, with {campaign.send_delay_seconds || 10} seconds
+              between batches, in the background. You can close this window; the list updates by itself.
+            </p>
+          )}
 
           <div className="flex items-center space-x-4">
             <div className="flex-1 relative">
@@ -727,20 +821,24 @@ function RecipientsModal({ campaign, onClose }: { campaign: any; onClose: () => 
               <input
                 type="text"
                 placeholder="Search by email..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent"
               />
             </div>
             <select
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
+              onChange={(e) => {
+                setStatusFilter(e.target.value);
+                setPage(0);
+              }}
               className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent"
             >
               <option value="all">All Status</option>
               <option value="delivered">Delivered</option>
               <option value="sent">Sent</option>
-              <option value="pending">Pending</option>
+              <option value="pending">{campaign.queue_enabled ? 'Waiting' : 'Pending'}</option>
+              <option value="sending">Sending now</option>
               <option value="failed">Failed</option>
               <option value="bounced">Bounced</option>
             </select>
@@ -752,18 +850,19 @@ function RecipientsModal({ campaign, onClose }: { campaign: any; onClose: () => 
             <div className="flex justify-center items-center py-12">
               <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-gray-900"></div>
             </div>
-          ) : filteredRecipients.length === 0 ? (
+          ) : recipients.length === 0 ? (
             <div className="text-center py-12">
               <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
               <p className="text-gray-500 font-medium">No recipients found</p>
             </div>
           ) : (
             <div className="space-y-2">
-              {filteredRecipients.map((recipient: any) => {
+              {recipients.map((recipient: any) => {
                 const isPending = recipient.status === 'pending';
                 const isFailed = recipient.status === 'failed';
-                const isPendingTimeout = isPending && recipient.created_at && 
-                  (Date.now() - new Date(recipient.created_at).getTime()) > 5 * 60 * 1000; // 5 minutes timeout
+                // Only older, non-queued campaigns can have a truly stuck "pending" email.
+                const isStalePending = !campaign.queue_enabled && isPending && recipient.created_at &&
+                  (Date.now() - new Date(recipient.created_at).getTime()) > 5 * 60 * 1000;
 
                 return (
                   <div
@@ -776,9 +875,9 @@ function RecipientsModal({ campaign, onClose }: { campaign: any; onClose: () => 
                           {getStatusIcon(recipient.status)}
                           <span className="font-medium text-gray-900">{recipient.email}</span>
                           <span className={`px-2 py-1 rounded text-xs font-medium border ${getStatusColor(recipient.status)}`}>
-                            {recipient.status}
+                            {campaign.queue_enabled && isPending ? 'waiting' : recipient.status}
                           </span>
-                          {isPendingTimeout && (
+                          {isStalePending && (
                             <span className="px-2 py-1 rounded text-xs font-medium bg-orange-50 text-orange-700 border border-orange-200">
                               Timeout
                             </span>
@@ -789,9 +888,9 @@ function RecipientsModal({ campaign, onClose }: { campaign: any; onClose: () => 
                             Error: {recipient.error_message}
                           </p>
                         )}
-                        {isPendingTimeout && (
+                        {isStalePending && (
                           <p className="text-sm text-orange-600 ml-7 mt-1">
-                            This email has been pending for more than 5 minutes. Consider retrying.
+                            This email has been pending for more than 5 minutes. Consider re-queuing it.
                           </p>
                         )}
                         <div className="flex items-center space-x-4 ml-7 mt-2 text-xs text-gray-500">
@@ -807,19 +906,17 @@ function RecipientsModal({ campaign, onClose }: { campaign: any; onClose: () => 
                           {recipient.clicked_at && (
                             <span className="text-blue-600">Clicked: {format(new Date(recipient.clicked_at), 'MMM dd, yyyy HH:mm')}</span>
                           )}
-                          {isPending && recipient.created_at && (
-                            <span className="text-gray-400">
-                              Pending for: {Math.floor((Date.now() - new Date(recipient.created_at).getTime()) / 60000)}m
-                            </span>
+                          {campaign.queue_enabled && isPending && (
+                            <span className="text-gray-400">In the send queue</span>
                           )}
                         </div>
                       </div>
-                      {(isFailed || isPendingTimeout) && (
+                      {(isFailed || isStalePending) && (
                         <button
                           onClick={() => handleRetry([recipient.id])}
                           disabled={retrying}
                           className="ml-4 px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                          title="Retry this email"
+                          title="Queue this email again"
                         >
                           <RotateCcw className={`w-3 h-3 ${retrying ? 'animate-spin' : ''}`} />
                           <span>Retry</span>
@@ -832,6 +929,33 @@ function RecipientsModal({ campaign, onClose }: { campaign: any; onClose: () => 
             </div>
           )}
         </div>
+
+        {filteredTotal > RECIPIENTS_PAGE_SIZE && (
+          <div className="px-6 py-3 border-t border-gray-100 flex items-center justify-between">
+            <p className="text-sm text-gray-500">
+              {n(page * RECIPIENTS_PAGE_SIZE + 1)}-{n(Math.min(filteredTotal, (page + 1) * RECIPIENTS_PAGE_SIZE))} of {n(filteredTotal)}
+            </p>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => setPage((p) => Math.max(0, p - 1))}
+                disabled={page === 0}
+                className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                aria-label="Previous page"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <span className="text-sm text-gray-600">Page {page + 1} of {n(pageCount)}</span>
+              <button
+                onClick={() => setPage((p) => Math.min(pageCount - 1, p + 1))}
+                disabled={page >= pageCount - 1}
+                className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                aria-label="Next page"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
 
         <div className="p-6 border-t border-gray-100">
           <button
@@ -1638,7 +1762,10 @@ function SendCampaignModal({
   const [segmentId, setSegmentId] = useState('all');
   const [scheduledDate, setScheduledDate] = useState('');
   const [isScheduled, setIsScheduled] = useState(false);
+  const [batchSize, setBatchSize] = useState(campaign.batch_size || 50);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // an already sent (or part-sent) campaign can be sent again: only people who haven't got it yet are queued
+  const isTopUp = campaign.status !== 'draft' && campaign.status !== 'scheduled';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1670,6 +1797,7 @@ function SendCampaignModal({
         : {
             action: 'send_campaign',
             campaign_id: campaign.id,
+            batch_size: batchSize,
             recipient_filters: recipientFilters,
           };
 
@@ -1692,7 +1820,7 @@ function SendCampaignModal({
         throw new Error(result.message || 'Failed to send campaign');
       }
 
-      showToast(result.message || 'Campaign sent successfully', 'success');
+      showToast(result.message || 'Campaign queued', 'success');
       onSuccess();
     } catch (error) {
       console.error('Error sending campaign:', error);
@@ -1743,6 +1871,7 @@ function SendCampaignModal({
             </select>
           </div>
 
+          {!isTopUp && (
           <div>
             <label className="flex items-center space-x-2 cursor-pointer">
               <input
@@ -1754,6 +1883,7 @@ function SendCampaignModal({
               <span className="text-sm text-gray-700">Schedule for later</span>
             </label>
           </div>
+          )}
 
           {isScheduled && (
             <div>
@@ -1770,6 +1900,37 @@ function SendCampaignModal({
             </div>
           )}
 
+          {!isScheduled && (
+            <div className="rounded-xl bg-gray-50 border border-gray-100 p-4 text-sm text-gray-600 space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Emails per batch</label>
+                <select
+                  value={batchSize}
+                  onChange={(e) => setBatchSize(Number(e.target.value))}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-xl bg-white focus:ring-2 focus:ring-accent focus:border-transparent"
+                >
+                  {[25, 50, 100].map((size) => {
+                    const minutes = Math.round((Math.ceil(10000 / size) * 10) / 60);
+                    return (
+                      <option key={size} value={size}>
+                        {size} per batch (10,000 users take about {minutes} min)
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+              <p>
+                Everyone in the audience is queued and emailed in the background in batches, with 10 seconds between
+                batches. You can close this page while it runs. Progress shows in the campaign list.
+              </p>
+              {isTopUp && (
+                <p>
+                  People who already received this campaign are skipped, so nobody gets it twice.
+                </p>
+              )}
+            </div>
+          )}
+
           <div className="flex space-x-4 pt-4">
             <button
               type="button"
@@ -1783,7 +1944,7 @@ function SendCampaignModal({
               disabled={isSubmitting}
               className="flex-1 px-4 py-2 bg-accent text-white rounded-xl hover:bg-accent-dark transition-colors disabled:opacity-50"
             >
-              {isSubmitting ? 'Sending...' : isScheduled ? 'Schedule' : 'Send Now'}
+              {isSubmitting ? 'Queuing...' : isScheduled ? 'Schedule' : isTopUp ? 'Send to the rest' : 'Send Now'}
             </button>
           </div>
         </form>

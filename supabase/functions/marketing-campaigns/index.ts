@@ -14,6 +14,7 @@ interface CreateCampaignRequest {
   html_content: string;
   plain_text_content?: string;
   category: string;
+  from_email_id?: string | null;
   metadata?: Record<string, any>;
 }
 
@@ -25,12 +26,14 @@ interface UpdateCampaignRequest {
   html_content: string;
   plain_text_content?: string;
   category: string;
+  from_email_id?: string | null;
   metadata?: Record<string, any>;
 }
 
 interface SendCampaignRequest {
   action: 'send_campaign';
   campaign_id: string;
+  batch_size?: number; // emails per batch, 1-100
   recipient_filters: {
     segment?: string;
     segment_id?: string;
@@ -66,7 +69,7 @@ async function sendEmailViaResend(
   htmlContent: string,
   resendApiKey: string,
   fromEmail?: string
-): Promise<{ success: boolean; id?: string; error?: string }> {
+): Promise<{ success: boolean; id?: string; error?: string; retryable?: boolean }> {
   try {
     // Default to the hardcoded email if fromEmail is not provided (backward compatibility)
     const fromAddress = fromEmail || 'Martins Osodi - Planmoni CEO <hello@planmoni.com>';
@@ -85,13 +88,15 @@ async function sendEmailViaResend(
       }),
     });
 
-    const responseData = await response.json();
+    const responseData = await response.json().catch(() => ({}));
 
     if (!response.ok) {
       console.error('Resend API error:', responseData);
       return {
         success: false,
         error: responseData.message || 'Failed to send email',
+        // rate limit or Resend-side trouble: worth another try. 4xx otherwise (bad address, etc.) is final.
+        retryable: response.status === 429 || response.status >= 500,
       };
     }
 
@@ -104,9 +109,245 @@ async function sendEmailViaResend(
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error',
+      retryable: true, // network failure
     };
   }
 }
+
+// One Resend request for up to 100 emails. Each email still goes to its own single recipient.
+// Resend accepts or rejects the whole batch (for example one malformed address rejects all of it).
+async function sendBatchViaResend(
+  recipients: { id: string; email: string }[],
+  subject: string,
+  htmlContent: string,
+  resendApiKey: string,
+  fromAddress: string
+): Promise<{ success: boolean; ids?: (string | undefined)[]; error?: string; retryable?: boolean; status?: number }> {
+  try {
+    const response = await fetch('https://api.resend.com/emails/batch', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${resendApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(
+        recipients.map((r) => ({ from: fromAddress, to: r.email, subject, html: htmlContent }))
+      ),
+    });
+
+    const responseData = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      console.error('Resend batch error:', response.status, responseData);
+      return {
+        success: false,
+        error: responseData.message || `Resend rejected the batch (${response.status})`,
+        retryable: response.status === 429 || response.status >= 500,
+        status: response.status,
+      };
+    }
+
+    const data: { id?: string }[] = Array.isArray(responseData.data) ? responseData.data : [];
+    return { success: true, ids: recipients.map((_, i) => data[i]?.id) };
+  } catch (error) {
+    console.error('Error calling Resend batch API:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+      retryable: true, // network failure
+    };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Queue worker
+//
+// Campaign recipients live in `campaign_recipients` (queued in SQL by marketing_enqueue_recipients). This worker sends
+// them in BATCHES (campaign.batch_size, 50 by default, one Resend batch request each) with a pause between batches
+// (campaign.send_delay_seconds, 10 s by default). The pause is enforced by the database
+// (marketing_claim_next_batch hands out a batch only when next_send_at has passed), so several workers running
+// at once, which happens on purpose around restarts, can never send faster than that.
+// A worker runs for a bounded time and exits; the per-minute cron (marketing_queue_tick) and the Send button start the next.
+// ---------------------------------------------------------------------------
+const WORKER_BUDGET_MS = 120_000;
+const MIN_TIME_LEFT_TO_SEND_MS = 20_000;
+const RETRY_DELAYS_MS = [3_000, 8_000];
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+async function resolveFromAddress(supabase: any, fromEmailId: string | null): Promise<string> {
+  let fromAddress = 'Martins Osodi - Planmoni CEO <hello@planmoni.com>'; // default fallback
+  if (fromEmailId) {
+    const { data: senderEmail } = await supabase
+      .from('sender_email_addresses')
+      .select('email, display_name, is_active')
+      .eq('id', fromEmailId)
+      .maybeSingle();
+    if (senderEmail && senderEmail.is_active) {
+      return `${senderEmail.display_name} <${senderEmail.email}>`;
+    }
+  } else {
+    const { data: defaultEmail } = await supabase
+      .from('sender_email_addresses')
+      .select('email, display_name')
+      .eq('is_default', true)
+      .eq('is_active', true)
+      .limit(1)
+      .maybeSingle();
+    if (defaultEmail) {
+      fromAddress = `${defaultEmail.display_name} <${defaultEmail.email}>`;
+    }
+  }
+  return fromAddress;
+}
+
+async function runQueueWorker(supabase: any, resendApiKey: string): Promise<void> {
+  const startedAt = Date.now();
+  const timeLeft = () => WORKER_BUDGET_MS - (Date.now() - startedAt);
+  const campaignCache = new Map<string, { subject: string; html: string; from: string }>();
+  let consecutiveErrors = 0;
+  let sentThisRun = 0;
+
+  console.log('Queue worker started');
+
+  while (timeLeft() > MIN_TIME_LEFT_TO_SEND_MS) {
+    const { data: next, error: nextError } = await supabase
+      .from('marketing_campaigns')
+      .select('id, subject, html_content, from_email_id')
+      .eq('status', 'sending')
+      .eq('queue_enabled', true)
+      .order('created_at', { ascending: true })
+      .limit(1)
+      .maybeSingle();
+
+    if (nextError) {
+      console.error('Queue worker: cannot read campaigns:', nextError);
+      if (++consecutiveErrors >= 5) break;
+      await sleep(2000);
+      continue;
+    }
+    if (!next) break; // nothing to send
+
+    let content = campaignCache.get(next.id);
+    if (!content) {
+      content = {
+        subject: next.subject,
+        html: next.html_content,
+        from: await resolveFromAddress(supabase, next.from_email_id),
+      };
+      campaignCache.set(next.id, content);
+    }
+
+    const { data: claim, error: claimError } = await supabase.rpc('marketing_claim_next_batch', {
+      p_campaign_id: next.id,
+    });
+    if (claimError || !claim) {
+      console.error('Queue worker: claim failed:', claimError);
+      if (++consecutiveErrors >= 5) break;
+      await sleep(2000);
+      continue;
+    }
+    consecutiveErrors = 0;
+
+    if (claim.state === 'wait') {
+      const waitMs = Math.max(100, Number(claim.wait_ms) || 1000) + 50;
+      if (timeLeft() - waitMs < MIN_TIME_LEFT_TO_SEND_MS) break; // the next worker picks it up
+      await sleep(waitMs);
+      continue;
+    }
+    if (claim.state === 'inactive') {
+      await sleep(1000);
+      continue;
+    }
+    if (claim.state === 'done') {
+      campaignCache.delete(next.id);
+      console.log(`Campaign ${next.id} finished`);
+      continue;
+    }
+    if (claim.state !== 'send' || !Array.isArray(claim.recipients) || claim.recipients.length === 0) continue;
+
+    const recipients = claim.recipients as { id: string; email: string }[];
+    type Outcome = { id: string; ok: boolean | null; resend_id?: string; error?: string };
+    const outcomes: Outcome[] = [];
+
+    let batch = await sendBatchViaResend(recipients, content.subject, content.html, resendApiKey, content.from);
+    for (const delay of RETRY_DELAYS_MS) {
+      if (batch.success || !batch.retryable) break;
+      console.log(`Retrying batch in ${delay} ms: ${batch.error}`);
+      await sleep(delay);
+      batch = await sendBatchViaResend(recipients, content.subject, content.html, resendApiKey, content.from);
+    }
+
+    if (batch.success) {
+      recipients.forEach((r, i) => outcomes.push({ id: r.id, ok: true, resend_id: batch.ids?.[i] }));
+    } else if (batch.retryable || batch.status === 401 || batch.status === 403) {
+      // Resend is down, rate limiting us, or rejects our key: every email would fail the same way.
+      recipients.forEach((r) => outcomes.push({ id: r.id, ok: false, error: batch.error }));
+    } else {
+      // Resend refused the batch because of the content of (at least) one email, usually a bad address.
+      // Send them one by one so only the offending address fails. Resend allows about 2 requests a second.
+      console.log(`Batch rejected (${batch.error}); sending its ${recipients.length} emails one by one`);
+      for (const r of recipients) {
+        if (timeLeft() < 5_000) {
+          outcomes.push({ id: r.id, ok: null }); // out of time: back in the queue for the next worker
+          continue;
+        }
+        let single = await sendEmailViaResend(r.email, content.subject, content.html, resendApiKey, content.from);
+        for (const delay of RETRY_DELAYS_MS) {
+          if (single.success || !single.retryable || timeLeft() < 5_000) break;
+          await sleep(delay);
+          single = await sendEmailViaResend(r.email, content.subject, content.html, resendApiKey, content.from);
+        }
+        outcomes.push(
+          single.success
+            ? { id: r.id, ok: true, resend_id: single.id }
+            : { id: r.id, ok: false, error: single.error ?? 'Failed to send email' }
+        );
+        await sleep(550);
+      }
+    }
+
+    // Record the outcome; if the write itself fails, try once more before the 5-minute requeue has to rescue it.
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const { error: completeError } = await supabase.rpc('marketing_complete_batch', { p_results: outcomes });
+      if (!completeError) break;
+      console.error('Queue worker: could not record results:', completeError);
+      await sleep(1000);
+    }
+    sentThisRun += outcomes.filter((o) => o.ok !== null).length;
+  }
+
+  console.log(`Queue worker finished after ${sentThisRun} email(s)`);
+}
+
+function startWorker(supabase: any, resendApiKey: string | undefined) {
+  if (!resendApiKey) {
+    console.error('RESEND_API_KEY not configured: queue worker not started');
+    return;
+  }
+  const job = runQueueWorker(supabase, resendApiKey).catch((error) => {
+    console.error('Queue worker crashed:', error);
+  });
+  const runtime = (globalThis as any).EdgeRuntime;
+  if (runtime && typeof runtime.waitUntil === 'function') {
+    runtime.waitUntil(job); // keep running after the response has been sent
+  }
+}
+
+function formatDuration(totalSeconds: number): string {
+  const minutes = Math.round(totalSeconds / 60);
+  if (minutes < 1) return 'less than a minute';
+  if (minutes < 60) return `about ${minutes} minute${minutes === 1 ? '' : 's'}`;
+  const hours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+  return `about ${hours} hour${hours === 1 ? '' : 's'}${rest ? ` ${rest} min` : ''}`;
+}
+
+function estimateSeconds(emails: number, batchSize: number, delaySeconds: number): number {
+  return Math.max(0, Math.ceil(emails / Math.max(1, batchSize)) - 1) * delaySeconds + 5;
+}
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
@@ -127,7 +368,22 @@ Deno.serve(async (req: Request) => {
       throw new Error('Missing authorization header');
     }
 
-    const token = authHeader.replace('Bearer ', '');
+    const token = authHeader.replace(/^Bearer\s+/i, '').trim();
+
+    // Internal call from the per-minute cron (service role key): it may only wake the queue worker.
+    if (supabaseServiceKey && token === supabaseServiceKey) {
+      const internalBody = req.method === 'POST' ? await req.json().catch(() => ({})) : {};
+      if (internalBody?.action !== 'process_queue') {
+        return new Response(JSON.stringify({ error: 'Forbidden' }), {
+          status: 403,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      startWorker(createClient(supabaseUrl, supabaseServiceKey), resendApiKey);
+      return new Response(JSON.stringify({ success: true, message: 'Queue worker started' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     // Create client with anon key to validate user token
     const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
@@ -280,538 +536,94 @@ Deno.serve(async (req: Request) => {
           throw new Error('RESEND_API_KEY not configured');
         }
 
-        const { campaign_id, recipient_filters } = body;
+        const { campaign_id, recipient_filters, batch_size } = body;
 
         const { data: campaign, error: campaignError } = await supabase
           .from('marketing_campaigns')
-          .select('*')
+          .select('id, status, metadata, send_delay_seconds, batch_size')
           .eq('id', campaign_id)
           .single();
 
         if (campaignError) throw campaignError;
 
-        // Fetch the sender email address
-        let fromEmailAddress = 'Martins Osodi - Planmoni CEO <hello@planmoni.com>'; // Default fallback
-        if (campaign.from_email_id) {
-          const { data: senderEmail } = await supabase
-            .from('sender_email_addresses')
-            .select('email, display_name, is_active')
-            .eq('id', campaign.from_email_id)
-            .single();
+        const chosenBatchSize = Number.isInteger(batch_size) && batch_size! >= 1 && batch_size! <= 100
+          ? (batch_size as number)
+          : (campaign.batch_size || 50);
 
-          if (senderEmail && senderEmail.is_active) {
-            fromEmailAddress = `${senderEmail.display_name} <${senderEmail.email}>`;
-          }
-        } else {
-          // Fallback to default email if no from_email_id is set
-          const { data: defaultEmail } = await supabase
-            .from('sender_email_addresses')
-            .select('email, display_name')
-            .eq('is_default', true)
-            .eq('is_active', true)
-            .single();
-
-          if (defaultEmail) {
-            fromEmailAddress = `${defaultEmail.display_name} <${defaultEmail.email}>`;
-          }
+        const requested = recipient_filters?.segment_id || recipient_filters?.segment;
+        if (!requested || typeof requested !== 'string') {
+          throw new Error('Choose a target audience');
         }
+        const isCustomSegment = UUID_RE.test(requested);
+        const segment = isCustomSegment
+          ? 'custom'
+          : (requested === 'all_active' || requested === 'kyc_verified' ? 'all' : requested);
 
-        let recipients: any[] = [];
-        const segmentId = recipient_filters.segment_id || recipient_filters.segment;
-        
-        console.log('Sending campaign to segment:', segmentId);
+        // Queue every matching user in ONE statement (no row limit). Anyone already in this campaign is skipped,
+        // so pressing Send twice, or topping up an older campaign, never emails the same person twice.
+        const { data: enqueued, error: enqueueError } = await supabase.rpc('marketing_enqueue_recipients', {
+          p_campaign_id: campaign_id,
+          p_segment: segment,
+          p_segment_id: isCustomSegment ? requested : null,
+        });
+        if (enqueueError) throw new Error(`Could not queue recipients: ${enqueueError.message}`);
 
-        // Handle predefined segments
-        if (segmentId === 'all') {
-          const { data, error: profilesError } = await supabase
-            .from('profiles')
-            .select('id, email, first_name, last_name');
-          
-          if (profilesError) {
-            console.error('Error fetching all profiles:', profilesError);
-            throw new Error(`Failed to fetch recipients: ${profilesError.message}`);
-          }
-          
-          recipients = data || [];
-        } else if (segmentId === 'active_users') {
-          // Users with active payout plans OR transactions in last 30 days
-          const thirtyDaysAgo = new Date();
-          thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        const queuedNow = Number(enqueued?.queued ?? 0);
+        const inSegment = Number(enqueued?.in_segment ?? 0);
 
-          const [activePlans, recentTransactions] = await Promise.all([
-            supabase
-              .from('payout_plans')
-              .select('user_id')
-              .eq('status', 'active'),
-            supabase
-              .from('transactions')
-              .select('user_id')
-              .gte('created_at', thirtyDaysAgo.toISOString())
-          ]);
+        const { count: openCount, error: openError } = await supabase
+          .from('campaign_recipients')
+          .select('id', { count: 'exact', head: true })
+          .eq('campaign_id', campaign_id)
+          .in('status', ['pending', 'sending']);
+        if (openError) throw openError;
+        const open = openCount ?? 0;
 
-          const activeUserIds = new Set();
-          activePlans.data?.forEach((p: any) => activeUserIds.add(p.user_id));
-          recentTransactions.data?.forEach((t: any) => activeUserIds.add(t.user_id));
-
-          if (activeUserIds.size > 0) {
-            const { data, error } = await supabase
-              .from('profiles')
-              .select('id, email, first_name, last_name')
-              .in('id', Array.from(activeUserIds));
-            
-            if (error) {
-              console.error('Error fetching active users:', error);
-              throw new Error(`Failed to fetch active users: ${error.message}`);
-            }
-            
-            recipients = data || [];
-          }
-        } else if (segmentId === 'users_with_balance') {
-          // Users with wallet balance > 0
-          const { data: wallets } = await supabase
-            .from('wallets')
-            .select('user_id')
-            .gt('balance', 0);
-
-          const userIds = wallets?.map((w: any) => w.user_id) || [];
-          if (userIds.length > 0) {
-            const { data } = await supabase
-              .from('profiles')
-              .select('id, email, first_name, last_name')
-              .in('id', userIds);
-            recipients = data || [];
-          }
-        } else if (segmentId === 'users_with_plans') {
-          // Users with active payout plans
-          const { data: activePlans } = await supabase
-            .from('payout_plans')
-            .select('user_id')
-            .eq('status', 'active');
-
-          const userIds = [...new Set(activePlans?.map((p: any) => p.user_id) || [])];
-          if (userIds.length > 0) {
-            const { data, error } = await supabase
-              .from('profiles')
-              .select('id, email, first_name, last_name')
-              .in('id', userIds);
-            
-            if (error) {
-              console.error('Error fetching users with plans:', error);
-              throw new Error(`Failed to fetch users with plans: ${error.message}`);
-            }
-            
-            recipients = data || [];
-          }
-        } else if (segmentId === 'kyc_tier_0') {
-          // Users without any KYC tier completed
-          const { data: allUsers, error: allUsersError } = await supabase
-            .from('profiles')
-            .select('id, email, first_name, last_name');
-          
-          if (allUsersError) {
-            console.error('Error fetching all users for KYC tier 0:', allUsersError);
-            throw new Error(`Failed to fetch users: ${allUsersError.message}`);
-          }
-          
-          const { data: kycProgress, error: kycError } = await supabase
-            .from('kyc_progress')
-            .select('user_id')
-            .or('tier_1_completed.eq.true,tier_2_completed.eq.true,tier_3_completed.eq.true');
-
-          if (kycError) {
-            console.error('Error fetching KYC progress:', kycError);
-            throw new Error(`Failed to fetch KYC progress: ${kycError.message}`);
-          }
-
-          const usersWithKyc = new Set(kycProgress?.map((k: any) => k.user_id) || []);
-          recipients = (allUsers || []).filter((u: any) => !usersWithKyc.has(u.id));
-        } else if (segmentId === 'kyc_tier_1') {
-          // Users with tier 1 completed
-          const { data: kycProgress, error: kycError } = await supabase
-            .from('kyc_progress')
-            .select('user_id')
-            .eq('tier_1_completed', true);
-
-          if (kycError) {
-            console.error('Error fetching KYC tier 1 progress:', kycError);
-            throw new Error(`Failed to fetch KYC tier 1 progress: ${kycError.message}`);
-          }
-
-          const userIds = kycProgress?.map((k: any) => k.user_id) || [];
-          if (userIds.length > 0) {
-            const { data, error } = await supabase
-              .from('profiles')
-              .select('id, email, first_name, last_name')
-              .in('id', userIds);
-            
-            if (error) {
-              console.error('Error fetching KYC tier 1 users:', error);
-              throw new Error(`Failed to fetch KYC tier 1 users: ${error.message}`);
-            }
-            
-            recipients = data || [];
-          }
-        } else if (segmentId === 'kyc_tier_2') {
-          // Users with tier 2 completed
-          const { data: kycProgress, error: kycError } = await supabase
-            .from('kyc_progress')
-            .select('user_id')
-            .eq('tier_2_completed', true);
-
-          if (kycError) {
-            console.error('Error fetching KYC tier 2 progress:', kycError);
-            throw new Error(`Failed to fetch KYC tier 2 progress: ${kycError.message}`);
-          }
-
-          const userIds = kycProgress?.map((k: any) => k.user_id) || [];
-          if (userIds.length > 0) {
-            const { data, error } = await supabase
-              .from('profiles')
-              .select('id, email, first_name, last_name')
-              .in('id', userIds);
-            
-            if (error) {
-              console.error('Error fetching KYC tier 2 users:', error);
-              throw new Error(`Failed to fetch KYC tier 2 users: ${error.message}`);
-            }
-            
-            recipients = data || [];
-          }
-        } else if (segmentId === 'kyc_tier_3') {
-          // Users with tier 3 completed
-          const { data: kycProgress, error: kycError } = await supabase
-            .from('kyc_progress')
-            .select('user_id')
-            .eq('tier_3_completed', true);
-
-          if (kycError) {
-            console.error('Error fetching KYC tier 3 progress:', kycError);
-            throw new Error(`Failed to fetch KYC tier 3 progress: ${kycError.message}`);
-          }
-
-          const userIds = kycProgress?.map((k: any) => k.user_id) || [];
-          if (userIds.length > 0) {
-            const { data, error } = await supabase
-              .from('profiles')
-              .select('id, email, first_name, last_name')
-              .in('id', userIds);
-            
-            if (error) {
-              console.error('Error fetching KYC tier 3 users:', error);
-              throw new Error(`Failed to fetch KYC tier 3 users: ${error.message}`);
-            }
-            
-            recipients = data || [];
-          }
-        } else if (segmentId === 'users_with_zero_balance') {
-          // Users with wallet balance = 0 or no wallet (using RPC function to bypass RLS)
-          // Use supabaseAuth (user context) instead of supabase (service role) so permission checks work
-          const { data, error } = await supabaseAuth.rpc('get_users_with_zero_balance');
-
-          if (error) {
-            console.error('Error fetching users with zero balance:', error);
-            throw new Error(`Failed to fetch users with zero balance: ${error.message}`);
-          }
-          
-          recipients = data || [];
-        } else if (segmentId && segmentId !== 'all') {
-          // Custom segment from campaign_segments table
-          const { data: segment, error: segmentError } = await supabase
-            .from('campaign_segments')
-            .select('filters')
-            .eq('id', segmentId)
-            .single();
-
-          if (segmentError) {
-            console.error('Error fetching custom segment:', segmentError);
-            throw new Error(`Failed to fetch custom segment: ${segmentError.message}`);
-          }
-
-          if (segment) {
-            let query = supabase.from('profiles').select('id, email, first_name, last_name');
-
-            if (segment.filters.kyc_status) {
-              query = query.eq('kyc_status', segment.filters.kyc_status);
-            }
-
-            if (segment.filters.has_payout_plan) {
-              const { data: activePlans, error: plansError } = await supabase
-                .from('payout_plans')
-                .select('user_id')
-                .eq('status', 'active');
-
-              if (plansError) {
-                console.error('Error fetching active plans for custom segment:', plansError);
-                throw new Error(`Failed to fetch active plans: ${plansError.message}`);
-              }
-
-              const userIds = activePlans?.map((p) => p.user_id) || [];
-              if (userIds.length > 0) {
-                query = query.in('id', userIds);
-              }
-            }
-
-            const { data, error: queryError } = await query;
-            
-            if (queryError) {
-              console.error('Error querying profiles for custom segment:', queryError);
-              throw new Error(`Failed to query profiles: ${queryError.message}`);
-            }
-            
-            recipients = data || [];
-          }
-        } else {
-          // Legacy support for old format
-          if (recipient_filters.segment === 'all_active' || recipient_filters.segment === 'kyc_verified') {
-            const { data } = await supabase
-              .from('profiles')
-              .select('id, email, first_name, last_name');
-            recipients = data || [];
-          } else if (recipient_filters.active_payout_plans) {
-            const { data: activePlans } = await supabase
-              .from('payout_plans')
-              .select('user_id')
-              .eq('status', 'active');
-
-            const userIds = activePlans?.map((p) => p.user_id) || [];
-            if (userIds.length > 0) {
-              const { data } = await supabase
-                .from('profiles')
-                .select('id, email, first_name, last_name')
-                .in('id', userIds);
-              recipients = data || [];
-            }
-          }
-        }
-
-        // Filter out recipients without valid email addresses
-        const validRecipients = recipients.filter((r: any) => r.email && r.email.trim() !== '');
-        
-        console.log(`Found ${recipients.length} total recipients, ${validRecipients.length} with valid emails`);
-        
-        if (validRecipients.length === 0) {
-          console.error('No valid recipients found. Segment:', segmentId, 'Total recipients:', recipients.length);
+        if (open === 0) {
           return new Response(
             JSON.stringify({
               success: false,
-              message: `No recipients found with valid email addresses for the selected segment. Found ${recipients.length} users but none have valid email addresses.`,
+              message: inSegment === 0
+                ? 'No users with a valid email address were found for the selected audience.'
+                : 'Everyone in this audience has already received this campaign.',
             }),
-            {
-              headers: {
-                ...corsHeaders,
-                'Content-Type': 'application/json',
-              },
-            }
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           );
         }
 
-        const recipientRecords = validRecipients.map((r) => ({
-          campaign_id,
-          user_id: r.id,
-          email: r.email,
-          status: 'pending',
-        }));
+        const { count: totalCount } = await supabase
+          .from('campaign_recipients')
+          .select('id', { count: 'exact', head: true })
+          .eq('campaign_id', campaign_id);
 
-        if (recipientRecords.length > 0) {
-          const { error: insertError } = await supabase
-            .from('campaign_recipients')
-            .insert(recipientRecords);
+        const { error: updateError } = await supabase
+          .from('marketing_campaigns')
+          .update({
+            status: 'sending',
+            queue_enabled: true,
+            next_send_at: null,
+            recipient_count: totalCount ?? open,
+            batch_size: chosenBatchSize,
+            scheduled_at: null,
+            metadata: { ...(campaign.metadata || {}), recipient_filters },
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', campaign_id);
+        if (updateError) throw updateError;
+        await supabase.rpc('marketing_recount', { p_campaign_id: campaign_id });
 
-          if (insertError) throw insertError;
+        startWorker(supabase, resendApiKey);
 
-          await supabase
-            .from('marketing_campaigns')
-            .update({
-              status: 'sending',
-              recipient_count: recipientRecords.length,
-              updated_at: new Date().toISOString(),
-            })
-            .eq('id', campaign_id);
-
-          // Optimized sending logic with smaller batches and faster processing
-          const BATCH_SIZE = 25; // Increased batch size for faster processing
-          const DELAY_BETWEEN_BATCHES = 1000; // Reduced to 1 second between batches
-          const MAX_RETRIES = 2; // Reduced retries to speed up
-          const RETRY_DELAY = 3000; // Reduced retry delay to 3 seconds
-
-          let sentCount = 0;
-          let deliveredCount = 0;
-          let failedCount = 0;
-
-          // Helper function to send email with retry logic (simplified for speed)
-          const sendEmailWithRetry = async (
-            recipient: any,
-            retryCount = 0
-          ): Promise<{ success: boolean; id?: string; error?: string }> => {
-            try {
-              const result = await sendEmailViaResend(
-                recipient.email,
-                campaign.subject,
-                campaign.html_content,
-                resendApiKey,
-                fromEmailAddress
-              );
-
-              if (result.success) {
-                return result;
-              }
-
-              // If failed and we have retries left, wait and retry
-              if (retryCount < MAX_RETRIES) {
-                console.log(`Retrying email to ${recipient.email} (attempt ${retryCount + 1}/${MAX_RETRIES})`);
-                await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY));
-                return sendEmailWithRetry(recipient, retryCount + 1);
-              }
-
-              return result;
-            } catch (error) {
-              // If error and we have retries left, wait and retry
-              if (retryCount < MAX_RETRIES) {
-                console.log(`Retrying email to ${recipient.email} after error (attempt ${retryCount + 1}/${MAX_RETRIES})`);
-                await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY));
-                return sendEmailWithRetry(recipient, retryCount + 1);
-              }
-
-              return {
-                success: false,
-                error: error instanceof Error ? error.message : 'Unknown error',
-              };
-            }
-          };
-
-          // Process recipients in batches with better error handling
-          try {
-            for (let i = 0; i < validRecipients.length; i += BATCH_SIZE) {
-              const batch = validRecipients.slice(i, i + BATCH_SIZE);
-              console.log(`Processing batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(validRecipients.length / BATCH_SIZE)} (${batch.length} emails)`);
-              
-              const batchPromises = batch.map(async (recipient) => {
-                try {
-                  const result = await sendEmailWithRetry(recipient);
-
-                  if (result.success) {
-                    sentCount++;
-                    deliveredCount++;
-
-                    await supabase
-                      .from('campaign_recipients')
-                      .update({
-                        status: 'delivered',
-                        sent_at: new Date().toISOString(),
-                        delivered_at: new Date().toISOString(),
-                        metadata: { resend_id: result.id },
-                        updated_at: new Date().toISOString(),
-                      })
-                      .eq('campaign_id', campaign_id)
-                      .eq('user_id', recipient.id);
-                  } else {
-                    failedCount++;
-
-                    await supabase
-                      .from('campaign_recipients')
-                      .update({
-                        status: 'failed',
-                        error_message: result.error || 'Failed to send email',
-                        sent_at: new Date().toISOString(),
-                        updated_at: new Date().toISOString(),
-                      })
-                      .eq('campaign_id', campaign_id)
-                      .eq('user_id', recipient.id);
-                  }
-                } catch (error) {
-                  console.error(`Error sending email to ${recipient.email}:`, error);
-                  failedCount++;
-                  await supabase
-                    .from('campaign_recipients')
-                    .update({
-                      status: 'failed',
-                      error_message: error instanceof Error ? error.message : 'Unknown error',
-                      sent_at: new Date().toISOString(),
-                      updated_at: new Date().toISOString(),
-                    })
-                    .eq('campaign_id', campaign_id)
-                    .eq('user_id', recipient.id);
-                }
-              });
-
-              // Wait for all emails in batch to complete
-              await Promise.all(batchPromises);
-
-              // Update campaign progress after each batch
-              await supabase
-                .from('marketing_campaigns')
-                .update({
-                  delivered_count: deliveredCount,
-                  failed_count: failedCount,
-                  updated_at: new Date().toISOString(),
-                })
-                .eq('id', campaign_id);
-
-              console.log(`Batch ${Math.floor(i / BATCH_SIZE) + 1} complete: ${deliveredCount} delivered, ${failedCount} failed`);
-
-              // Delay between batches (except for the last batch)
-              if (i + BATCH_SIZE < validRecipients.length) {
-                await new Promise((resolve) => setTimeout(resolve, DELAY_BETWEEN_BATCHES));
-              }
-            }
-
-            // Mark campaign as sent after all emails are processed
-            await supabase
-              .from('marketing_campaigns')
-              .update({
-                status: 'sent',
-                sent_at: new Date().toISOString(),
-                delivered_count: deliveredCount,
-                failed_count: failedCount,
-                updated_at: new Date().toISOString(),
-              })
-              .eq('id', campaign_id);
-
-            console.log(`Campaign ${campaign_id} completed: ${deliveredCount} delivered, ${failedCount} failed`);
-
-            return new Response(
-              JSON.stringify({
-                success: true,
-                message: `Campaign sent to ${deliveredCount} recipients (${failedCount} failed)`,
-                sent_count: sentCount,
-                delivered_count: deliveredCount,
-                failed_count: failedCount,
-              }),
-              {
-                headers: {
-                  ...corsHeaders,
-                  'Content-Type': 'application/json',
-                },
-              }
-            );
-          } catch (error) {
-            console.error(`Error processing campaign ${campaign_id}:`, error);
-            // Update campaign status to indicate partial completion
-            await supabase
-              .from('marketing_campaigns')
-              .update({
-                status: 'sending', // Keep as sending so it can be retried
-                delivered_count: deliveredCount,
-                failed_count: failedCount,
-                updated_at: new Date().toISOString(),
-              })
-              .eq('id', campaign_id);
-
-            throw new Error(`Failed to send all emails: ${error instanceof Error ? error.message : 'Unknown error'}. ${deliveredCount} sent successfully.`);
-          }
-        }
-
+        const delay = campaign.send_delay_seconds || 10;
         return new Response(
           JSON.stringify({
-            success: false,
-            message: 'No recipients found',
+            success: true,
+            queued: queuedNow,
+            waiting: open,
+            skipped: Math.max(0, inSegment - queuedNow),
+            message: `${open.toLocaleString('en-US')} email${open === 1 ? '' : 's'} queued. They go out in batches of ${chosenBatchSize} with ${delay} seconds between batches, in the background. That takes ${formatDuration(estimateSeconds(open, chosenBatchSize, delay))}. You can close this page.`,
           }),
-          {
-            headers: {
-              ...corsHeaders,
-              'Content-Type': 'application/json',
-            },
-          }
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
 
@@ -848,248 +660,39 @@ Deno.serve(async (req: Request) => {
 
         const { campaign_id, recipient_ids } = body;
 
-        // Fetch campaign details
         const { data: campaign, error: campaignError } = await supabase
           .from('marketing_campaigns')
-          .select('*')
+          .select('id, send_delay_seconds, batch_size')
           .eq('id', campaign_id)
           .single();
-
         if (campaignError) throw campaignError;
 
-        // Fetch sender email address
-        let fromEmailAddress = 'Martins Osodi - Planmoni CEO <hello@planmoni.com>';
-        if (campaign.from_email_id) {
-          const { data: senderEmail } = await supabase
-            .from('sender_email_addresses')
-            .select('email, display_name, is_active')
-            .eq('id', campaign.from_email_id)
-            .single();
+        // Failed, waiting and stuck recipients go back in the queue; the worker sends them at the same pace as a new send.
+        const { data: requeued, error: requeueError } = await supabase.rpc('marketing_requeue_recipients', {
+          p_campaign_id: campaign_id,
+          p_recipient_ids: recipient_ids && recipient_ids.length > 0 ? recipient_ids : null,
+        });
+        if (requeueError) throw new Error(`Failed to retry emails: ${requeueError.message}`);
 
-          if (senderEmail && senderEmail.is_active) {
-            fromEmailAddress = `${senderEmail.display_name} <${senderEmail.email}>`;
-          }
-        } else {
-          const { data: defaultEmail } = await supabase
-            .from('sender_email_addresses')
-            .select('email, display_name')
-            .eq('is_default', true)
-            .eq('is_active', true)
-            .single();
-
-          if (defaultEmail) {
-            fromEmailAddress = `${defaultEmail.display_name} <${defaultEmail.email}>`;
-          }
-        }
-
-        // Fetch recipients to retry (failed or pending, or specific IDs if provided)
-        let recipientsQuery = supabase
-          .from('campaign_recipients')
-          .select('id, user_id, email, status')
-          .eq('campaign_id', campaign_id);
-
-        if (recipient_ids && recipient_ids.length > 0) {
-          // Retry specific recipients
-          recipientsQuery = recipientsQuery.in('id', recipient_ids);
-        } else {
-          // Retry all failed or pending recipients
-          recipientsQuery = recipientsQuery.in('status', ['failed', 'pending']);
-        }
-
-        const { data: recipientsToRetry, error: recipientsError } = await recipientsQuery;
-
-        if (recipientsError) throw recipientsError;
-
-        if (!recipientsToRetry || recipientsToRetry.length === 0) {
+        const count = Number(requeued ?? 0);
+        if (count === 0) {
           return new Response(
-            JSON.stringify({
-              success: false,
-              message: 'No recipients found to retry',
-            }),
-            {
-              headers: {
-                ...corsHeaders,
-                'Content-Type': 'application/json',
-              },
-            }
+            JSON.stringify({ success: true, message: 'No failed or waiting recipients to retry.', retried: 0 }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           );
         }
 
-        // Mark recipients as pending
-        await supabase
-          .from('campaign_recipients')
-          .update({
-            status: 'pending',
-            error_message: null,
-            updated_at: new Date().toISOString(),
-          })
-          .in('id', recipientsToRetry.map((r: any) => r.id));
+        startWorker(supabase, resendApiKey);
 
-        // Update campaign status to sending
-        await supabase
-          .from('marketing_campaigns')
-          .update({
-            status: 'sending',
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', campaign_id);
-
-        // Process retry emails
-        const BATCH_SIZE = 25;
-        const DELAY_BETWEEN_BATCHES = 1000;
-        const MAX_RETRIES = 2;
-        const RETRY_DELAY = 3000;
-
-        let deliveredCount = 0;
-        let failedCount = 0;
-
-        const sendEmailWithRetry = async (
-          recipient: any,
-          retryCount = 0
-        ): Promise<{ success: boolean; id?: string; error?: string }> => {
-          try {
-            const result = await sendEmailViaResend(
-              recipient.email,
-              campaign.subject,
-              campaign.html_content,
-              resendApiKey,
-              fromEmailAddress
-            );
-
-            if (result.success) {
-              return result;
-            }
-
-            if (retryCount < MAX_RETRIES) {
-              console.log(`Retrying email to ${recipient.email} (attempt ${retryCount + 1}/${MAX_RETRIES})`);
-              await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY));
-              return sendEmailWithRetry(recipient, retryCount + 1);
-            }
-
-            return result;
-          } catch (error) {
-            if (retryCount < MAX_RETRIES) {
-              console.log(`Retrying email to ${recipient.email} after error (attempt ${retryCount + 1}/${MAX_RETRIES})`);
-              await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY));
-              return sendEmailWithRetry(recipient, retryCount + 1);
-            }
-
-            return {
-              success: false,
-              error: error instanceof Error ? error.message : 'Unknown error',
-            };
-          }
-        };
-
-        try {
-          for (let i = 0; i < recipientsToRetry.length; i += BATCH_SIZE) {
-            const batch = recipientsToRetry.slice(i, i + BATCH_SIZE);
-            console.log(`Retrying batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(recipientsToRetry.length / BATCH_SIZE)} (${batch.length} emails)`);
-
-            const batchPromises = batch.map(async (recipient: any) => {
-              try {
-                const result = await sendEmailWithRetry(recipient);
-
-                if (result.success) {
-                  deliveredCount++;
-
-                  await supabase
-                    .from('campaign_recipients')
-                    .update({
-                      status: 'delivered',
-                      sent_at: new Date().toISOString(),
-                      delivered_at: new Date().toISOString(),
-                      metadata: { resend_id: result.id },
-                      updated_at: new Date().toISOString(),
-                    })
-                    .eq('id', recipient.id);
-                } else {
-                  failedCount++;
-
-                  await supabase
-                    .from('campaign_recipients')
-                    .update({
-                      status: 'failed',
-                      error_message: result.error || 'Failed to send email',
-                      sent_at: new Date().toISOString(),
-                      updated_at: new Date().toISOString(),
-                    })
-                    .eq('id', recipient.id);
-                }
-              } catch (error) {
-                console.error(`Error retrying email to ${recipient.email}:`, error);
-                failedCount++;
-                await supabase
-                  .from('campaign_recipients')
-                  .update({
-                    status: 'failed',
-                    error_message: error instanceof Error ? error.message : 'Unknown error',
-                    sent_at: new Date().toISOString(),
-                    updated_at: new Date().toISOString(),
-                  })
-                  .eq('id', recipient.id);
-              }
-            });
-
-            await Promise.all(batchPromises);
-
-            // Update campaign progress
-            const { data: currentCampaign } = await supabase
-              .from('marketing_campaigns')
-              .select('delivered_count, failed_count')
-              .eq('id', campaign_id)
-              .single();
-
-            await supabase
-              .from('marketing_campaigns')
-              .update({
-                delivered_count: (currentCampaign?.delivered_count || 0) + deliveredCount,
-                failed_count: (currentCampaign?.failed_count || 0) + failedCount,
-                updated_at: new Date().toISOString(),
-              })
-              .eq('id', campaign_id);
-
-            if (i + BATCH_SIZE < recipientsToRetry.length) {
-              await new Promise((resolve) => setTimeout(resolve, DELAY_BETWEEN_BATCHES));
-            }
-          }
-
-          // Check if all recipients are processed
-          const { data: remainingRecipients } = await supabase
-            .from('campaign_recipients')
-            .select('id')
-            .eq('campaign_id', campaign_id)
-            .in('status', ['pending', 'failed']);
-
-          if (!remainingRecipients || remainingRecipients.length === 0) {
-            await supabase
-              .from('marketing_campaigns')
-              .update({
-                status: 'sent',
-                sent_at: new Date().toISOString(),
-                updated_at: new Date().toISOString(),
-              })
-              .eq('id', campaign_id);
-          }
-
-          return new Response(
-            JSON.stringify({
-              success: true,
-              message: `Retried ${recipientsToRetry.length} recipients: ${deliveredCount} delivered, ${failedCount} failed`,
-              delivered_count: deliveredCount,
-              failed_count: failedCount,
-            }),
-            {
-              headers: {
-                ...corsHeaders,
-                'Content-Type': 'application/json',
-              },
-            }
-          );
-        } catch (error) {
-          console.error(`Error retrying campaign ${campaign_id}:`, error);
-          throw new Error(`Failed to retry emails: ${error instanceof Error ? error.message : 'Unknown error'}`);
-        }
+        const delay = campaign.send_delay_seconds || 10;
+        return new Response(
+          JSON.stringify({
+            success: true,
+            retried: count,
+            message: `${count.toLocaleString('en-US')} email${count === 1 ? '' : 's'} re-queued. They go out in batches of ${campaign.batch_size || 50} with ${delay} seconds between batches (${formatDuration(estimateSeconds(count, campaign.batch_size || 50, delay))}).`,
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
       }
 
       if (body.action === 'delete_campaigns') {
@@ -1136,8 +739,8 @@ Deno.serve(async (req: Request) => {
         );
       }
 
-      console.error('Invalid action received:', body.action);
-      throw new Error(`Invalid action: ${body.action}`);
+      console.error('Invalid action received:', (body as { action?: string }).action);
+      throw new Error(`Invalid action: ${(body as { action?: string }).action}`);
     }
 
     return new Response(
