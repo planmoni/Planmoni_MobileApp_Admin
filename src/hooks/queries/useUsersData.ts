@@ -305,3 +305,123 @@ export const useSetPostNoDebit = () => {
     },
   });
 };
+
+export type UserDeleteCheck = {
+  can_delete: boolean;
+  reasons: string[];
+  email: string | null;
+  name: string | null;
+  counts: {
+    live_plans: number;
+    live_vaults: number;
+    live_expense_plans: number;
+    available_balance: number;
+    locked_balance: number;
+    plans_total: number;
+    transactions: number;
+  };
+};
+
+/** Whether a user can be deleted, and if not, why. Only callable by admins allowed to delete users. */
+export const useUserDeleteCheck = (userId: string, enabled: boolean) => {
+  return useQuery({
+    queryKey: ['user', userId, 'delete-check'],
+    queryFn: async (): Promise<UserDeleteCheck> => {
+      const { data, error } = await supabase.rpc('admin_user_delete_check', { p_user_id: userId });
+      if (error) throw error;
+      return data as UserDeleteCheck;
+    },
+    enabled: !!userId && enabled,
+    staleTime: 0,
+    gcTime: 0,
+  });
+};
+
+/** Folders in storage that hold a user's files. The database delete cannot remove these. */
+const USER_FILE_LOCATIONS: { bucket: string; prefix: (userId: string) => string }[] = [
+  { bucket: 'documents', prefix: (id) => `kyc-documents/${id}` },
+  { bucket: 'documents', prefix: (id) => id },
+  { bucket: 'avatars', prefix: (id) => id },
+];
+
+/** Best-effort removal of a deleted user's files. Never throws; returns how many failed. */
+async function removeUserFiles(userId: string): Promise<{ removed: number; failed: number }> {
+  let removed = 0;
+  let failed = 0;
+
+  for (const { bucket, prefix } of USER_FILE_LOCATIONS) {
+    const folder = prefix(userId);
+    try {
+      // paginate in case a folder holds more than one page of files
+      for (let page = 0; page < 20; page++) {
+        const { data: files, error: listError } = await supabase.storage
+          .from(bucket)
+          .list(folder, { limit: 100 });
+        if (listError) {
+          failed += 1;
+          break;
+        }
+        const paths = (files || []).filter((f) => f.id).map((f) => `${folder}/${f.name}`);
+        if (paths.length === 0) break;
+
+        const { error: removeError } = await supabase.storage.from(bucket).remove(paths);
+        if (removeError) {
+          failed += paths.length;
+          break;
+        }
+        removed += paths.length;
+      }
+    } catch {
+      failed += 1;
+    }
+  }
+
+  return { removed, failed };
+}
+
+/** Permanently delete a user. The database function re-checks permission and eligibility. */
+export const useDeleteUser = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ userId, confirmEmail }: { userId: string; confirmEmail: string }) => {
+      const { error } = await supabase.rpc('admin_delete_user', {
+        p_user_id: userId,
+        p_confirm_email: confirmEmail,
+      });
+      if (error) throw error;
+
+      const files = await removeUserFiles(userId);
+      return { files };
+    },
+    onSuccess: () => {
+      // only the list: the open profile page is about to be left, so don't make it refetch a user that no longer exists
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+    },
+  });
+};
+
+/** Account numbers generated for the user after KYC (Safe Haven / Paystack). */
+export type GeneratedAccount = {
+  source: 'safehaven' | 'paystack';
+  account_number: string;
+  account_name: string | null;
+  bank_name: string | null;
+  bank_code: string | null;
+  status: string | null;
+  is_default: boolean;
+  created_at: string | null;
+};
+
+export const useUserGeneratedAccounts = (userId: string) => {
+  return useQuery({
+    queryKey: ['user', userId, 'accounts'],
+    queryFn: async (): Promise<GeneratedAccount[]> => {
+      const { data, error } = await supabase.rpc('admin_get_user_accounts', { p_user_id: userId });
+      if (error) throw error;
+      return (data as GeneratedAccount[]) || [];
+    },
+    enabled: !!userId,
+    staleTime: 2 * 60 * 1000,
+  });
+};

@@ -2,12 +2,17 @@ import { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Wallet, Calendar, Building2, ArrowUpRight, ArrowDownRight, RefreshCw, Shield, Lock, TrendingUp, Clock, CircleCheck as CheckCircle2, Circle as XCircle, User, Phone, MapPin, FileText, CreditCard, CircleCheck as CheckCircle, Circle as XCircleIcon, Zap, Camera, ExternalLink, ListChecks, Ban } from 'lucide-react';
 import { format, addDays, addWeeks, addMonths } from 'date-fns';
-import { useUserDetails, useUserRestriction } from '@/hooks/queries/useUsersData';
+import { useUserDetails, useUserRestriction, useUserGeneratedAccounts } from '@/hooks/queries/useUsersData';
 import { usePermissions } from '@/contexts/PermissionsContext';
 import { useRefreshData } from '@/hooks/mutations/useRefreshData';
 import { PayoutCountdown } from '@/components/PayoutCountdown';
 import SendReengagementButton from '@/components/SendReengagementButton';
-import PostNoDebitButton from '@/components/PostNoDebitButton';
+import UserActionsMenu from '@/components/UserActionsMenu';
+import BankAccountRow from '@/components/BankAccountRow';
+import { PayoutPlanIcon, VaultIcon } from '@/components/PlanIcons';
+import { usePayoutPlanPurposes } from '@/hooks/queries/usePlanIcons';
+import { useUserPayoutActions } from '@/hooks/queries/usePayoutActions';
+import { InstallmentActions, PlanControls } from '@/components/PayoutActions';
 import TransactionDetailsModal from '@/components/TransactionDetailsModal';
 import PlanBreakdownModal from '@/components/PlanBreakdownModal';
 import { TierIcon } from '@/components/TierIcon';
@@ -21,7 +26,11 @@ export default function UserDetails() {
   const refreshData = useRefreshData();
   const { isSuperAdmin, hasPermission } = usePermissions();
   const canRestrict = isSuperAdmin || hasPermission('users', 'details');
+  const canDelete = isSuperAdmin || hasPermission('users', 'delete');
+  const canManagePayouts = isSuperAdmin || hasPermission('payout_plans', 'manage');
+  const { data: payoutActions } = useUserPayoutActions(id, canManagePayouts);
   const { data: restriction } = useUserRestriction(id!);
+  const { data: generatedAccounts, isLoading: accountsLoading, error: accountsError } = useUserGeneratedAccounts(id!);
   const [selectedTransaction, setSelectedTransaction] = useState<any>(null);
   const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
   const [breakdownPlan, setBreakdownPlan] = useState<any>(null);
@@ -54,6 +63,8 @@ export default function UserDetails() {
     },
     enabled: !!id,
   });
+
+  const { data: purposeMap } = usePayoutPlanPurposes((userDetailsData?.payoutPlans || []).map((p: any) => p.id));
 
   const { data: userVaults } = useQuery({
     queryKey: ['user-vaults', id],
@@ -244,9 +255,6 @@ export default function UserDetails() {
           </div>
         </div>
         <div className="flex items-center gap-3">
-          {canRestrict && (
-            <PostNoDebitButton userId={id!} userName={`${user.first_name || ''} ${user.last_name || ''}`} />
-          )}
           <SendReengagementButton
             userId={id!}
             userBalance={userBalance}
@@ -305,6 +313,12 @@ export default function UserDetails() {
               </div>
             )}
           </div>
+          <UserActionsMenu
+            userId={id!}
+            userName={`${user.first_name || ''} ${user.last_name || ''}`}
+            canRestrict={canRestrict}
+            canDelete={canDelete}
+          />
         </div>
       </div>
 
@@ -434,40 +448,69 @@ export default function UserDetails() {
         </div>
 
         <div>
+          <h2 className="text-xl font-bold text-gray-900 mb-1">Planmoni Account Number</h2>
+          <p className="text-sm text-gray-500 mb-4">Generated for the user after KYC. Deposits are received here.</p>
+          <div className="bg-white rounded-2xl shadow-soft border border-gray-100 overflow-hidden mb-8">
+            {accountsLoading ? (
+              <div className="p-8 flex justify-center">
+                <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-gray-400"></div>
+              </div>
+            ) : accountsError ? (
+              <div className="p-6 text-sm text-error">
+                Could not load account numbers
+                {(accountsError as { message?: string })?.message ? `: ${(accountsError as { message?: string }).message}` : ''}
+              </div>
+            ) : generatedAccounts && generatedAccounts.length > 0 ? (
+              <div className="divide-y divide-gray-100">
+                {generatedAccounts.map((account) => (
+                  <BankAccountRow
+                    key={account.account_number}
+                    bankName={account.bank_name}
+                    bankCode={account.bank_code}
+                    accountNumber={account.account_number}
+                    accountName={account.account_name}
+                    badges={[account.status, account.is_default ? 'Primary' : null].filter(Boolean) as string[]}
+                    footer={
+                      account.created_at ? <span>Created {format(new Date(account.created_at), 'MMM d, yyyy')}</span> : undefined
+                    }
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="p-10 text-center">
+                <div className="w-14 h-14 rounded-2xl bg-gray-50 flex items-center justify-center mx-auto mb-3">
+                  <Building2 className="h-6 w-6 text-gray-400" />
+                </div>
+                <p className="text-gray-500 font-medium">No account number generated</p>
+                <p className="text-gray-400 text-sm mt-1">An account number is created once the user completes KYC</p>
+              </div>
+            )}
+          </div>
+
           <h2 className="text-xl font-bold text-gray-900 mb-4">Payout Accounts</h2>
           <div className="bg-white rounded-2xl shadow-soft border border-gray-100 overflow-hidden">
             {bankAccounts.length > 0 ? (
               <div className="divide-y divide-gray-100">
                 {bankAccounts.map((account: any) => (
-                  <div key={account.id} className="p-5 hover:bg-gray-50 transition-colors">
-                    <div className="flex items-start gap-4">
-                      <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center shrink-0">
-                        <Building2 className="h-5 w-5 text-blue-600" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-2">
-                          <p className="text-base font-semibold text-gray-900">{account.bank_name}</p>
-                          {account.is_default && (
-                            <span className="px-2 py-1 text-xs font-semibold rounded-lg bg-blue-50 text-blue-600 border border-blue-100">
-                              Default
-                            </span>
-                          )}
-                   
-                        </div>
-                        <p className="text-gray-900 text-sm font-mono mb-1">{account.account_number}</p>
-                        <p className="text-gray-600 text-sm mb-2">{account.account_name}</p>
-                        <div className="flex items-center gap-2 text-xs text-gray-400">
-                          <span>Added {format(new Date(account.created_at), 'MMM d, yyyy')}</span>
-                          {account.paystack_recipient_code && (
-                            <>
-                              <span>•</span>
-                              <span className="font-mono">{account.paystack_recipient_code}</span>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                  <BankAccountRow
+                    key={account.id}
+                    bankName={account.bank_name}
+                    bankCode={account.bank_code || account.safehaven_bank_code}
+                    accountNumber={account.account_number}
+                    accountName={account.account_name}
+                    badges={account.is_default ? ['Default'] : []}
+                    footer={
+                      <>
+                        <span>Added {format(new Date(account.created_at), 'MMM d, yyyy')}</span>
+                        {account.paystack_recipient_code && (
+                          <>
+                            <span>•</span>
+                            <span className="font-mono">{account.paystack_recipient_code}</span>
+                          </>
+                        )}
+                      </>
+                    }
+                  />
                 ))}
               </div>
             ) : (
@@ -748,16 +791,20 @@ export default function UserDetails() {
             <div className="divide-y divide-gray-100">
               {activePayoutPlans.map((plan: any) => {
                 const endDate = calculateEndDate(plan);
+                const planActions = payoutActions?.plans.find((p) => p.plan_id === plan.id);
                 return (
                   <div key={plan.id} className="p-6 hover:bg-gray-50 transition-colors">
                     <div className="flex justify-between items-start mb-4">
-                      <div className="flex-1">
+                      <div className="flex-1 flex items-start gap-3">
+                        <PayoutPlanIcon purpose={purposeMap?.[plan.id]} name={plan.name} />
+                        <div className="min-w-0">
                         <h3 className="text-lg font-semibold text-gray-900 mb-1">{plan.name}</h3>
                         {plan.created_at && (
                           <p className="text-sm text-gray-500">
                             Created {format(new Date(plan.created_at), 'MMM d, yyyy')}
                           </p>
                         )}
+                        </div>
                       </div>
                       <span className={`px-3 py-1 rounded-lg text-xs font-semibold ${
                         plan.status === 'active'
@@ -849,13 +896,20 @@ export default function UserDetails() {
                       </div>
                     </div>
 
-                    <button
-                      onClick={() => setBreakdownPlan(plan)}
-                      className="mt-4 inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gray-900 text-white text-sm font-semibold hover:bg-gray-800 transition-colors"
-                    >
-                      <ListChecks className="h-4 w-4" />
-                      Plan Breakdown
-                    </button>
+                    {canManagePayouts && planActions?.current && (
+                      <InstallmentActions userId={id!} state={planActions.current} />
+                    )}
+
+                    <div className="mt-4 flex flex-wrap items-center gap-2">
+                      <button
+                        onClick={() => setBreakdownPlan(plan)}
+                        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gray-900 text-white text-sm font-semibold hover:bg-gray-800 transition-colors"
+                      >
+                        <ListChecks className="h-4 w-4" />
+                        Plan Breakdown
+                      </button>
+                      {canManagePayouts && <PlanControls userId={id!} plan={plan} actions={planActions} />}
+                    </div>
                   </div>
                 );
               })}
@@ -891,7 +945,9 @@ export default function UserDetails() {
               {userVaults.map((vault: any) => (
                 <div key={vault.id} className="p-6 hover:bg-gray-50 transition-colors">
                   <div className="flex justify-between items-start mb-4">
-                    <div className="flex-1">
+                    <div className="flex-1 flex items-start gap-3">
+                      <VaultIcon categories={vault.categories} subcategories={vault.subcategories} name={vault.name} />
+                      <div className="min-w-0">
                       <h3 className="text-lg font-semibold text-gray-900 mb-1">{vault.name}</h3>
                       {vault.plan_name && vault.plan_name !== vault.name && (
                         <p className="text-sm text-gray-500">{vault.plan_name}</p>
@@ -901,6 +957,7 @@ export default function UserDetails() {
                           Created {format(new Date(vault.created_at), 'MMM d, yyyy')}
                         </p>
                       )}
+                      </div>
                     </div>
                     <span className={`px-3 py-1 rounded-lg text-xs font-semibold ${
                       vault.status === 'active'
@@ -1053,6 +1110,13 @@ export default function UserDetails() {
                         }`}>
                           {transaction.status.charAt(0).toUpperCase() + transaction.status.slice(1)}
                         </span>
+                        {canManagePayouts && (() => {
+                          const a = payoutActions?.transactions[transaction.id];
+                          const unresolved = transaction.status === 'pending' || transaction.status === 'failed';
+                          return unresolved && a && (a.can_complete || a.can_refund || a.can_retry) ? (
+                            <span className="ml-2 text-xs text-gray-500">Needs attention · open to resolve</span>
+                          ) : null;
+                        })()}
                       </div>
                     </div>
                     <p className={`text-xl font-bold ${

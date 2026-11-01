@@ -1,0 +1,137 @@
+-- Run this once in the Supabase SQL editor of the project the admin app points to
+-- (the one in VITE_SUPABASE_URL). Safe to re-run.
+--
+-- Adds admin_get_user_accounts(user_id): the account numbers generated for a user
+-- after KYC, shown on the admin user profile. The payout accounts section needs no SQL.
+
+-- Preflight: lists anything this function reads that is missing in this project.
+DO $$
+DECLARE
+  v_missing text[] := ARRAY[]::text[];
+  t text;
+BEGIN
+  FOREACH t IN ARRAY ARRAY['safehaven_accounts', 'safehaven_user_accounts', 'paystack_accounts', 'profiles'] LOOP
+    IF to_regclass('public.' || t) IS NULL THEN
+      v_missing := array_append(v_missing, 'table public.' || t);
+    END IF;
+  END LOOP;
+  -- has_permission takes (text, uuid DEFAULT ...) so check by name, not exact signature
+  IF NOT EXISTS (SELECT 1 FROM pg_proc WHERE pronamespace = 'public'::regnamespace AND proname = 'has_permission') THEN
+    v_missing := array_append(v_missing, 'function has_permission');
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_proc WHERE pronamespace = 'public'::regnamespace AND proname = 'is_admin') THEN
+    v_missing := array_append(v_missing, 'function is_admin');
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='profiles' AND column_name='safehaven_account_number') THEN
+    v_missing := array_append(v_missing, 'column profiles.safehaven_account_number');
+  END IF;
+
+  IF array_length(v_missing, 1) IS NOT NULL THEN
+    RAISE EXCEPTION 'Missing dependencies in this project: %', array_to_string(v_missing, ', ');
+  END IF;
+END $$;
+
+-- Account numbers generated for a user after KYC (shown on the admin user profile).
+--
+-- Sources (all unreadable to admins under RLS, so this is SECURITY DEFINER):
+--   safehaven_accounts       Safe Haven MFB account provisioned for the user
+--   safehaven_user_accounts  Safe Haven account tied to an identity verification
+--   paystack_accounts        Paystack dedicated virtual account
+--   profiles.safehaven_account_number  fallback when no account row exists
+--
+-- Only display fields are returned. BVN, client ids, balances and provider ids
+-- stay in the source tables.
+
+CREATE OR REPLACE FUNCTION public.admin_get_user_accounts(p_user_id uuid)
+RETURNS jsonb
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_result jsonb;
+BEGIN
+  IF NOT (public.has_permission('users.details')
+          OR public.has_permission('users.list')
+          OR public.is_admin()) THEN
+    RAISE EXCEPTION 'Permission denied: user access required';
+  END IF;
+
+  SELECT COALESCE(jsonb_agg(to_jsonb(a) ORDER BY a.is_default DESC, a.created_at ASC NULLS LAST), '[]'::jsonb)
+  INTO v_result
+  FROM (
+    SELECT DISTINCT ON (u.account_number)
+           u.source, u.account_number, u.account_name, u.bank_name, u.bank_code,
+           u.status, u.is_default, u.created_at
+    FROM (
+      SELECT 'safehaven'::text AS source,
+             s.account_number,
+             s.account_name,
+             'Safe Haven Microfinance Bank'::text AS bank_name,
+             '51113'::text AS bank_code,
+             s.status,
+             COALESCE(s.is_default, false) AS is_default,
+             s.created_at,
+             1 AS priority
+      FROM public.safehaven_accounts s
+      WHERE s.user_id = p_user_id
+        AND COALESCE(s.is_deleted, false) = false
+        AND s.account_number IS NOT NULL AND s.account_number <> ''
+
+      UNION ALL
+
+      SELECT 'safehaven',
+             su.account_number,
+             su.account_name,
+             COALESCE(NULLIF(su.bank_name, ''), 'Safe Haven Microfinance Bank'),
+             COALESCE(NULLIF(su.bank_code, ''), '51113'),
+             su.status,
+             COALESCE(su.is_primary, false),
+             su.created_at,
+             2
+      FROM public.safehaven_user_accounts su
+      WHERE su.user_id = p_user_id
+        AND su.account_number IS NOT NULL AND su.account_number <> ''
+
+      UNION ALL
+
+      SELECT 'paystack',
+             pa.account_number,
+             pa.account_name,
+             pa.bank_name,
+             NULL,
+             CASE WHEN COALESCE(pa.is_active, true) THEN 'Active' ELSE 'Inactive' END,
+             false,
+             pa.created_at,
+             3
+      FROM public.paystack_accounts pa
+      WHERE pa.user_id = p_user_id
+        AND pa.account_number IS NOT NULL AND pa.account_number <> ''
+
+      UNION ALL
+
+      SELECT 'safehaven',
+             pr.safehaven_account_number,
+             NULLIF(btrim(COALESCE(pr.first_name, '') || ' ' || COALESCE(pr.last_name, '')), ''),
+             'Safe Haven Microfinance Bank',
+             '51113',
+             NULL,
+             false,
+             NULL::timestamptz,
+             4
+      FROM public.profiles pr
+      WHERE pr.id = p_user_id
+        AND pr.safehaven_account_number IS NOT NULL AND pr.safehaven_account_number <> ''
+    ) u
+    ORDER BY u.account_number, u.priority
+  ) a;
+
+  RETURN v_result;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.admin_get_user_accounts(uuid) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.admin_get_user_accounts(uuid) TO authenticated;
+
+NOTIFY pgrst, 'reload schema';

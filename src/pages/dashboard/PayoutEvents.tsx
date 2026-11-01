@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Filter, RefreshCw, CheckCircle, XCircle, Clock, DollarSign, Calendar, User, ChevronLeft, ChevronRight } from 'lucide-react';
 import { usePayoutEvents } from '@/hooks/queries/usePayoutEvents';
+import { PayoutPlanIcon } from '@/components/PlanIcons';
+import { usePayoutPlanPurposes } from '@/hooks/queries/usePlanIcons';
 import { useRefreshData } from '@/hooks/mutations/useRefreshData';
 import { format } from 'date-fns';
 
@@ -12,6 +14,7 @@ export default function PayoutEvents() {
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 50;
   const { data, isLoading, error } = usePayoutEvents(searchQuery, statusFilter, currentPage, pageSize);
+  const { data: purposeMap } = usePayoutPlanPurposes((data?.events || []).map((e: any) => e.payout_plan_id));
   const refreshData = useRefreshData();
 
   const handleRefresh = () => {
@@ -292,7 +295,10 @@ export default function PayoutEvents() {
                     <td className="px-6 py-4 whitespace-nowrap">
                       {event.payout_plan ? (
                         <div className="space-y-1">
-                          <div className="text-sm font-medium text-gray-900">{event.payout_plan.name}</div>
+                          <div className="flex items-center gap-2.5 text-sm font-medium text-gray-900">
+                            <PayoutPlanIcon size="sm" purpose={purposeMap?.[event.payout_plan_id]} name={event.payout_plan.name} />
+                            <span>{event.payout_plan.name}</span>
+                          </div>
                           <div className="text-xs text-gray-500 capitalize">
                             {event.payout_plan.frequency}
                           </div>
@@ -380,7 +386,10 @@ export default function PayoutEvents() {
                 <div className="space-y-2.5">
                   {event.payout_plan && (
                     <div>
-                      <div className="text-sm font-semibold text-gray-900 mb-0.5">{event.payout_plan.name}</div>
+                      <div className="flex items-center gap-2.5 text-sm font-semibold text-gray-900 mb-0.5">
+                        <PayoutPlanIcon size="sm" purpose={purposeMap?.[event.payout_plan_id]} name={event.payout_plan.name} />
+                        <span>{event.payout_plan.name}</span>
+                      </div>
                       <div className="text-xs text-gray-500 capitalize">{event.payout_plan.frequency}</div>
                     </div>
                   )}

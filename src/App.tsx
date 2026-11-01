@@ -63,6 +63,12 @@ function App() {
             </>
           ) : (
             <>
+              {/* A signed-in user opening an auth URL (e.g. right after login, while the
+                  URL is still /login, or via a bookmark) goes to the app instead of a 404 */}
+              <Route path="/login" element={<Navigate to="/welcome" replace />} />
+              <Route path="/signup" element={<Navigate to="/welcome" replace />} />
+              <Route path="/forgot-password" element={<Navigate to="/welcome" replace />} />
+
               {/* Dashboard Routes */}
               <Route path="/" element={<DashboardLayout />}>
                 <Route index element={<Navigate to="/welcome" replace />} />

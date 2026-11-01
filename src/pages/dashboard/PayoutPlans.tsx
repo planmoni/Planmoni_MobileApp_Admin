@@ -5,6 +5,7 @@ import { usePayoutPlans } from '@/hooks/queries/usePayoutPlans';
 import { useRefreshData } from '@/hooks/mutations/useRefreshData';
 import { format } from 'date-fns';
 import PlanBreakdownModal from '@/components/PlanBreakdownModal';
+import { PayoutPlanIcon } from '@/components/PlanIcons';
 import { Pie, Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -644,7 +645,10 @@ export default function PayoutPlans() {
 
                       <td className="px-6 py-4">
                         <div className="space-y-1">
-                          <div className="text-sm font-medium text-gray-900">{plan.name}</div>
+                          <div className="flex items-center gap-2.5 text-sm font-medium text-gray-900">
+                            <PayoutPlanIcon size="sm" purpose={plan.purpose} name={plan.name} />
+                            <span>{plan.name}</span>
+                          </div>
                           {plan.description && (
                             <div className="text-xs text-gray-500 max-w-xs truncate">{plan.description}</div>
                           )}
@@ -780,7 +784,10 @@ export default function PayoutPlans() {
 
                   <div className="space-y-2.5">
                     <div>
-                      <div className="text-sm font-semibold text-gray-900 mb-0.5">{plan.name}</div>
+                      <div className="flex items-center gap-2.5 text-sm font-semibold text-gray-900 mb-0.5">
+                        <PayoutPlanIcon size="sm" purpose={plan.purpose} name={plan.name} />
+                        <span>{plan.name}</span>
+                      </div>
                       {plan.description && (
                         <div className="text-xs text-gray-500 line-clamp-2">{plan.description}</div>
                       )}

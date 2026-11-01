@@ -1,6 +1,8 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, RefreshCw, User, Calendar, DollarSign, TrendingUp, TrendingDown, Clock, Repeat, CreditCard } from 'lucide-react';
 import { useVaultDetails } from '@/hooks/queries/useVaults';
+import { VaultIcon } from '@/components/PlanIcons';
+import { useVaultCategories } from '@/hooks/queries/usePlanIcons';
 import { useRefreshData } from '@/hooks/mutations/useRefreshData';
 import { format } from 'date-fns';
 
@@ -8,6 +10,7 @@ export default function VaultDetails() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { data, isLoading, error } = useVaultDetails(id);
+  const { data: vaultCategories } = useVaultCategories([id]);
   const refreshData = useRefreshData();
 
   const handleRefresh = () => {
@@ -92,6 +95,12 @@ export default function VaultDetails() {
           >
             <ArrowLeft className="h-5 w-5 text-gray-600" />
           </button>
+          <VaultIcon
+            size="lg"
+            categories={id ? vaultCategories?.[id]?.categories : undefined}
+            subcategories={id ? vaultCategories?.[id]?.subcategories : undefined}
+            name={vault.name}
+          />
           <div>
             <h1 className="text-3xl font-bold text-gray-900 mb-1">{vault.name}</h1>
             <p className="text-gray-500">Vault Details and Activity</p>

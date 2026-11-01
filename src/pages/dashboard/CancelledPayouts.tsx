@@ -2,10 +2,13 @@ import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, XCircle } from 'lucide-react';
 import { format, addDays, addWeeks, addMonths } from 'date-fns';
 import { useUserDetails } from '@/hooks/queries/useUsersData';
+import { PayoutPlanIcon } from '@/components/PlanIcons';
+import { usePayoutPlanPurposes } from '@/hooks/queries/usePlanIcons';
 
 export default function CancelledPayouts() {
   const { id } = useParams<{ id: string }>();
   const { data: userDetailsData, isLoading, error } = useUserDetails(id!);
+  const { data: purposeMap } = usePayoutPlanPurposes((userDetailsData?.payoutPlans || []).map((p: any) => p.id));
 
   if (isLoading) {
     return (
@@ -91,13 +94,16 @@ export default function CancelledPayouts() {
               return (
                 <div key={plan.id} className="p-6 hover:bg-gray-50 transition-colors">
                   <div className="flex justify-between items-start mb-4">
-                    <div className="flex-1">
+                    <div className="flex-1 flex items-start gap-3">
+                      <PayoutPlanIcon purpose={purposeMap?.[plan.id]} name={plan.name} />
+                      <div className="min-w-0">
                       <h3 className="text-lg font-semibold text-gray-900 mb-1">{plan.name}</h3>
                       {plan.created_at && (
                         <p className="text-sm text-gray-500">
                           Created {format(new Date(plan.created_at), 'MMM d, yyyy')}
                         </p>
                       )}
+                      </div>
                     </div>
                     <span className="px-3 py-1 rounded-lg text-xs font-semibold bg-red-50 text-red-600 border border-red-100">
                       Cancelled

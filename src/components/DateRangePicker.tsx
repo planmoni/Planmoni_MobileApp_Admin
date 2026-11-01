@@ -1,16 +1,34 @@
 import { useState, useRef, useEffect } from 'react';
 import { Calendar, ChevronLeft, ChevronRight, X } from 'lucide-react';
-import { format, startOfMonth, endOfMonth, isSameMonth, isSameDay, addMonths, subMonths, isToday, isBefore, isAfter, isWithinInterval } from 'date-fns';
+import {
+  format,
+  startOfMonth,
+  endOfMonth,
+  startOfDay,
+  isSameMonth,
+  isSameDay,
+  addMonths,
+  subMonths,
+  addDays,
+  subDays,
+  isToday,
+  isBefore,
+  isAfter,
+  isWithinInterval,
+} from 'date-fns';
 
 type DateRangePickerProps = {
   startDate: Date | null;
   endDate: Date | null;
-  onChange: (startDate: Date, endDate: Date) => void;
+  /** called with the chosen days, or with nulls when the range is cleared */
+  onChange: (startDate: Date | null, endDate: Date | null) => void;
   placeholder?: string;
   className?: string;
   minDate?: Date;
   maxDate?: Date;
   disabled?: boolean;
+  /** highlight the trigger, e.g. when this range is the active filter */
+  active?: boolean;
 };
 
 export default function DateRangePicker({
@@ -21,7 +39,8 @@ export default function DateRangePicker({
   className = '',
   minDate,
   maxDate,
-  disabled = false
+  disabled = false,
+  active = false,
 }: DateRangePickerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(startDate || new Date());
@@ -30,19 +49,23 @@ export default function DateRangePicker({
   const [tempEndDate, setTempEndDate] = useState<Date | null>(endDate);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  const closeAndReset = () => {
+    setIsOpen(false);
+    setTempStartDate(startDate);
+    setTempEndDate(endDate);
+    setSelectingStart(true);
+  };
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-        // Reset temp dates if not applied
-        setTempStartDate(startDate);
-        setTempEndDate(endDate);
-        setSelectingStart(true);
+        closeAndReset();
       }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [startDate, endDate]);
 
   const handleDateSelect = (date: Date) => {
@@ -52,7 +75,6 @@ export default function DateRangePicker({
       setSelectingStart(false);
     } else {
       if (tempStartDate && isBefore(date, tempStartDate)) {
-        // If end date is before start date, swap them
         setTempStartDate(date);
         setTempEndDate(tempStartDate);
       } else {
@@ -75,13 +97,6 @@ export default function DateRangePicker({
     setSelectingStart(true);
   };
 
-  const handleCancel = () => {
-    setTempStartDate(startDate);
-    setTempEndDate(endDate);
-    setSelectingStart(true);
-    setIsOpen(false);
-  };
-
   const isDateDisabled = (date: Date) => {
     if (minDate && isBefore(date, minDate)) return true;
     if (maxDate && isAfter(date, maxDate)) return true;
@@ -93,136 +108,84 @@ export default function DateRangePicker({
     return isWithinInterval(date, { start: tempStartDate, end: tempEndDate });
   };
 
-  const isDateSelected = (date: Date) => {
-    if (tempStartDate && isSameDay(date, tempStartDate)) return true;
-    if (tempEndDate && isSameDay(date, tempEndDate)) return true;
-    return false;
-  };
+  const isDateSelected = (date: Date) =>
+    (!!tempStartDate && isSameDay(date, tempStartDate)) || (!!tempEndDate && isSameDay(date, tempEndDate));
 
-  const formatDisplayRange = () => {
-    if (!startDate || !endDate) return placeholder;
-    return `${format(startDate, 'MMM d, yyyy')} - ${format(endDate, 'MMM d, yyyy')}`;
-  };
+  const hasRange = !!startDate && !!endDate;
+  const triggerLabel = hasRange
+    ? `${format(startDate!, 'MMM d')} – ${format(endDate!, 'MMM d, yyyy')}`
+    : placeholder;
 
+  // six Monday-first weeks
   const getCalendarDays = () => {
-    const firstDay = startOfMonth(currentMonth);
-    const startDate = new Date(firstDay);
-    startDate.setDate(startDate.getDate() - firstDay.getDay());
-
-    const days = [];
-    for (let i = 0; i < 42; i++) {
-      const date = new Date(startDate);
-      date.setDate(startDate.getDate() + i);
-      days.push(date);
-    }
-    return days;
+    const first = startOfMonth(currentMonth);
+    const offset = (first.getDay() + 6) % 7;
+    const start = subDays(first, offset);
+    return Array.from({ length: 42 }, (_, i) => addDays(start, i));
   };
 
-  const handlePrevMonth = () => {
-    setCurrentMonth(subMonths(currentMonth, 1));
-  };
-
-  const handleNextMonth = () => {
-    setCurrentMonth(addMonths(currentMonth, 1));
-  };
-
-  // Quick select options
+  const today = startOfDay(new Date());
   const quickSelects = [
-    {
-      label: 'Today',
-      getValue: () => {
-        const today = new Date();
-        return { start: today, end: today };
-      }
-    },
-    {
-      label: 'Last 7 days',
-      getValue: () => {
-        const end = new Date();
-        const start = new Date();
-        start.setDate(start.getDate() - 6);
-        return { start, end };
-      }
-    },
-    {
-      label: 'Last 30 days',
-      getValue: () => {
-        const end = new Date();
-        const start = new Date();
-        start.setDate(start.getDate() - 29);
-        return { start, end };
-      }
-    },
-    {
-      label: 'This month',
-      getValue: () => {
-        const today = new Date();
-        return { 
-          start: startOfMonth(today), 
-          end: endOfMonth(today) 
-        };
-      }
-    }
+    { label: 'Today', getValue: () => ({ start: today, end: today }) },
+    { label: 'Last 7 days', getValue: () => ({ start: subDays(today, 6), end: today }) },
+    { label: 'Last 30 days', getValue: () => ({ start: subDays(today, 29), end: today }) },
+    { label: 'Last 90 days', getValue: () => ({ start: subDays(today, 89), end: today }) },
+    { label: 'This month', getValue: () => ({ start: startOfMonth(today), end: endOfMonth(today) }) },
   ];
 
   const handleQuickSelect = (getValue: () => { start: Date; end: Date }) => {
     const { start, end } = getValue();
     setTempStartDate(start);
     setTempEndDate(end);
+    setCurrentMonth(start);
   };
 
   return (
     <div ref={containerRef} className={`relative ${className}`}>
-      <button
-        type="button"
-        onClick={() => !disabled && setIsOpen(!isOpen)}
-        disabled={disabled}
-        className={`
-          inline-flex items-center justify-between w-full px-4 py-2 text-left
-          border border-border dark:border-border rounded-md
-          bg-white dark:bg-background-tertiary
-          text-text dark:text-text
-          hover:bg-background-tertiary dark:hover:bg-background-secondary
-          focus:outline-none focus:ring-2 focus:ring-primary dark:focus:ring-primary-light
-          transition-colors
-          ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
-        `}
+      <div
+        className={`inline-flex items-center rounded-xl border text-sm font-medium transition-all duration-200 ${
+          active || hasRange
+            ? 'bg-gray-900 text-white border-gray-900 shadow-sm'
+            : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+        } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
       >
-        <div className="flex items-center">
-          <Calendar className="h-5 w-5 mr-2 text-text-secondary dark:text-text-secondary" />
-          <span className={startDate && endDate ? 'text-text dark:text-text' : 'text-text-secondary dark:text-text-secondary'}>
-            {formatDisplayRange()}
-          </span>
-        </div>
-        {startDate && endDate && (
+        <button
+          type="button"
+          onClick={() => {
+            if (disabled) return;
+            if (isOpen) closeAndReset();
+            else setIsOpen(true);
+          }}
+          disabled={disabled}
+          className="inline-flex items-center px-4 py-2 whitespace-nowrap focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-900 rounded-xl"
+        >
+          <Calendar className="h-4 w-4 mr-2" />
+          {triggerLabel}
+        </button>
+        {hasRange && (
           <button
             type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onChange(null as any, null as any);
-            }}
-            className="ml-2 p-1 hover:bg-background-secondary dark:hover:bg-background-tertiary rounded"
+            onClick={() => onChange(null, null)}
+            className="mr-2 p-1 rounded-lg hover:bg-white/20 transition-colors"
+            title="Clear dates"
           >
-            <X className="h-4 w-4 text-text-secondary dark:text-text-secondary" />
+            <X className="h-3.5 w-3.5" />
           </button>
         )}
-      </button>
+      </div>
 
       {isOpen && (
-        <div className="absolute z-50 mt-2 bg-white dark:bg-surface border border-border dark:border-border rounded-lg shadow-lg w-96">
+        <div className="absolute z-50 mt-2 right-0 bg-white border border-gray-100 rounded-2xl shadow-large w-[22rem] max-w-[calc(100vw-2rem)]">
           <div className="flex">
-            {/* Quick Select Sidebar */}
-            <div className="w-32 border-r border-border dark:border-border p-3">
-              <h4 className="text-xs font-medium text-text-secondary dark:text-text-secondary mb-2 uppercase tracking-wide">
-                Quick Select
-              </h4>
+            <div className="w-28 border-r border-gray-100 p-3 shrink-0">
+              <h4 className="text-xs font-medium text-gray-500 mb-2">Quick select</h4>
               <div className="space-y-1">
                 {quickSelects.map((option) => (
                   <button
                     key={option.label}
                     type="button"
                     onClick={() => handleQuickSelect(option.getValue)}
-                    className="w-full text-left text-xs px-2 py-1 rounded text-text dark:text-text hover:bg-background-tertiary dark:hover:bg-background-tertiary transition-colors"
+                    className="w-full text-left text-xs px-2 py-1.5 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
                   >
                     {option.label}
                   </button>
@@ -230,86 +193,67 @@ export default function DateRangePicker({
               </div>
             </div>
 
-            {/* Calendar */}
-            <div className="flex-1 p-4">
-              {/* Calendar Header */}
-              <div className="flex items-center justify-between mb-4">
+            <div className="flex-1 p-3 min-w-0">
+              <div className="flex items-center justify-between mb-2">
                 <button
                   type="button"
-                  onClick={handlePrevMonth}
-                  className="p-2 hover:bg-background-tertiary dark:hover:bg-background-tertiary rounded-full transition-colors"
+                  onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
+                  className="p-1.5 hover:bg-gray-100 rounded-full transition-colors"
+                  aria-label="Previous month"
                 >
-                  <ChevronLeft className="h-5 w-5 text-text-secondary dark:text-text-secondary" />
+                  <ChevronLeft className="h-4 w-4 text-gray-600" />
                 </button>
-                
-                <h3 className="text-lg font-semibold text-text dark:text-text">
-                  {format(currentMonth, 'MMMM yyyy')}
-                </h3>
-                
+                <h3 className="text-sm font-semibold text-gray-900">{format(currentMonth, 'MMMM yyyy')}</h3>
                 <button
                   type="button"
-                  onClick={handleNextMonth}
-                  className="p-2 hover:bg-background-tertiary dark:hover:bg-background-tertiary rounded-full transition-colors"
+                  onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
+                  className="p-1.5 hover:bg-gray-100 rounded-full transition-colors"
+                  aria-label="Next month"
                 >
-                  <ChevronRight className="h-5 w-5 text-text-secondary dark:text-text-secondary" />
+                  <ChevronRight className="h-4 w-4 text-gray-600" />
                 </button>
               </div>
 
-              {/* Selection Status */}
-              <div className="mb-4 text-center">
-                <p className="text-sm text-text-secondary dark:text-text-secondary">
-                  {selectingStart ? 'Select start date' : 'Select end date'}
-                </p>
-                {tempStartDate && tempEndDate && (
-                  <p className="text-sm text-primary dark:text-primary-light mt-1">
-                    {format(tempStartDate, 'MMM d')} - {format(tempEndDate, 'MMM d, yyyy')}
-                  </p>
-                )}
-              </div>
+              <p className="mb-2 text-center text-xs text-gray-500 h-4">
+                {tempStartDate && tempEndDate
+                  ? `${format(tempStartDate, 'MMM d')} – ${format(tempEndDate, 'MMM d, yyyy')}`
+                  : selectingStart
+                    ? 'Select start date'
+                    : 'Select end date'}
+              </p>
 
-              {/* Days of Week */}
-              <div className="grid grid-cols-7 gap-1 mb-2">
-                {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((day) => (
-                  <div key={day} className="text-center text-xs font-medium text-text-secondary dark:text-text-secondary py-2">
+              <div className="grid grid-cols-7 gap-0.5 mb-1">
+                {['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'].map((day) => (
+                  <div key={day} className="text-center text-xs font-medium text-gray-400 py-1">
                     {day}
                   </div>
                 ))}
               </div>
 
-              {/* Calendar Days */}
-              <div className="grid grid-cols-7 gap-1 mb-4">
-                {getCalendarDays().map((date, index) => {
-                  const isCurrentMonth = isSameMonth(date, currentMonth);
-                  const isSelected = isDateSelected(date);
-                  const isInRange = isDateInRange(date);
-                  const isTodayDate = isToday(date);
+              <div className="grid grid-cols-7 gap-0.5 mb-3 place-items-center">
+                {getCalendarDays().map((date) => {
+                  const inMonth = isSameMonth(date, currentMonth);
+                  const selected = isDateSelected(date);
+                  const inRange = isDateInRange(date);
                   const isDisabled = isDateDisabled(date);
 
                   return (
                     <button
-                      key={index}
+                      key={date.toISOString()}
                       type="button"
                       onClick={() => !isDisabled && handleDateSelect(date)}
                       disabled={isDisabled}
-                      className={`
-                        w-8 h-8 text-sm rounded-full transition-colors relative
-                        ${!isCurrentMonth 
-                          ? 'text-text-tertiary dark:text-text-tertiary' 
-                          : 'text-text dark:text-text'
-                        }
-                        ${isSelected 
-                          ? 'bg-primary text-white' 
-                          : isInRange
-                            ? 'bg-primary/20 text-primary dark:text-primary-light'
-                            : isTodayDate 
-                              ? 'bg-primary/10 text-primary dark:text-primary-light font-semibold'
-                              : 'hover:bg-background-tertiary dark:hover:bg-background-tertiary'
-                        }
-                        ${isDisabled 
-                          ? 'opacity-50 cursor-not-allowed' 
-                          : 'cursor-pointer'
-                        }
-                      `}
+                      className={`w-8 h-8 text-xs rounded-full transition-colors ${
+                        selected
+                          ? 'bg-gray-900 text-white'
+                          : inRange
+                            ? 'bg-gray-100 text-gray-900'
+                            : isToday(date)
+                              ? 'border border-gray-300 text-gray-900 font-semibold'
+                              : inMonth
+                                ? 'text-gray-900 hover:bg-gray-100'
+                                : 'text-gray-300 hover:bg-gray-50'
+                      } ${isDisabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
                     >
                       {format(date, 'd')}
                     </button>
@@ -317,20 +261,19 @@ export default function DateRangePicker({
                 })}
               </div>
 
-              {/* Footer */}
               <div className="flex justify-between items-center">
                 <button
                   type="button"
                   onClick={handleClear}
-                  className="text-sm text-text-secondary dark:text-text-secondary hover:text-text dark:hover:text-text"
+                  className="text-xs text-gray-500 hover:text-gray-900 transition-colors"
                 >
                   Clear
                 </button>
                 <div className="flex gap-2">
                   <button
                     type="button"
-                    onClick={handleCancel}
-                    className="px-3 py-1 text-sm text-text-secondary dark:text-text-secondary hover:text-text dark:hover:text-text"
+                    onClick={closeAndReset}
+                    className="px-3 py-1.5 text-xs text-gray-600 hover:text-gray-900 transition-colors"
                   >
                     Cancel
                   </button>
@@ -338,7 +281,7 @@ export default function DateRangePicker({
                     type="button"
                     onClick={handleApply}
                     disabled={!tempStartDate || !tempEndDate}
-                    className="px-3 py-1 text-sm bg-primary text-white rounded hover:bg-primary-dark disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-3 py-1.5 text-xs font-medium bg-gray-900 text-white rounded-lg hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                   >
                     Apply
                   </button>

@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Filter, RefreshCw, CircleCheck as CheckCircle, Circle as XCircle, Clock, Calendar, User, ChevronLeft, ChevronRight, Wallet } from 'lucide-react';
 import { useVaults } from '@/hooks/queries/useVaults';
+import { VaultIcon } from '@/components/PlanIcons';
+import { useVaultCategories } from '@/hooks/queries/usePlanIcons';
 import { useRefreshData } from '@/hooks/mutations/useRefreshData';
 import { format } from 'date-fns';
 import { Pie, Bar } from 'react-chartjs-2';
@@ -33,6 +35,7 @@ export default function Vaults() {
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 50;
   const { data, isLoading, error } = useVaults(searchQuery, statusFilter, currentPage, pageSize);
+  const { data: vaultCategories } = useVaultCategories((data?.vaults || []).map((v: any) => v.id));
   const refreshData = useRefreshData();
 
   const handleRefresh = () => {
@@ -440,7 +443,10 @@ export default function Vaults() {
 
                       <td className="px-6 py-4">
                         <div className="space-y-1">
-                          <div className="text-sm font-medium text-gray-900">{vault.name}</div>
+                          <div className="flex items-center gap-2.5 text-sm font-medium text-gray-900">
+                            <VaultIcon size="sm" categories={vaultCategories?.[vault.id]?.categories} subcategories={vaultCategories?.[vault.id]?.subcategories} name={vault.name} />
+                            <span>{vault.name}</span>
+                          </div>
                           {vault.plan_name && vault.plan_name !== vault.name && (
                             <div className="text-xs text-gray-500 max-w-xs truncate">{vault.plan_name}</div>
                           )}
@@ -535,7 +541,10 @@ export default function Vaults() {
 
                   <div className="space-y-2.5">
                     <div>
-                      <div className="text-sm font-semibold text-gray-900 mb-0.5">{vault.name}</div>
+                      <div className="flex items-center gap-2.5 text-sm font-semibold text-gray-900 mb-0.5">
+                        <VaultIcon size="sm" categories={vaultCategories?.[vault.id]?.categories} subcategories={vaultCategories?.[vault.id]?.subcategories} name={vault.name} />
+                        <span>{vault.name}</span>
+                      </div>
                       {vault.plan_name && vault.plan_name !== vault.name && (
                         <div className="text-xs text-gray-500 line-clamp-2">{vault.plan_name}</div>
                       )}
