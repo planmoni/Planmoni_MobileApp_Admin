@@ -178,7 +178,7 @@ export default function SendReengagementButton({
                       <div className="mx-auto w-16 h-16 bg-gradient-to-br from-gray-900 to-gray-700 rounded-2xl flex items-center justify-center mb-4 shadow-lg">
                         <Bell className="h-8 w-8 text-white" />
                       </div>
-                      <h2 className="text-2xl font-bold text-gray-900 mb-2">Confirm Alert</h2>
+                      <h2 className="text-2xl font-semibold text-gray-900 mb-2">Confirm Alert</h2>
                       <p className="text-gray-600 text-sm">You're about to send a notification to this user</p>
                     </div>
 

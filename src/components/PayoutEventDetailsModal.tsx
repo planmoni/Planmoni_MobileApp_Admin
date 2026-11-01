@@ -103,7 +103,7 @@ export default function PayoutEventDetailsModal({
         <div className="relative transform overflow-hidden rounded-3xl bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-xl">
           <div className="px-6 pt-6 pb-4">
             <div className="flex items-center justify-between mb-5">
-              <h3 className="text-xl font-bold text-gray-900">Payout event</h3>
+              <h3 className="text-xl font-semibold text-gray-900">Payout event</h3>
               <button
                 onClick={onClose}
                 className="rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
@@ -121,7 +121,7 @@ export default function PayoutEventDetailsModal({
                   <EventStatusBadge status={event.status} />
                   <EventFlag flag={view.flag} tone={view.tone} />
                 </div>
-                <p className="text-3xl font-bold text-gray-900 mt-1">{formatNaira(event.amount)}</p>
+                <p className="text-lg font-semibold text-gray-900 mt-1">{formatNaira(event.amount)}</p>
                 {view.position && <p className="text-sm text-gray-500 mt-0.5">{view.position}</p>}
               </div>
             </div>

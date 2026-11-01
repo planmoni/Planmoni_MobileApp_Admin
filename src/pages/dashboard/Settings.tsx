@@ -17,7 +17,7 @@ export default function Settings() {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-text">Settings</h1>
+        <h1 className="text-2xl font-semibold text-text">Settings</h1>
         <p className="text-text-secondary">Configure admin dashboard settings</p>
       </div>
 

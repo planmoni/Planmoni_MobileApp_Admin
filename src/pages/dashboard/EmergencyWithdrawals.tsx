@@ -172,7 +172,7 @@ export default function EmergencyWithdrawals() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-3 mb-2">
-            <h1 className="text-3xl font-bold text-gray-900">Emergency Withdrawals</h1>
+            <h1 className="text-3xl font-semibold text-gray-900">Emergency Withdrawals</h1>
           </div>
           <p className="text-gray-500">
             Monitor and manage emergency withdrawal requests from users
@@ -206,7 +206,7 @@ export default function EmergencyWithdrawals() {
             <span className="text-sm text-gray-600">Total Requests</span>
             <FileText className="h-5 w-5 text-gray-400" />
           </div>
-          <div className="text-2xl font-bold text-gray-900">{stats.total}</div>
+          <div className="text-2xl font-semibold text-gray-900">{stats.total}</div>
         </div>
 
         <div className="bg-white rounded-2xl shadow-soft border border-gray-100 p-6">
@@ -214,7 +214,7 @@ export default function EmergencyWithdrawals() {
             <span className="text-sm text-gray-600">Pending</span>
             <Clock className="h-5 w-5 text-yellow-500" />
           </div>
-          <div className="text-2xl font-bold text-yellow-600">{stats.pending}</div>
+          <div className="text-2xl font-semibold text-yellow-600">{stats.pending}</div>
         </div>
 
         <div className="bg-white rounded-2xl shadow-soft border border-gray-100 p-6">
@@ -222,7 +222,7 @@ export default function EmergencyWithdrawals() {
             <span className="text-sm text-gray-600">Completed</span>
             <CheckCircle2 className="h-5 w-5 text-green-500" />
           </div>
-          <div className="text-2xl font-bold text-green-600">{stats.completed}</div>
+          <div className="text-2xl font-semibold text-green-600">{stats.completed}</div>
         </div>
 
         <div className="bg-white rounded-2xl shadow-soft border border-gray-100 p-6">
@@ -230,7 +230,7 @@ export default function EmergencyWithdrawals() {
             <span className="text-sm text-gray-600">Failed</span>
             <XCircle className="h-5 w-5 text-red-500" />
           </div>
-          <div className="text-2xl font-bold text-red-600">{stats.failed}</div>
+          <div className="text-2xl font-semibold text-red-600">{stats.failed}</div>
         </div>
 
         <div className="bg-white rounded-2xl shadow-soft border border-gray-100 p-6">
@@ -238,7 +238,7 @@ export default function EmergencyWithdrawals() {
             <span className="text-sm text-gray-600">Total Amount</span>
             <TrendingUp className="h-5 w-5 text-blue-500" />
           </div>
-          <div className="text-2xl font-bold text-blue-600">
+          <div className="text-2xl font-semibold text-blue-600">
             {formatCurrency(stats.totalAmount)}
           </div>
         </div>
@@ -248,7 +248,7 @@ export default function EmergencyWithdrawals() {
             <span className="text-sm text-gray-600">Total Fees</span>
             <CreditCard className="h-5 w-5 text-grey-500" />
           </div>
-          <div className="text-2xl font-bold text-grey-600">
+          <div className="text-2xl font-semibold text-grey-600">
             {formatCurrency(stats.totalFees)}
           </div>
         </div>
@@ -442,7 +442,7 @@ export default function EmergencyWithdrawals() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
             <div className="p-6 border-b border-gray-200 flex items-center justify-between">
-              <h2 className="text-xl font-bold text-gray-900">Withdrawal Details</h2>
+              <h2 className="text-xl font-semibold text-gray-900">Withdrawal Details</h2>
               <button
                 onClick={() => setSelectedWithdrawal(null)}
                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
@@ -485,7 +485,7 @@ export default function EmergencyWithdrawals() {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <p className="text-xs text-gray-500 mb-1">Withdrawal Amount</p>
-                      <p className="text-sm font-bold text-gray-900">{formatCurrency(selectedWithdrawal.withdrawal_amount)}</p>
+                      <p className="text-sm font-semibold text-gray-900">{formatCurrency(selectedWithdrawal.withdrawal_amount)}</p>
                     </div>
                     <div>
                       <p className="text-xs text-gray-500 mb-1">Fee Amount</p>
@@ -493,7 +493,7 @@ export default function EmergencyWithdrawals() {
                     </div>
                     <div>
                       <p className="text-xs text-gray-500 mb-1">Net Amount</p>
-                      <p className="text-sm font-bold text-green-600">{formatCurrency(selectedWithdrawal.net_amount)}</p>
+                      <p className="text-sm font-semibold text-green-600">{formatCurrency(selectedWithdrawal.net_amount)}</p>
                     </div>
                   </div>
                 </div>

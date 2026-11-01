@@ -6,8 +6,8 @@ import { useToast } from '@/contexts/ToastContext';
 export function BankLogo({
   bankName,
   bankCode,
-  className = 'w-12 h-12',
-  wideClassName = 'w-20 h-12',
+  className = 'w-11 h-11',
+  wideClassName = 'w-[4.5rem] h-11',
 }: {
   bankName?: string | null;
   bankCode?: string | null;
@@ -85,12 +85,12 @@ export default function BankAccountRow({
   };
 
   return (
-    <div className="p-5 hover:bg-gray-50 transition-colors">
+    <div className="p-4 md:p-5 hover:bg-gray-50 transition-colors">
       <div className="flex items-start gap-4">
         <BankLogo bankName={bankName} bankCode={bankCode} />
         <div className="flex-1 min-w-0">
           <div className="flex items-center flex-wrap gap-2 mb-1.5">
-            <p className="text-base font-semibold text-gray-900">{bankName || 'Unknown bank'}</p>
+            <p className="text-sm font-semibold text-gray-900">{bankName || 'Unknown bank'}</p>
             {badges.map((badge) => (
               <span
                 key={badge}
@@ -101,7 +101,7 @@ export default function BankAccountRow({
             ))}
           </div>
           <div className="flex items-center gap-2 mb-1">
-            <p className="text-gray-900 text-lg font-mono font-semibold tracking-wide">{accountNumber}</p>
+            <p className="text-gray-900 text-base font-mono font-semibold tracking-wide">{accountNumber}</p>
             <button
               onClick={copy}
               className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"

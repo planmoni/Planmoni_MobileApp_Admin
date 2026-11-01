@@ -95,7 +95,7 @@ export default function TransactionRow({
 
   const amountBlock = (
     <>
-      <p className={`text-sm font-bold ${settled ? 'text-gray-900' : 'text-gray-500'}`}>
+      <p className={`text-sm font-semibold ${settled ? 'text-gray-900' : 'text-gray-500'}`}>
         {amountSign(view, item.status)}
         {formatNaira(item.amount)}
       </p>

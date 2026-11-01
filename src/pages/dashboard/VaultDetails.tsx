@@ -102,7 +102,7 @@ export default function VaultDetails() {
             name={vault.name}
           />
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-1">{vault.name}</h1>
+            <h1 className="text-3xl font-semibold text-gray-900 mb-1">{vault.name}</h1>
             <p className="text-gray-500">Vault Details and Activity</p>
           </div>
         </div>
@@ -184,7 +184,7 @@ export default function VaultDetails() {
             <div className="space-y-4">
               <div>
                 <p className="text-xs text-gray-500 mb-1">Total Budget</p>
-                <p className="text-2xl font-bold text-gray-900">
+                <p className="text-lg font-semibold text-gray-900">
                   {new Intl.NumberFormat('en-NG', {
                     style: 'currency',
                     currency: 'NGN'
@@ -193,7 +193,7 @@ export default function VaultDetails() {
               </div>
               <div>
                 <p className="text-xs text-gray-500 mb-1">Current Balance</p>
-                <p className="text-2xl font-bold text-green-600">
+                <p className="text-lg font-semibold text-green-600">
                   {new Intl.NumberFormat('en-NG', {
                     style: 'currency',
                     currency: 'NGN'
@@ -202,7 +202,7 @@ export default function VaultDetails() {
               </div>
               <div>
                 <p className="text-xs text-gray-500 mb-1">Total remaining to fund</p>
-                <p className="text-2xl font-bold text-orange-600">
+                <p className="text-lg font-semibold text-orange-600">
                   {new Intl.NumberFormat('en-NG', {
                     style: 'currency',
                     currency: 'NGN'

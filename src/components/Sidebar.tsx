@@ -124,7 +124,7 @@ export default function Sidebar({ isMobileMenuOpen, closeMobileMenu }: { isMobil
             }
           }}
         />
-        <h1 className="text-xl font-bold text-primary ml-2" style={{ display: 'none' }}>
+        <h1 className="text-xl font-semibold text-primary ml-2" style={{ display: 'none' }}>
           Planmoni Admin
         </h1>
       </div>

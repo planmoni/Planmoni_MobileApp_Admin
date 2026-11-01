@@ -65,7 +65,7 @@ export default function ForgotPassword() {
               }
             }}
           />
-          <h1 className="text-xl font-bold text-primary text-center mt-2" style={{ display: 'none' }}>
+          <h1 className="text-xl font-semibold text-primary text-center mt-2" style={{ display: 'none' }}>
             Planmoni Admin
           </h1>
         </div>
@@ -76,7 +76,7 @@ export default function ForgotPassword() {
               <div className="w-16 h-16 bg-success-light rounded-full flex items-center justify-center mb-6">
                 <Check className="h-8 w-8 text-success" />
               </div>
-              <h2 className="text-2xl font-bold text-text mb-4">Check your email</h2>
+              <h2 className="text-2xl font-semibold text-text mb-4">Check your email</h2>
               <p className="text-center text-text-secondary mb-2">
                 We've sent a password reset link to<br />
                 <span className="font-semibold text-text">{email}</span>
@@ -122,10 +122,10 @@ export default function ForgotPassword() {
             }
           }}
         />
-        <h1 className="text-xl font-bold text-primary text-center mt-2" style={{ display: 'none' }}>
+        <h1 className="text-xl font-semibold text-primary text-center mt-2" style={{ display: 'none' }}>
           Planmoni Admin
         </h1>
-        <h2 className="mt-6 text-center text-2xl font-bold leading-9 text-text">
+        <h2 className="mt-6 text-center text-2xl font-semibold leading-9 text-text">
           Reset your password
         </h2>
         <p className="mt-2 text-center text-sm text-text-secondary">

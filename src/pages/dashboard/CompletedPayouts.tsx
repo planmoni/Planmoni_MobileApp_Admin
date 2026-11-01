@@ -68,7 +68,7 @@ export default function CompletedPayouts() {
             <ArrowLeft className="h-5 w-5 text-gray-600" />
           </Link>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-1">Completed Payouts</h1>
+            <h1 className="text-3xl font-semibold text-gray-900 mb-1">Completed Payouts</h1>
             <p className="text-gray-500">{user.first_name} {user.last_name}</p>
           </div>
         </div>
@@ -81,7 +81,7 @@ export default function CompletedPayouts() {
           </div>
           <div>
             <p className="text-sm font-medium text-gray-500">Total Completed Payouts</p>
-            <p className="text-2xl font-bold text-gray-900">{completedPlans.length}</p>
+            <p className="text-lg font-semibold text-gray-900">{completedPlans.length}</p>
           </div>
         </div>
       </div>
@@ -113,28 +113,28 @@ export default function CompletedPayouts() {
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                     <div>
                       <p className="text-xs font-medium text-gray-500 mb-1">Total Amount</p>
-                      <p className="text-base font-bold text-gray-900">₦{plan.total_amount.toLocaleString()}</p>
+                      <p className="text-base font-semibold text-gray-900">₦{plan.total_amount.toLocaleString()}</p>
                     </div>
                     <div>
                       <p className="text-xs font-medium text-gray-500 mb-1">Payout Amount</p>
-                      <p className="text-base font-bold text-gray-900">₦{plan.payout_amount.toLocaleString()}</p>
+                      <p className="text-base font-semibold text-gray-900">₦{plan.payout_amount.toLocaleString()}</p>
                     </div>
                     <div>
                       <p className="text-xs font-medium text-gray-500 mb-1">Frequency</p>
-                      <p className="text-base font-bold text-gray-900">
+                      <p className="text-base font-semibold text-gray-900">
                         {plan.frequency.charAt(0).toUpperCase() + plan.frequency.slice(1)}
                       </p>
                     </div>
                     <div>
                       <p className="text-xs font-medium text-gray-500 mb-1">Duration</p>
-                      <p className="text-base font-bold text-gray-900">{plan.duration} payouts</p>
+                      <p className="text-base font-semibold text-gray-900">{plan.duration} payouts</p>
                     </div>
                   </div>
 
                   {endDate && !isNaN(endDate.getTime()) && (
                     <div className="mb-3 p-3 bg-gray-50 rounded-lg">
                       <p className="text-xs font-medium text-gray-500 mb-1">Completion Date</p>
-                      <p className="text-sm font-bold text-gray-900">{format(endDate, 'MMMM d, yyyy')}</p>
+                      <p className="text-sm font-semibold text-gray-900">{format(endDate, 'MMMM d, yyyy')}</p>
                     </div>
                   )}
 

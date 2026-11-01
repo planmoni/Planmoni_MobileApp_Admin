@@ -131,7 +131,7 @@ export default function UserTransactions() {
             <ArrowLeft className="h-5 w-5 text-gray-600" />
           </Link>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-1">
+            <h1 className="text-3xl font-semibold text-gray-900 mb-1">
               Transactions for {userData.first_name} {userData.last_name}
             </h1>
             <p className="text-gray-500">{userData.email}</p>
@@ -160,7 +160,7 @@ export default function UserTransactions() {
           <div className="flex justify-between items-start">
             <div>
               <p className="text-sm font-medium text-gray-500 mb-1">Total Transactions</p>
-              <p className="text-3xl font-bold text-gray-900">{transactions.length}</p>
+              <p className="text-lg font-semibold text-gray-900">{transactions.length}</p>
             </div>
             <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center">
               <Filter className="h-5 w-5 text-blue-600" />
@@ -172,7 +172,7 @@ export default function UserTransactions() {
           <div className="flex justify-between items-start">
             <div>
               <p className="text-sm font-medium text-gray-500 mb-1">Total Deposited</p>
-              <p className="text-3xl font-bold text-green-600">₦{totalDeposits.toLocaleString()}</p>
+              <p className="text-lg font-semibold text-green-600">₦{totalDeposits.toLocaleString()}</p>
             </div>
             <div className="w-12 h-12 rounded-xl bg-green-50 flex items-center justify-center">
               <ArrowUpRight className="h-5 w-5 text-green-600" />
@@ -184,7 +184,7 @@ export default function UserTransactions() {
           <div className="flex justify-between items-start">
             <div>
               <p className="text-sm font-medium text-gray-500 mb-1">Total Paid Out</p>
-              <p className="text-3xl font-bold text-red-600">₦{totalPayouts.toLocaleString()}</p>
+              <p className="text-lg font-semibold text-red-600">₦{totalPayouts.toLocaleString()}</p>
             </div>
             <div className="w-12 h-12 rounded-xl bg-red-50 flex items-center justify-center">
               <ArrowDownRight className="h-5 w-5 text-red-600" />
@@ -265,7 +265,7 @@ export default function UserTransactions() {
                     </span>
                   </div>
                 </div>
-                <p className={`text-xl font-bold ${
+                <p className={`text-xl font-semibold ${
                   transaction.type === 'deposit' ? 'text-green-600' : 'text-red-600'
                 }`}>
                   {transaction.type === 'deposit' ? '+' : '-'}₦{transaction.amount.toLocaleString()}

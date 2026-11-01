@@ -166,7 +166,7 @@ export default function Vaults() {
     <div>
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-1">Vaults</h1>
+          <h1 className="text-3xl font-semibold text-gray-900 mb-1">Vaults</h1>
           <p className="text-gray-500">Manage and monitor all user budget vaults</p>
         </div>
         <button
@@ -188,7 +188,7 @@ export default function Vaults() {
           <div className="flex justify-between items-start mb-4">
             <div className="flex-1 text-left">
               <p className="text-sm font-medium text-gray-500 mb-1">Total Vaults</p>
-              <p className="text-3xl font-bold text-gray-900">{stats?.total || 0}</p>
+              <p className="text-lg font-semibold text-gray-900">{stats?.total || 0}</p>
             </div>
             <div className="w-12 h-12 rounded-xl bg-gray-50 flex items-center justify-center">
               <Wallet className="h-5 w-5 text-gray-600" />
@@ -208,7 +208,7 @@ export default function Vaults() {
           <div className="flex justify-between items-start mb-4">
             <div className="flex-1 text-left">
               <p className="text-sm font-medium text-gray-500 mb-1">Active</p>
-              <p className="text-3xl font-bold text-green-600">{stats?.active || 0}</p>
+              <p className="text-lg font-semibold text-green-600">{stats?.active || 0}</p>
             </div>
             <div className="w-12 h-12 rounded-xl bg-green-50 flex items-center justify-center">
               <Clock className="h-5 w-5 text-green-600" />
@@ -228,7 +228,7 @@ export default function Vaults() {
           <div className="flex justify-between items-start mb-4">
             <div className="flex-1 text-left">
               <p className="text-sm font-medium text-gray-500 mb-1">Completed</p>
-              <p className="text-3xl font-bold text-blue-600">{stats?.completed || 0}</p>
+              <p className="text-lg font-semibold text-blue-600">{stats?.completed || 0}</p>
             </div>
             <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center">
               <CheckCircle className="h-5 w-5 text-blue-600" />
@@ -248,7 +248,7 @@ export default function Vaults() {
           <div className="flex justify-between items-start mb-4">
             <div className="flex-1 text-left">
               <p className="text-sm font-medium text-gray-500 mb-1">Cancelled</p>
-              <p className="text-3xl font-bold text-red-600">{stats?.cancelled || 0}</p>
+              <p className="text-lg font-semibold text-red-600">{stats?.cancelled || 0}</p>
             </div>
             <div className="w-12 h-12 rounded-xl bg-red-50 flex items-center justify-center">
               <XCircle className="h-5 w-5 text-red-600" />
@@ -281,7 +281,7 @@ export default function Vaults() {
           <div className="flex items-center gap-3 mb-2">
             <div>
               <p className="text-sm text-gray-500">Total in Vaults</p>
-              <p className="text-lg font-bold text-gray-900">
+              <p className="text-lg font-semibold text-gray-900">
                 {new Intl.NumberFormat('en-NG', {
                   style: 'currency',
                   currency: 'NGN'
@@ -295,7 +295,7 @@ export default function Vaults() {
           <div className="flex items-center gap-3 mb-2">
             <div>
               <p className="text-sm text-gray-500">Funds added</p>
-              <p className="text-lg font-bold text-gray-900">
+              <p className="text-lg font-semibold text-gray-900">
                 {new Intl.NumberFormat('en-NG', {
                   style: 'currency',
                   currency: 'NGN'
@@ -309,7 +309,7 @@ export default function Vaults() {
           <div className="flex items-center gap-3 mb-2">
             <div>
               <p className="text-sm text-gray-500">Remaining to fund</p>
-              <p className="text-lg font-bold text-gray-900">
+              <p className="text-lg font-semibold text-gray-900">
                 {new Intl.NumberFormat('en-NG', {
                   style: 'currency',
                   currency: 'NGN'

@@ -48,7 +48,7 @@ export function ProtectedRoute({
           <div className="w-20 h-20 rounded-2xl bg-red-50 flex items-center justify-center mx-auto mb-6">
             <ShieldOff className="h-10 w-10 text-red-600" />
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-3">Access Denied</h2>
+          <h2 className="text-2xl font-semibold text-gray-900 mb-3">Access Denied</h2>
           <p className="text-gray-600 mb-6">
             You don't have permission to access this page. Contact your administrator if you believe this is an error.
           </p>

@@ -157,7 +157,7 @@ export default function KycReviewDrawer({ userId, onClose }: KycReviewDrawerProp
               </span>
             </div>
             <div className="min-w-0">
-              <h2 className="font-bold text-gray-900 truncate">{fullName || 'KYC review'}</h2>
+              <h2 className="font-semibold text-gray-900 truncate">{fullName || 'KYC review'}</h2>
               <p className="text-sm text-gray-500 truncate">{data?.email}</p>
             </div>
           </div>

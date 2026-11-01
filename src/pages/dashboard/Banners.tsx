@@ -18,7 +18,7 @@ export default function Banners() {
     <div className="max-w-7xl mx-auto">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
         <div className="flex-1 min-w-0">
-          <h1 className="text-3xl font-bold text-gray-900 mb-1">Banner Management</h1>
+          <h1 className="text-3xl font-semibold text-gray-900 mb-1">Banner Management</h1>
           <p className="text-gray-500">
             Manage promotional banners displayed in the app
           </p>

@@ -263,7 +263,7 @@ export default function Analytics() {
     <div>
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-1">Analytics</h1>
+          <h1 className="text-2xl font-semibold text-gray-900 mb-1">Analytics</h1>
           <p className="text-gray-500">Platform performance metrics and insights</p>
         </div>
         <button
@@ -280,7 +280,7 @@ export default function Analytics() {
           <div className="flex justify-between items-start mb-4">
             <div className="flex-1">
               <p className="text-sm font-medium text-gray-500 mb-1">User Growth</p>
-              <p className="text-2xl font-bold text-gray-900">{data.userGrowth.this_month}</p>
+              <p className="text-lg font-semibold text-gray-900">{data.userGrowth.this_month}</p>
             </div>
           </div>
           <div className="flex items-center gap-2 pt-3 border-t border-gray-100">
@@ -306,7 +306,7 @@ export default function Analytics() {
           <div className="flex justify-between items-start mb-4">
             <div className="flex-1">
               <p className="text-sm font-medium text-gray-500 mb-1">Transaction Volume</p>
-              <p className="text-2xl font-bold text-gray-900">₦{data.transactionVolume.this_month.toLocaleString()}</p>
+              <p className="text-lg font-semibold text-gray-900">₦{data.transactionVolume.this_month.toLocaleString()}</p>
             </div>
           </div>
           <div className="flex items-center gap-2 pt-3 border-t border-gray-100">
@@ -332,7 +332,7 @@ export default function Analytics() {
           <div className="flex justify-between items-start mb-4">
             <div className="flex-1">
               <p className="text-sm font-medium text-gray-500 mb-1">Retention Rate</p>
-              <p className="text-2xl font-bold text-gray-900">{data.retentionRate.value.toFixed(1)}%</p>
+              <p className="text-lg font-semibold text-gray-900">{data.retentionRate.value.toFixed(1)}%</p>
             </div>
           </div>
           <div className="flex items-center gap-2 pt-3 border-t border-gray-100">
@@ -358,7 +358,7 @@ export default function Analytics() {
           <div className="flex justify-between items-start mb-4">
             <div className="flex-1">
               <p className="text-sm font-medium text-gray-500 mb-1">Active Plans</p>
-              <p className="text-2xl font-bold text-gray-900">
+              <p className="text-lg font-semibold text-gray-900">
                 {(data.payoutDistribution.daily || 0) + (data.payoutDistribution.weekly || 0) + (data.payoutDistribution.biweekly || 0) +
                  (data.payoutDistribution.specificDays || 0) + (data.payoutDistribution.monthEnd || 0) + (data.payoutDistribution.monthly || 0) +
                  (data.payoutDistribution.quarterly || 0) + (data.payoutDistribution.biAnnually || 0) + (data.payoutDistribution.annually || 0) +
@@ -377,7 +377,7 @@ export default function Analytics() {
           <div className="flex justify-between items-start mb-4">
             <div className="flex-1">
               <p className="text-sm font-medium text-gray-500 mb-1">All Users</p>
-              <p className="text-2xl font-bold text-gray-900">{data.totalUsers.toLocaleString()}</p>
+              <p className="text-lg font-semibold text-gray-900">{data.totalUsers.toLocaleString()}</p>
             </div>
           </div>
           <div className="pt-3 border-t border-gray-100">
@@ -389,7 +389,7 @@ export default function Analytics() {
           <div className="flex justify-between items-start mb-4">
             <div className="flex-1">
               <p className="text-sm font-medium text-gray-500 mb-1">Total Deposited</p>
-              <p className="text-2xl font-bold text-gray-900">₦{data.totalDeposited.toLocaleString()}</p>
+              <p className="text-lg font-semibold text-gray-900">₦{data.totalDeposited.toLocaleString()}</p>
             </div>
           </div>
           <div className="pt-3 border-t border-gray-100">
@@ -401,7 +401,7 @@ export default function Analytics() {
           <div className="flex justify-between items-start mb-4">
             <div className="flex-1">
               <p className="text-sm font-medium text-gray-500 mb-1">Total Paid Out</p>
-              <p className="text-2xl font-bold text-gray-900">₦{data.totalPaidOut.toLocaleString()}</p>
+              <p className="text-lg font-semibold text-gray-900">₦{data.totalPaidOut.toLocaleString()}</p>
             </div>
           </div>
           <div className="pt-3 border-t border-gray-100">
@@ -413,7 +413,7 @@ export default function Analytics() {
           <div className="flex justify-between items-start mb-4">
             <div className="flex-1">
               <p className="text-sm font-medium text-gray-500 mb-1">Total User's Balance</p>
-              <p className="text-2xl font-bold text-gray-900">₦{data.totalUsersBalance.toLocaleString()}</p>
+              <p className="text-lg font-semibold text-gray-900">₦{data.totalUsersBalance.toLocaleString()}</p>
             </div>
           </div>
           <div className="pt-3 border-t border-gray-100">
@@ -425,7 +425,7 @@ export default function Analytics() {
           <div className="flex justify-between items-start mb-4">
             <div className="flex-1">
               <p className="text-sm font-medium text-gray-500 mb-1">Total Amount in Plans</p>
-              <p className="text-2xl font-bold text-gray-900">₦{data.totalAmountInPlans.toLocaleString()}</p>
+              <p className="text-lg font-semibold text-gray-900">₦{data.totalAmountInPlans.toLocaleString()}</p>
             </div>
           </div>
           <div className="pt-3 border-t border-gray-100">
@@ -437,7 +437,7 @@ export default function Analytics() {
           <div className="flex justify-between items-start mb-4">
             <div className="flex-1">
               <p className="text-sm font-medium text-gray-500 mb-1">Total Completed Payouts</p>
-              <p className="text-2xl font-bold text-gray-900">{data.totalCompletedPayouts.toLocaleString()}</p>
+              <p className="text-lg font-semibold text-gray-900">{data.totalCompletedPayouts.toLocaleString()}</p>
             </div>
 
           </div>
@@ -457,7 +457,7 @@ export default function Analytics() {
           <div className="flex justify-between items-start mb-4">
             <div className="flex-1">
               <p className="text-sm font-medium text-gray-500 mb-1">Highest User Balance</p>
-              <p className="text-2xl font-bold text-gray-900 mb-1">₦{data.highestUserBalance.amount.toLocaleString()}</p>
+              <p className="text-lg font-semibold text-gray-900 mb-1">₦{data.highestUserBalance.amount.toLocaleString()}</p>
               {data.highestUserBalance.user_name && (
                 <p className="text-xs text-gray-500">{data.highestUserBalance.user_name}</p>
               )}
@@ -479,11 +479,11 @@ export default function Analytics() {
               <p className="text-sm font-medium text-gray-500 mb-1">Most Recent Deposit</p>
               {data.mostRecentDeposit ? (
                 <>
-                  <p className="text-2xl font-bold text-gray-900 mb-1">₦{data.mostRecentDeposit.amount.toLocaleString()}</p>
+                  <p className="text-lg font-semibold text-gray-900 mb-1">₦{data.mostRecentDeposit.amount.toLocaleString()}</p>
                   <p className="text-xs text-gray-500">{data.mostRecentDeposit.user_name}</p>
                 </>
               ) : (
-                <p className="text-2xl font-bold text-gray-400">No deposits</p>
+                <p className="text-lg font-semibold text-gray-400">No deposits</p>
               )}
             </div>
           </div>
@@ -508,11 +508,11 @@ export default function Analytics() {
               <p className="text-sm font-medium text-gray-500 mb-1">Most Recent Payout</p>
               {data.mostRecentPayout ? (
                 <>
-                  <p className="text-2xl font-bold text-gray-900 mb-1">₦{data.mostRecentPayout.amount.toLocaleString()}</p>
+                  <p className="text-lg font-semibold text-gray-900 mb-1">₦{data.mostRecentPayout.amount.toLocaleString()}</p>
                   <p className="text-xs text-gray-500">{data.mostRecentPayout.user_name}</p>
                 </>
               ) : (
-                <p className="text-2xl font-bold text-gray-400">No payouts</p>
+                <p className="text-lg font-semibold text-gray-400">No payouts</p>
               )}
             </div>
           </div>

@@ -5,7 +5,7 @@ interface PayoutCountdownProps {
   className?: string;
 }
 
-export function PayoutCountdown({ targetDate, className = 'font-mono text-lg md:text-xl font-bold text-gray-900' }: PayoutCountdownProps) {
+export function PayoutCountdown({ targetDate, className = 'font-mono text-lg md:text-xl font-semibold text-gray-900' }: PayoutCountdownProps) {
   const [timeLeft, setTimeLeft] = useState<string>('');
 
   useEffect(() => {

@@ -113,7 +113,7 @@ export default function UserEvents() {
             <ArrowLeft className="h-5 w-5 text-gray-600" />
           </Link>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-1">User Activity</h1>
+            <h1 className="text-3xl font-semibold text-gray-900 mb-1">User Activity</h1>
             {userData && (
               <p className="text-gray-500">
                 {userData.first_name} {userData.last_name} ({userData.email})

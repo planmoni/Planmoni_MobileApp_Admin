@@ -156,7 +156,7 @@ export default function Users() {
     <div className="w-full min-w-0">
       <div className="flex justify-between items-center mb-6 md:mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-1">Users</h1>
+          <h1 className="text-2xl font-semibold text-gray-900 mb-1">Users</h1>
           <p className="text-sm md:text-base text-gray-500">Manage all users on the platform</p>
         </div>
         <button
@@ -174,7 +174,7 @@ export default function Users() {
           {statCards.map((card) => (
             <div key={card.label} className="bg-white rounded-2xl p-4 md:p-6 shadow-soft border border-gray-100">
               <p className="text-xs md:text-sm font-medium text-gray-500 mb-1">{card.label}</p>
-              <p className="text-xl md:text-2xl font-bold text-gray-900">{card.value}</p>
+              <p className="text-lg font-semibold text-gray-900">{card.value}</p>
               <p className="text-xs text-gray-400 mt-2 pt-2 border-t border-gray-100 break-words">{card.hint}</p>
             </div>
           ))}

@@ -65,7 +65,7 @@ export default function DeleteUserDialog({ userId, userName, open, onClose }: De
             </button>
           </div>
 
-          <h2 className="text-xl font-bold text-gray-900 mb-2">Delete user</h2>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Delete user</h2>
 
           {isLoading && (
             <div className="flex items-center gap-3 py-6 text-sm text-gray-500">

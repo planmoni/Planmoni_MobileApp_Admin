@@ -284,7 +284,7 @@ export default function Notifications() {
     <div className="w-full min-w-0">
       <div className="flex justify-between items-center mb-6 md:mb-8">
         <div>
-          <h1 className="text-2xl md:text-2xl font-bold text-gray-900 mb-1">Push Notifications</h1>
+          <h1 className="text-2xl md:text-2xl font-semibold text-gray-900 mb-1">Push Notifications</h1>
           <p className="text-sm md:text-base text-gray-500">Send push notifications to mobile app users</p>
         </div>
         <div className="flex space-x-3">
@@ -310,7 +310,7 @@ export default function Notifications() {
           <div className="flex justify-between items-start mb-3 md:mb-4">
             <div className="flex-1">
               <p className="text-sm font-medium text-gray-500 mb-1">Total Sent</p>
-              <p className="text-2xl md:text-2xl font-bold text-gray-900">{stats?.total_sent || 0}</p>
+              <p className="text-lg font-semibold text-gray-900">{stats?.total_sent || 0}</p>
             </div>
           </div>
         </div>
@@ -319,7 +319,7 @@ export default function Notifications() {
           <div className="flex justify-between items-start mb-3 md:mb-4">
             <div className="flex-1">
               <p className="text-sm font-medium text-gray-500 mb-1">Delivered</p>
-              <p className="text-2xl md:text-2xl font-bold text-gray-900">{stats?.total_delivered || 0}</p>
+              <p className="text-lg font-semibold text-gray-900">{stats?.total_delivered || 0}</p>
             </div>
           </div>
         </div>
@@ -328,7 +328,7 @@ export default function Notifications() {
           <div className="flex justify-between items-start mb-3 md:mb-4">
             <div className="flex-1">
               <p className="text-sm font-medium text-gray-500 mb-1">Failed</p>
-              <p className="text-2xl md:text-2xl font-bold text-gray-900">{stats?.total_failed || 0}</p>
+              <p className="text-lg font-semibold text-gray-900">{stats?.total_failed || 0}</p>
             </div>
           </div>
         </div>
@@ -337,7 +337,7 @@ export default function Notifications() {
           <div className="flex justify-between items-start mb-3 md:mb-4">
             <div className="flex-1">
               <p className="text-sm font-medium text-gray-500 mb-1">Delivery Rate</p>
-              <p className="text-2xl md:text-2xl font-bold text-gray-900">{stats?.delivery_rate || 0}%</p>
+              <p className="text-lg font-semibold text-gray-900">{stats?.delivery_rate || 0}%</p>
             </div>
           </div>
         </div>
@@ -360,7 +360,7 @@ export default function Notifications() {
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="text-sm">
-                    <span className="font-bold text-xl text-gray-900">{count}</span>
+                    <span className="font-semibold text-xl text-gray-900">{count}</span>
                     <span className="text-gray-600 ml-1">eligible</span>
                   </div>
                   <div className="flex space-x-2">
@@ -549,19 +549,19 @@ export default function Notifications() {
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
                 <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
                   <p className="text-xs text-gray-600 mb-1">Dispatched Today</p>
-                  <p className="text-2xl font-bold text-gray-900">{dispatchStatsData?.total_dispatched || 0}</p>
+                  <p className="text-lg font-semibold text-gray-900">{dispatchStatsData?.total_dispatched || 0}</p>
                 </div>
                 <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
                   <p className="text-xs text-gray-600 mb-1">Success Rate</p>
-                  <p className="text-2xl font-bold text-gray-900">{dispatchStatsData?.success_rate || 0}%</p>
+                  <p className="text-lg font-semibold text-gray-900">{dispatchStatsData?.success_rate || 0}%</p>
                 </div>
                 <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
                   <p className="text-xs text-gray-600 mb-1">Failed</p>
-                  <p className="text-2xl font-bold text-gray-900">{dispatchStatsData?.total_failed || 0}</p>
+                  <p className="text-lg font-semibold text-gray-900">{dispatchStatsData?.total_failed || 0}</p>
                 </div>
                 <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
                   <p className="text-xs text-gray-600 mb-1">Avg. Delivery</p>
-                  <p className="text-2xl font-bold text-gray-900">{dispatchStatsData?.avg_delivery_time || 0}s</p>
+                  <p className="text-lg font-semibold text-gray-900">{dispatchStatsData?.avg_delivery_time || 0}s</p>
                 </div>
               </div>
 
@@ -745,7 +745,7 @@ export default function Notifications() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-gray-100">
-              <h2 className="text-2xl font-bold text-gray-900">Send Push Notification</h2>
+              <h2 className="text-2xl font-semibold text-gray-900">Send Push Notification</h2>
               <p className="text-gray-500 mt-1">Create and send a push notification to mobile users</p>
             </div>
 
@@ -897,7 +897,7 @@ export default function Notifications() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl max-w-lg w-full">
             <div className="p-6 border-b border-gray-100">
-              <h2 className="text-2xl font-bold text-gray-900">Confirm Re-engagement Alert</h2>
+              <h2 className="text-2xl font-semibold text-gray-900">Confirm Re-engagement Alert</h2>
             </div>
 
             <div className="p-6 space-y-4">
@@ -913,7 +913,7 @@ export default function Notifications() {
 
                     <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
                       <p className="text-sm text-gray-900">
-                        This will send a notification to <span className="font-bold">{count} eligible users</span>.
+                        This will send a notification to <span className="font-semibold">{count} eligible users</span>.
                       </p>
                     </div>
 
@@ -966,7 +966,7 @@ export default function Notifications() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col">
             <div className="p-6 border-b border-gray-100">
-              <h2 className="text-2xl font-bold text-gray-900">Eligible Recipients</h2>
+              <h2 className="text-2xl font-semibold text-gray-900">Eligible Recipients</h2>
               <p className="text-gray-500 mt-1">
                 {REENGAGEMENT_CATEGORIES.find(c => c.id === selectedReengagement)?.title}
               </p>

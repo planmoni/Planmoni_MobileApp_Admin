@@ -175,7 +175,7 @@ export default function PayoutPlans() {
     <div>
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-1">Payout Plans</h1>
+          <h1 className="text-3xl font-semibold text-gray-900 mb-1">Payout Plans</h1>
           <p className="text-gray-500">Manage and monitor all user payout plans</p>
         </div>
         <button
@@ -197,7 +197,7 @@ export default function PayoutPlans() {
           <div className="flex justify-between items-start mb-4">
             <div className="flex-1 text-left">
               <p className="text-sm font-medium text-gray-500 mb-1">Total Plans</p>
-              <p className="text-3xl font-bold text-gray-900">{stats?.total || 0}</p>
+              <p className="text-lg font-semibold text-gray-900">{stats?.total || 0}</p>
             </div>
             <div className="w-12 h-12 rounded-xl bg-gray-50 flex items-center justify-center">
               <TrendingUp className="h-5 w-5 text-gray-600" />
@@ -217,7 +217,7 @@ export default function PayoutPlans() {
           <div className="flex justify-between items-start mb-4">
             <div className="flex-1 text-left">
               <p className="text-sm font-medium text-gray-500 mb-1">Active</p>
-              <p className="text-3xl font-bold text-green-600">{stats?.active || 0}</p>
+              <p className="text-lg font-semibold text-green-600">{stats?.active || 0}</p>
             </div>
             <div className="w-12 h-12 rounded-xl bg-green-50 flex items-center justify-center">
               <Clock className="h-5 w-5 text-green-600" />
@@ -237,7 +237,7 @@ export default function PayoutPlans() {
           <div className="flex justify-between items-start mb-4">
             <div className="flex-1 text-left">
               <p className="text-sm font-medium text-gray-500 mb-1">Completed</p>
-              <p className="text-3xl font-bold text-blue-600">{stats?.completed || 0}</p>
+              <p className="text-lg font-semibold text-blue-600">{stats?.completed || 0}</p>
             </div>
             <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center">
               <CheckCircle className="h-5 w-5 text-blue-600" />
@@ -257,7 +257,7 @@ export default function PayoutPlans() {
           <div className="flex justify-between items-start mb-4">
             <div className="flex-1 text-left">
               <p className="text-sm font-medium text-gray-500 mb-1">Cancelled</p>
-              <p className="text-3xl font-bold text-red-600">{stats?.cancelled || 0}</p>
+              <p className="text-lg font-semibold text-red-600">{stats?.cancelled || 0}</p>
             </div>
             <div className="w-12 h-12 rounded-xl bg-red-50 flex items-center justify-center">
               <XCircle className="h-5 w-5 text-red-600" />
@@ -293,7 +293,7 @@ export default function PayoutPlans() {
             </div>
             <div>
               <p className="text-sm text-gray-500">Total Amount in all Plans</p>
-              <p className="text-2xl font-bold text-gray-900">
+              <p className="text-lg font-semibold text-gray-900">
                 {new Intl.NumberFormat('en-NG', {
                   style: 'currency',
                   currency: 'NGN'
@@ -310,7 +310,7 @@ export default function PayoutPlans() {
             </div>
             <div>
               <p className="text-sm text-gray-500">Total Payout Amount</p>
-              <p className="text-2xl font-bold text-gray-900">
+              <p className="text-lg font-semibold text-gray-900">
                 {new Intl.NumberFormat('en-NG', {
                   style: 'currency',
                   currency: 'NGN'
@@ -327,7 +327,7 @@ export default function PayoutPlans() {
             </div>
             <div>
               <p className="text-sm text-gray-500">Total Locked for Payouts</p>
-              <p className="text-2xl font-bold text-gray-900">
+              <p className="text-lg font-semibold text-gray-900">
                 {new Intl.NumberFormat('en-NG', {
                   style: 'currency',
                   currency: 'NGN'
@@ -344,7 +344,7 @@ export default function PayoutPlans() {
             </div>
             <div>
               <p className="text-sm text-gray-500">Emergency Withdrawals</p>
-              <p className="text-2xl font-bold text-gray-900">
+              <p className="text-lg font-semibold text-gray-900">
                 {new Intl.NumberFormat('en-NG', {
                   style: 'currency',
                   currency: 'NGN'
@@ -360,7 +360,7 @@ export default function PayoutPlans() {
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4">
           <div className="p-4 bg-blue-50 rounded-xl">
             <p className="text-xs text-blue-600 font-medium mb-1">Daily</p>
-            <p className="text-2xl font-bold text-gray-900 mb-1">{stats?.daily || 0}</p>
+            <p className="text-lg font-semibold text-gray-900 mb-1">{stats?.daily || 0}</p>
             <p className="text-xs text-gray-600">
               {new Intl.NumberFormat('en-NG', {
                 style: 'currency',
@@ -372,7 +372,7 @@ export default function PayoutPlans() {
 
           <div className="p-4 bg-purple-50 rounded-xl">
             <p className="text-xs text-purple-600 font-medium mb-1">Specific Days</p>
-            <p className="text-2xl font-bold text-gray-900 mb-1">{stats?.specificDays || 0}</p>
+            <p className="text-lg font-semibold text-gray-900 mb-1">{stats?.specificDays || 0}</p>
             <p className="text-xs text-gray-600">
               {new Intl.NumberFormat('en-NG', {
                 style: 'currency',
@@ -384,7 +384,7 @@ export default function PayoutPlans() {
 
           <div className="p-4 bg-pink-50 rounded-xl">
             <p className="text-xs text-pink-600 font-medium mb-1">Weekly</p>
-            <p className="text-2xl font-bold text-gray-900 mb-1">{stats?.weekly || 0}</p>
+            <p className="text-lg font-semibold text-gray-900 mb-1">{stats?.weekly || 0}</p>
             <p className="text-xs text-gray-600">
               {new Intl.NumberFormat('en-NG', {
                 style: 'currency',
@@ -396,7 +396,7 @@ export default function PayoutPlans() {
 
           <div className="p-4 bg-orange-50 rounded-xl">
             <p className="text-xs text-orange-600 font-medium mb-1">Bi-Weekly</p>
-            <p className="text-2xl font-bold text-gray-900 mb-1">{stats?.biWeekly || 0}</p>
+            <p className="text-lg font-semibold text-gray-900 mb-1">{stats?.biWeekly || 0}</p>
             <p className="text-xs text-gray-600">
               {new Intl.NumberFormat('en-NG', {
                 style: 'currency',
@@ -408,7 +408,7 @@ export default function PayoutPlans() {
 
           <div className="p-4 bg-green-50 rounded-xl">
             <p className="text-xs text-green-600 font-medium mb-1">Monthly</p>
-            <p className="text-2xl font-bold text-gray-900 mb-1">{stats?.monthly || 0}</p>
+            <p className="text-lg font-semibold text-gray-900 mb-1">{stats?.monthly || 0}</p>
             <p className="text-xs text-gray-600">
               {new Intl.NumberFormat('en-NG', {
                 style: 'currency',
@@ -420,7 +420,7 @@ export default function PayoutPlans() {
 
           <div className="p-4 bg-cyan-50 rounded-xl">
             <p className="text-xs text-cyan-600 font-medium mb-1">Month End</p>
-            <p className="text-2xl font-bold text-gray-900 mb-1">{stats?.monthEnd || 0}</p>
+            <p className="text-lg font-semibold text-gray-900 mb-1">{stats?.monthEnd || 0}</p>
             <p className="text-xs text-gray-600">
               {new Intl.NumberFormat('en-NG', {
                 style: 'currency',
@@ -432,7 +432,7 @@ export default function PayoutPlans() {
 
           <div className="p-4 bg-indigo-50 rounded-xl">
             <p className="text-xs text-indigo-600 font-medium mb-1">Quarterly</p>
-            <p className="text-2xl font-bold text-gray-900 mb-1">{stats?.quarterly || 0}</p>
+            <p className="text-lg font-semibold text-gray-900 mb-1">{stats?.quarterly || 0}</p>
             <p className="text-xs text-gray-600">
               {new Intl.NumberFormat('en-NG', {
                 style: 'currency',
@@ -444,7 +444,7 @@ export default function PayoutPlans() {
 
           <div className="p-4 bg-orange-50 rounded-xl">
             <p className="text-xs text-orange-600 font-medium mb-1">Bi-Annually</p>
-            <p className="text-2xl font-bold text-gray-900 mb-1">{stats?.biAnnually || 0}</p>
+            <p className="text-lg font-semibold text-gray-900 mb-1">{stats?.biAnnually || 0}</p>
             <p className="text-xs text-gray-600">
               {new Intl.NumberFormat('en-NG', {
                 style: 'currency',
@@ -456,7 +456,7 @@ export default function PayoutPlans() {
 
           <div className="p-4 bg-teal-50 rounded-xl">
             <p className="text-xs text-teal-600 font-medium mb-1">Annually</p>
-            <p className="text-2xl font-bold text-gray-900 mb-1">{stats?.annually || 0}</p>
+            <p className="text-lg font-semibold text-gray-900 mb-1">{stats?.annually || 0}</p>
             <p className="text-xs text-gray-600">
               {new Intl.NumberFormat('en-NG', {
                 style: 'currency',
@@ -468,7 +468,7 @@ export default function PayoutPlans() {
 
           <div className="p-4 bg-gray-50 rounded-xl">
             <p className="text-xs text-gray-600 font-medium mb-1">Custom</p>
-            <p className="text-2xl font-bold text-gray-900 mb-1">{stats?.custom || 0}</p>
+            <p className="text-lg font-semibold text-gray-900 mb-1">{stats?.custom || 0}</p>
             <p className="text-xs text-gray-600">
               {new Intl.NumberFormat('en-NG', {
                 style: 'currency',

@@ -171,7 +171,7 @@ export default function AppVersions() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">App Versions</h1>
+          <h1 className="text-3xl font-semibold text-gray-900">App Versions</h1>
           <p className="text-gray-500 mt-1">Manage mobile application versions independently</p>
         </div>
         <button
@@ -191,7 +191,7 @@ export default function AppVersions() {
                 <Smartphone className="w-6 h-6" />
               </div>
               <div>
-                <h2 className="text-2xl font-bold">Android</h2>
+                <h2 className="text-2xl font-semibold">Android</h2>
                 <p className="text-sm opacity-90">Play Store Version</p>
               </div>
             </div>
@@ -267,7 +267,7 @@ export default function AppVersions() {
                 <Smartphone className="w-6 h-6" />
               </div>
               <div>
-                <h2 className="text-2xl font-bold">iOS</h2>
+                <h2 className="text-2xl font-semibold">iOS</h2>
                 <p className="text-sm opacity-90">App Store Version</p>
               </div>
             </div>

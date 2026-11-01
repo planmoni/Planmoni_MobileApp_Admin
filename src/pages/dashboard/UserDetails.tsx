@@ -1,27 +1,172 @@
 import { useState } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Wallet, Calendar, Building2, ArrowUpRight, ArrowDownRight, RefreshCw, Shield, Lock, TrendingUp, Clock, CircleCheck as CheckCircle2, Circle as XCircle, User, Phone, MapPin, FileText, CreditCard, CircleCheck as CheckCircle, Circle as XCircleIcon, Zap, Camera, ExternalLink, ListChecks, Ban } from 'lucide-react';
-import { format, addDays, addWeeks, addMonths } from 'date-fns';
+import { useParams, Link, useSearchParams } from 'react-router-dom';
+import {
+  ArrowLeft,
+  ArrowDownRight,
+  ArrowUpRight,
+  Banknote,
+  Bell,
+  Building2,
+  Calendar,
+  CircleCheck,
+  CircleX,
+  ClipboardCheck,
+  Clock,
+  CreditCard,
+  Lock,
+  RefreshCw,
+  Shield,
+  Ban,
+  Vault,
+  Wallet,
+  Zap,
+  type LucideIcon,
+} from 'lucide-react';
+import { format, addDays, addWeeks, addMonths, formatDistanceToNow } from 'date-fns';
 import { useUserDetails, useUserRestriction, useUserGeneratedAccounts } from '@/hooks/queries/useUsersData';
 import { usePermissions } from '@/contexts/PermissionsContext';
 import { useRefreshData } from '@/hooks/mutations/useRefreshData';
-import { PayoutCountdown } from '@/components/PayoutCountdown';
 import SendReengagementButton from '@/components/SendReengagementButton';
 import UserActionsMenu from '@/components/UserActionsMenu';
 import BankAccountRow from '@/components/BankAccountRow';
-import { PayoutPlanIcon, VaultIcon } from '@/components/PlanIcons';
 import { usePayoutPlanPurposes } from '@/hooks/queries/usePlanIcons';
 import { useUserPayoutActions } from '@/hooks/queries/usePayoutActions';
-import { InstallmentActions, PlanControls } from '@/components/PayoutActions';
 import TransactionDetailsModal from '@/components/TransactionDetailsModal';
 import PlanBreakdownModal from '@/components/PlanBreakdownModal';
-import { TierIcon } from '@/components/TierIcon';
+import { TransactionStatusBadge } from '@/components/TransactionRow';
+import { TierBadge } from '@/components/KycBadges';
+import type { KycTier } from '@/hooks/queries/useKycData';
+import PayoutPlanCard from '@/components/userDetails/PayoutPlanCard';
+import VaultCard from '@/components/userDetails/VaultCard';
+import KycPanel from '@/components/userDetails/KycPanel';
+import { EmptyState, Panel, naira } from '@/components/userDetails/ui';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 
+const TABS = [
+  { id: 'overview', label: 'Overview' },
+  { id: 'plans', label: 'Payout plans' },
+  { id: 'vaults', label: 'Vaults' },
+  { id: 'transactions', label: 'Transactions' },
+  { id: 'kyc', label: 'KYC' },
+  { id: 'activity', label: 'Activity' },
+] as const;
+type TabId = (typeof TABS)[number]['id'];
+
+const eventIcon = (type: string): LucideIcon => {
+  if (type.includes('payout')) return Banknote;
+  if (type.includes('kyc')) return ClipboardCheck;
+  if (type.includes('transaction')) return CreditCard;
+  if (type.includes('notification')) return Bell;
+  return Zap;
+};
+
+function StatTile({ icon: Icon, label, value }: { icon: LucideIcon; label: string; value: string }) {
+  return (
+    <div className="flex items-start gap-3 bg-white rounded-2xl p-3.5 shadow-soft border border-gray-100 min-w-0">
+      <div className="flex-shrink-0 w-9 h-9 rounded-xl bg-gray-50 text-gray-600 flex items-center justify-center">
+        <Icon className="h-[18px] w-[18px]" />
+      </div>
+      <div className="min-w-0">
+        <p className="text-xs text-gray-500 truncate">{label}</p>
+        <p className="mt-0.5 text-sm md:text-base font-semibold text-gray-900 tabular-nums break-words leading-snug">
+          {value}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function TransactionList({
+  items,
+  onOpen,
+  attention,
+}: {
+  items: any[];
+  onOpen: (t: any) => void;
+  attention: (t: any) => boolean;
+}) {
+  return (
+    <div className="divide-y divide-gray-100">
+      {items.map((t) => {
+        const isIn = t.type === 'deposit';
+        return (
+          <button
+            key={t.id}
+            onClick={() => onOpen(t)}
+            className="w-full text-left px-4 md:px-5 py-3 hover:bg-gray-50 transition-colors flex items-center justify-between gap-3"
+          >
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-9 h-9 rounded-xl bg-gray-50 flex items-center justify-center flex-shrink-0">
+                {isIn ? (
+                  <ArrowDownRight className="h-4 w-4 text-gray-700" />
+                ) : (
+                  <ArrowUpRight className="h-4 w-4 text-gray-700" />
+                )}
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-gray-900 capitalize">{t.type}</p>
+                <p className="text-xs text-gray-500">{format(new Date(t.created_at), 'MMM d, yyyy h:mm a')}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 flex-shrink-0">
+              {attention(t) && <span className="hidden sm:inline text-xs text-gray-500">Open to resolve</span>}
+              <TransactionStatusBadge status={t.status} />
+              <p className="w-28 text-right text-sm font-semibold text-gray-900 tabular-nums">
+                {isIn ? '+' : '-'}
+                {naira(t.amount)}
+              </p>
+            </div>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function EventList({ events }: { events: any[] }) {
+  return (
+    <ul className="divide-y divide-gray-100">
+      {events.map((event) => {
+        const Icon = eventIcon(String(event.type || ''));
+        return (
+          <li key={event.id} className="px-4 md:px-5 py-3 flex items-start gap-3">
+            <div className="w-9 h-9 rounded-xl bg-gray-50 flex items-center justify-center flex-shrink-0">
+              <Icon className="h-4 w-4 text-gray-600" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-start justify-between gap-3">
+                <p className="text-sm font-medium text-gray-900">{event.title}</p>
+                <span className="text-xs text-gray-400 whitespace-nowrap flex items-center gap-1">
+                  <Clock className="h-3 w-3" />
+                  {format(new Date(event.created_at), 'MMM d, h:mm a')}
+                </span>
+              </div>
+              {event.description && <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{event.description}</p>}
+              <div className="mt-1.5 flex items-center gap-1.5">
+                <span
+                  className={`px-2 py-0.5 rounded-md text-xs font-medium ${
+                    event.status === 'failed'
+                      ? 'bg-error-light text-red-700'
+                      : event.status === 'pending'
+                        ? 'bg-warning-light text-amber-800'
+                        : 'bg-gray-100 text-gray-700'
+                  }`}
+                >
+                  {event.status}
+                </span>
+                <span className="px-2 py-0.5 rounded-md text-xs text-gray-500 bg-gray-50">{event.type}</span>
+              </div>
+            </div>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
 export default function UserDetails() {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
   const { data: userDetailsData, isLoading, error } = useUserDetails(id!);
   const refreshData = useRefreshData();
   const { isSuperAdmin, hasPermission } = usePermissions();
@@ -34,6 +179,9 @@ export default function UserDetails() {
   const [selectedTransaction, setSelectedTransaction] = useState<any>(null);
   const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
   const [breakdownPlan, setBreakdownPlan] = useState<any>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tab: TabId = TABS.some((t) => t.id === searchParams.get('tab')) ? (searchParams.get('tab') as TabId) : 'overview';
+  const setTab = (next: TabId) => setSearchParams(next === 'overview' ? {} : { tab: next }, { replace: true });
 
   const { data: userActivity } = useQuery({
     queryKey: ['user-activity', id],
@@ -126,14 +274,6 @@ export default function UserDetails() {
   const handleCloseTransactionModal = () => {
     setIsTransactionModalOpen(false);
     setSelectedTransaction(null);
-  };
-
-  const getEventIcon = (type: string) => {
-    if (type.includes('payout')) return '💰';
-    if (type.includes('kyc')) return '📋';
-    if (type.includes('transaction')) return '💳';
-    if (type.includes('notification')) return '🔔';
-    return '📌';
   };
 
   if (isLoading) {
@@ -239,984 +379,373 @@ export default function UserDetails() {
     return lastSeen < fourteenDaysAgo;
   })();
 
-  return (
-    <div>
-      <div className="flex justify-between items-center mb-8">
-        <div className="flex items-center gap-4">
-          <Link
-            to="/users"
-            className="p-3 rounded-xl bg-white hover:bg-gray-50 transition-colors shadow-soft border border-gray-100"
-          >
-            <ArrowLeft className="h-5 w-5 text-gray-600" />
-          </Link>
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-1">User Details</h1>
-            <p className="text-gray-500">View and manage user information</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-3">
-          <SendReengagementButton
-            userId={id!}
-            userBalance={userBalance}
-            hasActivePlans={activePlans > 0}
-            hasDeposits={hasDeposits}
-            hasUnfundedVaults={hasUnfundedVaults}
-            isInactive={isInactive}
-          />
-          <button
-            onClick={handleRefresh}
-            className="p-3 rounded-xl bg-white hover:bg-gray-50 transition-colors shadow-soft border border-gray-100"
-            disabled={refreshData.isPending}
-          >
-            <RefreshCw className={`h-5 w-5 text-gray-600 ${refreshData.isPending ? 'animate-spin' : ''}`} />
-          </button>
-        </div>
-      </div>
 
-      <div className="bg-white rounded-2xl p-6 shadow-soft border border-gray-100 mb-6">
-        <div className="flex items-start gap-4">
-          <div className="w-20 h-20 rounded-2xl bg-[#000] flex items-center justify-center text-white text-2xl font-bold shadow-lg">
-            {user.first_name?.[0]}{user.last_name?.[0]}
+  const tier: KycTier = (
+    kycProgress?.tier_3_completed ? 3 : kycProgress?.tier_2_completed ? 2 : kycProgress?.tier_1_completed ? 1 : 0
+  ) as KycTier;
+  const wallet = user.wallets?.[0];
+  const fullName = `${user.first_name || ''} ${user.last_name || ''}`.trim();
+  const needsAttention = (t: any) => {
+    const a = payoutActions?.transactions[t.id];
+    return !!(
+      canManagePayouts &&
+      (t.status === 'pending' || t.status === 'failed') &&
+      a &&
+      (a.can_complete || a.can_refund || a.can_retry)
+    );
+  };
+  const vaults = userVaults || [];
+  const events = userActivity?.events || [];
+  const tabCount: Partial<Record<TabId, number>> = {
+    plans: activePayoutPlans.length,
+    vaults: vaults.length,
+  };
+
+  const accountsPanels = (
+    <>
+      <Panel
+        title="Planmoni account number"
+        subtitle="Generated after KYC. Deposits are received here."
+        flush
+      >
+        {accountsLoading ? (
+          <div className="p-8 flex justify-center">
+            <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-gray-400"></div>
           </div>
-          <div className="flex-1">
-            <div className="flex items-center gap-3 mb-2">
-              <h2 className="text-2xl font-bold text-gray-900">{user.first_name} {user.last_name}</h2>
+        ) : accountsError ? (
+          <div className="p-5 text-sm text-error">
+            Could not load account numbers
+            {(accountsError as { message?: string })?.message ? `: ${(accountsError as { message?: string }).message}` : ''}
+          </div>
+        ) : generatedAccounts && generatedAccounts.length > 0 ? (
+          <div className="divide-y divide-gray-100">
+            {generatedAccounts.map((account) => (
+              <BankAccountRow
+                key={account.account_number}
+                bankName={account.bank_name}
+                bankCode={account.bank_code}
+                accountNumber={account.account_number}
+                accountName={account.account_name}
+                badges={[account.status, account.is_default ? 'Primary' : null].filter(Boolean) as string[]}
+                footer={account.created_at ? <span>Created {format(new Date(account.created_at), 'MMM d, yyyy')}</span> : undefined}
+              />
+            ))}
+          </div>
+        ) : (
+          <EmptyState
+            icon={Building2}
+            title="No account number generated"
+            hint="An account number is created once the user completes KYC"
+          />
+        )}
+      </Panel>
+
+      <Panel title="Payout accounts" subtitle="Bank accounts the user can be paid out to" flush>
+        {bankAccounts.length > 0 ? (
+          <div className="divide-y divide-gray-100">
+            {bankAccounts.map((account: any) => (
+              <BankAccountRow
+                key={account.id}
+                bankName={account.bank_name}
+                bankCode={account.bank_code || account.safehaven_bank_code}
+                accountNumber={account.account_number}
+                accountName={account.account_name}
+                badges={account.is_default ? ['Default'] : []}
+                footer={
+                  <>
+                    <span>Added {format(new Date(account.created_at), 'MMM d, yyyy')}</span>
+                    {account.paystack_recipient_code && (
+                      <>
+                        <span>•</span>
+                        <span className="font-mono">{account.paystack_recipient_code}</span>
+                      </>
+                    )}
+                  </>
+                }
+              />
+            ))}
+          </div>
+        ) : (
+          <EmptyState icon={Building2} title="No payout accounts added" hint="User hasn't added any bank accounts yet" />
+        )}
+      </Panel>
+    </>
+  );
+
+  const transactionsEmpty = (
+    <EmptyState icon={CreditCard} title="No transactions found" hint="User hasn't made any transactions yet" />
+  );
+
+  return (
+    <div className="space-y-5">
+      <Link to="/users" className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900 transition-colors">
+        <ArrowLeft className="h-4 w-4" />
+        Users
+      </Link>
+
+      <Panel>
+        <div className="flex flex-col md:flex-row md:items-start gap-4">
+          <div className="w-14 h-14 rounded-2xl bg-gray-900 flex items-center justify-center text-white text-lg font-semibold flex-shrink-0">
+            {user.first_name?.[0]}
+            {user.last_name?.[0]}
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="text-lg md:text-xl font-semibold text-gray-900">{fullName || user.email}</h1>
+              <TierBadge tier={tier} size="sm" />
               {user.is_admin && (
-                <span className="px-3 py-1 text-xs font-semibold rounded-lg bg-blue-50 text-blue-600 flex items-center gap-1.5 border border-blue-100">
-                  <Shield className="h-3.5 w-3.5" />
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-medium bg-gray-900 text-white">
+                  <Shield className="h-3 w-3" />
                   Admin
                 </span>
               )}
             </div>
-            <p className="text-gray-600 mb-1">{user.email}</p>
-            <p className="text-gray-400 text-sm flex items-center gap-2">
-              <Calendar className="h-4 w-4" />
-              Joined {format(new Date(user.created_at), 'MMMM d, yyyy')}
+            <p className="text-sm text-gray-600 mt-0.5 break-all">{user.email}</p>
+            <p className="text-xs text-gray-500 mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1">
+              <span className="inline-flex items-center gap-1.5">
+                <Calendar className="h-3.5 w-3.5" />
+                Joined {format(new Date(user.created_at), 'MMM d, yyyy')}
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <Clock className="h-3.5 w-3.5" />
+                {user.last_seen_at
+                  ? `Last seen ${formatDistanceToNow(new Date(user.last_seen_at), { addSuffix: true })}`
+                  : 'Never opened the app'}
+              </span>
             </p>
-            {restriction?.post_no_debit && (
-              <div className="mt-3 inline-flex items-start gap-2 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700">
-                <Ban className="h-4 w-4 mt-0.5 flex-shrink-0 text-gray-900" />
-                <div>
-                  <p className="font-semibold text-gray-900">Post No Debit</p>
-                  <p className="text-gray-600">
-                    Cannot create payout plans or lock funds.
-                    {restriction.post_no_debit_reason && ` Reason: ${restriction.post_no_debit_reason}.`}
-                  </p>
-                  {(restriction.post_no_debit_by || restriction.post_no_debit_at) && (
-                    <p className="text-xs text-gray-400 mt-0.5">
-                      {restriction.post_no_debit_by && `Applied by ${restriction.post_no_debit_by}`}
-                      {restriction.post_no_debit_at &&
-                        `${restriction.post_no_debit_by ? ' on ' : 'Applied '}${format(new Date(restriction.post_no_debit_at), 'MMM d, yyyy')}`}
-                    </p>
-                  )}
-                </div>
-              </div>
-            )}
           </div>
-          <UserActionsMenu
-            userId={id!}
-            userName={`${user.first_name || ''} ${user.last_name || ''}`}
-            canRestrict={canRestrict}
-            canDelete={canDelete}
-          />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mb-8">
-        <div className="bg-white rounded-2xl p-6 shadow-soft border border-gray-100">
-          <div className="flex justify-between items-start mb-4">
-            <div className="flex-1">
-              <p className="text-sm font-medium text-gray-500 mb-1">Available Balance</p>
-              <p className="text-3xl font-bold text-gray-900">₦{user.wallets?.[0]?.balance.toLocaleString() || '0'}</p>
-            </div>
-            <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center">
-              <Wallet className="h-5 w-5 text-blue-600" />
-            </div>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <SendReengagementButton
+              userId={id!}
+              userBalance={userBalance}
+              hasActivePlans={activePlans > 0}
+              hasDeposits={hasDeposits}
+              hasUnfundedVaults={hasUnfundedVaults}
+              isInactive={isInactive}
+            />
+            <button
+              onClick={handleRefresh}
+              className="p-2.5 rounded-xl bg-white hover:bg-gray-50 transition-colors border border-gray-200"
+              disabled={refreshData.isPending}
+              aria-label="Refresh"
+              title="Refresh"
+            >
+              <RefreshCw className={`h-4 w-4 text-gray-600 ${refreshData.isPending ? 'animate-spin' : ''}`} />
+            </button>
+            <UserActionsMenu userId={id!} userName={fullName} canRestrict={canRestrict} canDelete={canDelete} />
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl p-6 shadow-soft border border-gray-100">
-          <div className="flex justify-between items-start mb-4">
-            <div className="flex-1">
-              <p className="text-sm font-medium text-gray-500 mb-1">Total Deposits</p>
-              <p className="text-3xl font-bold text-gray-900">₦{totalDeposits.toLocaleString()}</p>
-            </div>
-            <div className="w-12 h-12 rounded-xl bg-green-50 flex items-center justify-center">
-              <ArrowUpRight className="h-5 w-5 text-green-600" />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-2xl p-6 shadow-soft border border-gray-100">
-          <div className="flex justify-between items-start mb-4">
-            <div className="flex-1">
-              <p className="text-sm font-medium text-gray-500 mb-1">Total Payouts</p>
-              <p className="text-3xl font-bold text-gray-900">₦{totalPayouts.toLocaleString()}</p>
-            </div>
-            <div className="w-12 h-12 rounded-xl bg-red-50 flex items-center justify-center">
-              <ArrowDownRight className="h-5 w-5 text-red-600" />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-2xl p-6 shadow-soft border border-gray-100">
-          <div className="flex justify-between items-start mb-4">
-            <div className="flex-1">
-              <p className="text-sm font-medium text-gray-500 mb-1">Active Plans</p>
-              <p className="text-3xl font-bold text-gray-900">{activePlans}</p>
-            </div>
-            <div className="w-12 h-12 rounded-xl bg-yellow-50 flex items-center justify-center">
-              <Calendar className="h-5 w-5 text-yellow-600" />
-            </div>
-          </div>
-        </div>
-
-        <div
-          className="bg-white rounded-2xl p-6 shadow-soft border border-gray-100 cursor-pointer hover:shadow-md transition-shadow"
-          onClick={() => navigate(`/users/${id}/completed-payouts`)}
-        >
-          <div className="flex justify-between items-start mb-4">
-            <div className="flex-1">
-              <p className="text-sm font-medium text-gray-500 mb-1">Completed Payouts</p>
-              <p className="text-3xl font-bold text-gray-900">{completedPlans}</p>
-            </div>
-            <div className="w-12 h-12 rounded-xl bg-green-50 flex items-center justify-center">
-              <CheckCircle2 className="h-5 w-5 text-green-600" />
-            </div>
-          </div>
-        </div>
-
-        <div
-          className="bg-white rounded-2xl p-6 shadow-soft border border-gray-100 cursor-pointer hover:shadow-md transition-shadow"
-          onClick={() => navigate(`/users/${id}/cancelled-payouts`)}
-        >
-          <div className="flex justify-between items-start mb-4">
-            <div className="flex-1">
-              <p className="text-sm font-medium text-gray-500 mb-1">Cancelled Payouts</p>
-              <p className="text-3xl font-bold text-gray-900">{cancelledPlans}</p>
-            </div>
-            <div className="w-12 h-12 rounded-xl bg-red-50 flex items-center justify-center">
-              <XCircle className="h-5 w-5 text-red-600" />
-            </div>
-          </div>
-        </div>
-      </div>
-
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        <div>
-          <h2 className="text-xl font-bold text-gray-900 mb-4">Wallet Information</h2>
-          <div className="bg-white rounded-2xl p-6 shadow-soft border border-gray-100">
-            <div className="space-y-5">
-              <div className="flex items-center justify-between pb-5 border-b border-gray-100">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center">
-                    <Wallet className="h-5 w-5 text-blue-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-500">Available Balance</p>
-                    <p className="text-2xl font-bold text-gray-900">₦{user.wallets?.[0]?.balance.toLocaleString() || '0'}</p>
-                  </div>
-                </div>
-              </div>
-              <div className="flex items-center justify-between pb-5 border-b border-gray-100">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-yellow-50 flex items-center justify-center">
-                    <Lock className="h-5 w-5 text-yellow-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-500">Locked Balance</p>
-                    <p className="text-2xl font-bold text-gray-900">₦{user.wallets?.[0]?.locked_balance.toLocaleString() || '0'}</p>
-                  </div>
-                </div>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center">
-                    <TrendingUp className="h-5 w-5 text-green-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-500">Total Balance</p>
-                    <p className="text-2xl font-bold text-gray-900">
-                      ₦{((user.wallets?.[0]?.balance || 0) + (user.wallets?.[0]?.locked_balance || 0)).toLocaleString()}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div>
-          <h2 className="text-xl font-bold text-gray-900 mb-1">Planmoni Account Number</h2>
-          <p className="text-sm text-gray-500 mb-4">Generated for the user after KYC. Deposits are received here.</p>
-          <div className="bg-white rounded-2xl shadow-soft border border-gray-100 overflow-hidden mb-8">
-            {accountsLoading ? (
-              <div className="p-8 flex justify-center">
-                <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-gray-400"></div>
-              </div>
-            ) : accountsError ? (
-              <div className="p-6 text-sm text-error">
-                Could not load account numbers
-                {(accountsError as { message?: string })?.message ? `: ${(accountsError as { message?: string }).message}` : ''}
-              </div>
-            ) : generatedAccounts && generatedAccounts.length > 0 ? (
-              <div className="divide-y divide-gray-100">
-                {generatedAccounts.map((account) => (
-                  <BankAccountRow
-                    key={account.account_number}
-                    bankName={account.bank_name}
-                    bankCode={account.bank_code}
-                    accountNumber={account.account_number}
-                    accountName={account.account_name}
-                    badges={[account.status, account.is_default ? 'Primary' : null].filter(Boolean) as string[]}
-                    footer={
-                      account.created_at ? <span>Created {format(new Date(account.created_at), 'MMM d, yyyy')}</span> : undefined
-                    }
-                  />
-                ))}
-              </div>
-            ) : (
-              <div className="p-10 text-center">
-                <div className="w-14 h-14 rounded-2xl bg-gray-50 flex items-center justify-center mx-auto mb-3">
-                  <Building2 className="h-6 w-6 text-gray-400" />
-                </div>
-                <p className="text-gray-500 font-medium">No account number generated</p>
-                <p className="text-gray-400 text-sm mt-1">An account number is created once the user completes KYC</p>
-              </div>
-            )}
-          </div>
-
-          <h2 className="text-xl font-bold text-gray-900 mb-4">Payout Accounts</h2>
-          <div className="bg-white rounded-2xl shadow-soft border border-gray-100 overflow-hidden">
-            {bankAccounts.length > 0 ? (
-              <div className="divide-y divide-gray-100">
-                {bankAccounts.map((account: any) => (
-                  <BankAccountRow
-                    key={account.id}
-                    bankName={account.bank_name}
-                    bankCode={account.bank_code || account.safehaven_bank_code}
-                    accountNumber={account.account_number}
-                    accountName={account.account_name}
-                    badges={account.is_default ? ['Default'] : []}
-                    footer={
-                      <>
-                        <span>Added {format(new Date(account.created_at), 'MMM d, yyyy')}</span>
-                        {account.paystack_recipient_code && (
-                          <>
-                            <span>•</span>
-                            <span className="font-mono">{account.paystack_recipient_code}</span>
-                          </>
-                        )}
-                      </>
-                    }
-                  />
-                ))}
-              </div>
-            ) : (
-              <div className="p-12 text-center">
-                <div className="w-16 h-16 rounded-2xl bg-gray-50 flex items-center justify-center mx-auto mb-4">
-                  <Building2 className="h-7 w-7 text-gray-400" />
-                </div>
-                <p className="text-gray-500 font-medium">No payout accounts added</p>
-                <p className="text-gray-400 text-sm mt-1">User hasn't added any bank accounts yet</p>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {kycData && (
-        <div className="mb-8">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">KYC Information</h2>
-          <div className="bg-white rounded-2xl shadow-soft border border-gray-100 overflow-hidden">
-            <div className="p-6">
-              <div className="flex items-center gap-3 mb-6">
-                <TierIcon
-                  tier={
-                    kycProgress?.tier_3_completed ? 3 :
-                    kycProgress?.tier_2_completed ? 2 :
-                    kycProgress?.tier_1_completed ? 1 : 0
-                  }
-                  className="h-12 w-12"
-                />
-                <div>
-                  <p className="text-sm font-medium text-gray-500">Verification Status</p>
-                  <p className="text-lg font-bold text-gray-900">
-                    {kycProgress?.tier_3_completed ? 'Tier 3' :
-                     kycProgress?.tier_2_completed ? 'Tier 2' :
-                     kycProgress?.tier_1_completed ? 'Tier 1' : 'Unverified'}
-                  </p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <div>
-                    <p className="text-sm font-medium text-gray-500 mb-2 flex items-center gap-2">
-                      <User className="h-4 w-4" />
-                      Personal Information
-                    </p>
-                    <div className="pl-6 space-y-2">
-                      <div>
-                        <p className="text-xs text-gray-500">Full Name</p>
-                        <p className="text-sm font-semibold text-gray-900">
-                          {kycData.first_name} {kycData.middle_name ? kycData.middle_name + ' ' : ''}{kycData.last_name}
-                        </p>
-                      </div>
-                      {kycData.date_of_birth && !isNaN(new Date(kycData.date_of_birth).getTime()) && (
-                        <div>
-                          <p className="text-xs text-gray-500">Date of Birth</p>
-                          <p className="text-sm font-semibold text-gray-900">
-                            {format(new Date(kycData.date_of_birth), 'MMMM d, yyyy')}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {kycData.phone_number && (
-                    <div>
-                      <p className="text-sm font-medium text-gray-500 mb-2 flex items-center gap-2">
-                        <Phone className="h-4 w-4" />
-                        Contact Information
-                      </p>
-                      <div className="pl-6 space-y-2">
-                        <div>
-                          <p className="text-xs text-gray-500">Phone Number</p>
-                          <p className="text-sm font-semibold text-gray-900">{kycData.phone_number}</p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {kycData.address && (
-                    <div>
-                      <p className="text-sm font-medium text-gray-500 mb-2 flex items-center gap-2">
-                        <MapPin className="h-4 w-4" />
-                        Address Information
-                      </p>
-                      <div className="pl-6 space-y-2">
-                        <div>
-                          <p className="text-xs text-gray-500">Address</p>
-                          <p className="text-sm font-semibold text-gray-900">
-                            {kycData.address_no ? `${kycData.address_no}, ` : ''}{kycData.address}
-                          </p>
-                        </div>
-                        {(kycData.lga || kycData.state) && (
-                          <div className="grid grid-cols-2 gap-2">
-                            {kycData.lga && (
-                              <div>
-                                <p className="text-xs text-gray-500">LGA</p>
-                                <p className="text-sm font-semibold text-gray-900">{kycData.lga}</p>
-                              </div>
-                            )}
-                            {kycData.state && (
-                              <div>
-                                <p className="text-xs text-gray-500">State</p>
-                                <p className="text-sm font-semibold text-gray-900">{kycData.state}</p>
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                <div className="space-y-4">
-                  <div>
-                    <p className="text-sm font-medium text-gray-500 mb-2 flex items-center gap-2">
-                      <FileText className="h-4 w-4" />
-                      Identity Verification
-                    </p>
-                    <div className="pl-6 space-y-2">
-                      {kycData.bvn && (
-                        <div>
-                          <p className="text-xs text-gray-500">BVN</p>
-                          <p className="text-sm font-mono font-semibold text-gray-900">
-                            {kycData.bvn.length > 6
-                              ? `${kycData.bvn.slice(0, 3)}${'*'.repeat(kycData.bvn.length - 6)}${kycData.bvn.slice(-3)}`
-                              : kycData.bvn
-                            }
-                          </p>
-                        </div>
-                      )}
-                      {kycData.nin && (
-                        <div>
-                          <p className="text-xs text-gray-500">NIN</p>
-                          <p className="text-sm font-mono font-semibold text-gray-900">
-                            {kycData.nin.length > 6
-                              ? `${kycData.nin.slice(0, 3)}${'*'.repeat(kycData.nin.length - 6)}${kycData.nin.slice(-3)}`
-                              : kycData.nin
-                            }
-                          </p>
-                        </div>
-                      )}
-                      {kycData.document_type && (
-                        <div>
-                          <p className="text-xs text-gray-500">Document Type</p>
-                          <p className="text-sm font-semibold text-gray-900 capitalize">
-                            {typeof kycData.document_type === 'object' ? kycData.document_type.document_name : kycData.document_type}
-                          </p>
-                        </div>
-                      )}
-                      {kycData.document_number && (
-                        <div>
-                          <p className="text-xs text-gray-500">Document Number</p>
-                          <p className="text-sm font-mono font-semibold text-gray-900">{kycData.document_number}</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {(kycData.bank_name || kycData.account_number) && (
-                    <div>
-                      <p className="text-sm font-medium text-gray-500 mb-2 flex items-center gap-2">
-                        <CreditCard className="h-4 w-4" />
-                        Bank Information
-                      </p>
-                      <div className="pl-6 space-y-2">
-                        {kycData.bank_name && (
-                          <div>
-                            <p className="text-xs text-gray-500">Bank Name</p>
-                            <p className="text-sm font-semibold text-gray-900">{kycData.bank_name}</p>
-                          </div>
-                        )}
-                        {kycData.account_number && (
-                          <div>
-                            <p className="text-xs text-gray-500">Account Number</p>
-                            <p className="text-sm font-mono font-semibold text-gray-900">{kycData.account_number}</p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                  {kycProgress && (
-                    <div>
-                      <p className="text-sm font-medium text-gray-500 mb-2 flex items-center gap-2">
-                        <CheckCircle className="h-4 w-4" />
-                        Verification Stages
-                      </p>
-                      <div className="pl-6 space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs text-gray-600">Personal Info</span>
-                          {kycProgress.personal_info_completed ? (
-                            <CheckCircle className="h-4 w-4 text-gray-900" />
-                          ) : (
-                            <XCircleIcon className="h-4 w-4 text-gray-300" />
-                          )}
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs text-gray-600">BVN Verification</span>
-                          {kycProgress.bvn_verified ? (
-                            <CheckCircle className="h-4 w-4 text-gray-900" />
-                          ) : (
-                            <XCircleIcon className="h-4 w-4 text-gray-300" />
-                          )}
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs text-gray-600">Documents Verified</span>
-                          {kycProgress.documents_verified ? (
-                            <CheckCircle className="h-4 w-4 text-gray-900" />
-                          ) : (
-                            <XCircleIcon className="h-4 w-4 text-gray-300" />
-                          )}
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs text-gray-600">Address Completed</span>
-                          {kycProgress.address_completed ? (
-                            <CheckCircle className="h-4 w-4 text-gray-900" />
-                          ) : (
-                            <XCircleIcon className="h-4 w-4 text-gray-300" />
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {kycData.selfie_url && (
-                <div className="mt-6 pt-6 border-t border-gray-100">
-                  <p className="text-sm font-medium text-gray-500 mb-3 flex items-center gap-2">
-                    <Camera className="h-4 w-4" />
-                    Verification Selfie
-                  </p>
-                  <div className="relative group inline-block">
-                    <img
-                      src={kycData.selfie_url}
-                      alt="KYC Selfie"
-                      className="w-32 h-32 object-cover rounded-xl border border-gray-200 shadow-sm"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).style.display = 'none';
-                      }}
-                    />
-                    <a
-                      href={kycData.selfie_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all rounded-xl flex items-center justify-center"
-                    >
-                      <ExternalLink className="h-5 w-5 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
-                    </a>
-                  </div>
-                </div>
-              )}
-
-              {kycData.created_at && (
-                <div className="mt-6 pt-6 border-t border-gray-100">
-                  <div className="grid grid-cols-2 gap-4 text-xs text-gray-500">
-                    <div>
-                      <span className="font-medium">Submitted:</span> {format(new Date(kycData.created_at), 'MMM d, yyyy')}
-                    </div>
-                    {kycData.updated_at && (
-                      <div>
-                        <span className="font-medium">Last Updated:</span> {format(new Date(kycData.updated_at), 'MMM d, yyyy')}
-                      </div>
-                    )}
-                  </div>
-                </div>
+        {restriction?.post_no_debit && (
+          <div className="mt-4 flex items-start gap-2.5 rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-3 text-sm">
+            <Ban className="h-4 w-4 mt-0.5 flex-shrink-0 text-gray-900" />
+            <div>
+              <p className="font-semibold text-gray-900">Post No Debit</p>
+              <p className="text-gray-600">
+                Cannot create payout plans or lock funds.
+                {restriction.post_no_debit_reason && ` Reason: ${restriction.post_no_debit_reason}.`}
+              </p>
+              {(restriction.post_no_debit_by || restriction.post_no_debit_at) && (
+                <p className="text-xs text-gray-400 mt-0.5">
+                  {restriction.post_no_debit_by && `Applied by ${restriction.post_no_debit_by}`}
+                  {restriction.post_no_debit_at &&
+                    `${restriction.post_no_debit_by ? ' on ' : 'Applied '}${format(new Date(restriction.post_no_debit_at), 'MMM d, yyyy')}`}
+                </p>
               )}
             </div>
+          </div>
+        )}
+      </Panel>
+
+      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
+        <StatTile icon={Wallet} label="Available balance" value={naira(wallet?.balance)} />
+        <StatTile icon={Lock} label="Locked balance" value={naira(wallet?.locked_balance)} />
+        <StatTile
+          icon={Banknote}
+          label="Total balance"
+          value={naira((wallet?.balance || 0) + (wallet?.locked_balance || 0))}
+        />
+        <StatTile icon={ArrowDownRight} label="Total deposits" value={naira(totalDeposits)} />
+        <StatTile icon={ArrowUpRight} label="Total payouts" value={naira(totalPayouts)} />
+        <StatTile icon={Calendar} label="Active plans" value={activePlans.toLocaleString()} />
+      </div>
+
+      <div className="flex gap-1 border-b border-gray-200 overflow-x-auto">
+        {TABS.map((t) => {
+          const count = tabCount[t.id];
+          return (
+            <button
+              key={t.id}
+              onClick={() => setTab(t.id)}
+              className={`px-4 py-2.5 text-sm font-medium border-b-2 -mb-px whitespace-nowrap transition-colors ${
+                tab === t.id ? 'border-gray-900 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              {t.label}
+              {count !== undefined && count > 0 && (
+                <span className="ml-2 px-2 py-0.5 rounded-full text-xs bg-gray-100 text-gray-600">{count}</span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {tab === 'overview' && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">
+          <div className="space-y-5">{accountsPanels}</div>
+          <div className="space-y-5">
+            <Panel
+              title="Recent transactions"
+              flush
+              action={
+                transactions.length > 0 ? (
+                  <button onClick={() => setTab('transactions')} className="text-sm font-medium text-primary hover:underline">
+                    See all
+                  </button>
+                ) : undefined
+              }
+            >
+              {transactions.length > 0 ? (
+                <TransactionList items={transactions.slice(0, 5)} onOpen={handleTransactionClick} attention={needsAttention} />
+              ) : (
+                transactionsEmpty
+              )}
+            </Panel>
+            <Panel
+              title="Recent activity"
+              flush
+              action={
+                events.length > 0 ? (
+                  <button onClick={() => setTab('activity')} className="text-sm font-medium text-primary hover:underline">
+                    See all
+                  </button>
+                ) : undefined
+              }
+            >
+              {events.length > 0 ? (
+                <EventList events={events.slice(0, 4)} />
+              ) : (
+                <EmptyState icon={Zap} title="No recent events" />
+              )}
+            </Panel>
           </div>
         </div>
       )}
 
-      <div className="mb-8">
-        <h2 className="text-xl font-bold text-gray-900 mb-4">Active Payout Plans</h2>
-        <div className="bg-white rounded-2xl shadow-soft border border-gray-100 overflow-hidden">
+      {tab === 'plans' && (
+        <Panel
+          title="Payout plans"
+          subtitle="Active and paused plans"
+          flush
+          action={
+            <div className="flex items-center gap-2">
+              <Link
+                to={`/users/${id}/completed-payouts`}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                <CircleCheck className="h-3.5 w-3.5" />
+                Completed ({completedPlans})
+              </Link>
+              <Link
+                to={`/users/${id}/cancelled-payouts`}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                <CircleX className="h-3.5 w-3.5" />
+                Cancelled ({cancelledPlans})
+              </Link>
+            </div>
+          }
+        >
           {activePayoutPlans.length > 0 ? (
             <div className="divide-y divide-gray-100">
-              {activePayoutPlans.map((plan: any) => {
-                const endDate = calculateEndDate(plan);
-                const planActions = payoutActions?.plans.find((p) => p.plan_id === plan.id);
-                return (
-                  <div key={plan.id} className="p-6 hover:bg-gray-50 transition-colors">
-                    <div className="flex justify-between items-start mb-4">
-                      <div className="flex-1 flex items-start gap-3">
-                        <PayoutPlanIcon purpose={purposeMap?.[plan.id]} name={plan.name} />
-                        <div className="min-w-0">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-1">{plan.name}</h3>
-                        {plan.created_at && (
-                          <p className="text-sm text-gray-500">
-                            Created {format(new Date(plan.created_at), 'MMM d, yyyy')}
-                          </p>
-                        )}
-                        </div>
-                      </div>
-                      <span className={`px-3 py-1 rounded-lg text-xs font-semibold ${
-                        plan.status === 'active'
-                          ? 'bg-green-50 text-green-600 border border-green-100'
-                          : plan.status === 'paused'
-                            ? 'bg-yellow-50 text-yellow-600 border border-yellow-100'
-                            : plan.status === 'completed'
-                              ? 'bg-blue-50 text-blue-600 border border-blue-100'
-                              : 'bg-gray-50 text-gray-600 border border-gray-100'
-                      }`}>
-                        {plan.status.charAt(0).toUpperCase() + plan.status.slice(1)}
-                      </span>
-                    </div>
-
-                    {plan.next_payout_date && plan.status === 'active' && new Date(plan.next_payout_date).getTime() && (
-                      <div className="mb-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Clock className="h-4 w-4 text-blue-600" />
-                          <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Next Payout In</p>
-                        </div>
-                        <PayoutCountdown targetDate={plan.next_payout_date} />
-                        <p className="text-xs text-gray-500 mt-1">
-                          Due on {format(new Date(plan.next_payout_date), 'MMM d, yyyy')}
-                        </p>
-                      </div>
-                    )}
-
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                      <div>
-                        <p className="text-xs font-medium text-gray-500 mb-1">Total Amount</p>
-                        <p className="text-base font-bold text-gray-900">₦{plan.total_amount.toLocaleString()}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs font-medium text-gray-500 mb-1">Payout Amount</p>
-                        <p className="text-base font-bold text-gray-900">₦{plan.payout_amount.toLocaleString()}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs font-medium text-gray-500 mb-1">Frequency</p>
-                        <p className="text-base font-bold text-gray-900">
-                          {plan.frequency.charAt(0).toUpperCase() + plan.frequency.slice(1)}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-xs font-medium text-gray-500 mb-1">Progress</p>
-                        <p className="text-base font-bold text-gray-900">{plan.completed_payouts}/{plan.duration}</p>
-                      </div>
-                    </div>
-
-                    {plan.bank_account && (
-                      <div className="mb-4 p-4 bg-gray-50 rounded-xl border border-gray-200">
-                        <div className="flex items-center gap-2 mb-2">
-                          <CreditCard className="h-4 w-4 text-gray-600" />
-                          <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Payout Account</p>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                          <div>
-                            <p className="text-xs text-gray-500 mb-0.5">Account Name</p>
-                            <p className="text-sm font-semibold text-gray-900">{plan.bank_account.account_name}</p>
-                          </div>
-                          <div>
-                            <p className="text-xs text-gray-500 mb-0.5">Account Number</p>
-                            <p className="text-sm font-mono font-semibold text-gray-900">{plan.bank_account.account_number}</p>
-                          </div>
-                          <div>
-                            <p className="text-xs text-gray-500 mb-0.5">Bank</p>
-                            <p className="text-sm font-semibold text-gray-900">{plan.bank_account.bank_name}</p>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {endDate && !isNaN(endDate.getTime()) && (
-                      <div className="mb-3 p-3 bg-gray-50 rounded-lg">
-                        <p className="text-xs font-medium text-gray-500 mb-1">Plan End Date</p>
-                        <p className="text-sm font-bold text-gray-900">{format(endDate, 'MMMM d, yyyy')}</p>
-                      </div>
-                    )}
-
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-xs text-gray-500">
-                        <span>{Math.round((plan.completed_payouts / plan.duration) * 100)}% complete</span>
-                        <span>{plan.duration - plan.completed_payouts} remaining</span>
-                      </div>
-                      <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
-                        <div
-                          className="bg-gradient-to-r from-green-500 to-green-600 h-full rounded-full transition-all duration-500"
-                          style={{ width: `${Math.round((plan.completed_payouts / plan.duration) * 100)}%` }}
-                        ></div>
-                      </div>
-                    </div>
-
-                    {canManagePayouts && planActions?.current && (
-                      <InstallmentActions userId={id!} state={planActions.current} />
-                    )}
-
-                    <div className="mt-4 flex flex-wrap items-center gap-2">
-                      <button
-                        onClick={() => setBreakdownPlan(plan)}
-                        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gray-900 text-white text-sm font-semibold hover:bg-gray-800 transition-colors"
-                      >
-                        <ListChecks className="h-4 w-4" />
-                        Plan Breakdown
-                      </button>
-                      {canManagePayouts && <PlanControls userId={id!} plan={plan} actions={planActions} />}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="p-12 text-center">
-              <div className="w-16 h-16 rounded-2xl bg-gray-50 flex items-center justify-center mx-auto mb-4">
-                <Calendar className="h-7 w-7 text-gray-400" />
-              </div>
-              <p className="text-gray-500 font-medium">No payout plans found</p>
-              <p className="text-gray-400 text-sm mt-1">User hasn't created any plans yet</p>
-            </div>
-          )}
-        </div>
-      </div>
-
-      <div className="mb-8">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold text-gray-900">Vaults</h2>
-          {userVaults && userVaults.length > 0 && (
-            <Link
-              to="/vaults"
-              className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
-            >
-              View All Vaults
-              <ArrowUpRight className="h-4 w-4" />
-            </Link>
-          )}
-        </div>
-        <div className="bg-white rounded-2xl shadow-soft border border-gray-100 overflow-hidden">
-          {userVaults && userVaults.length > 0 ? (
-            <div className="divide-y divide-gray-100">
-              {userVaults.map((vault: any) => (
-                <div key={vault.id} className="p-6 hover:bg-gray-50 transition-colors">
-                  <div className="flex justify-between items-start mb-4">
-                    <div className="flex-1 flex items-start gap-3">
-                      <VaultIcon categories={vault.categories} subcategories={vault.subcategories} name={vault.name} />
-                      <div className="min-w-0">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-1">{vault.name}</h3>
-                      {vault.plan_name && vault.plan_name !== vault.name && (
-                        <p className="text-sm text-gray-500">{vault.plan_name}</p>
-                      )}
-                      {vault.created_at && (
-                        <p className="text-xs text-gray-400 mt-1">
-                          Created {format(new Date(vault.created_at), 'MMM d, yyyy')}
-                        </p>
-                      )}
-                      </div>
-                    </div>
-                    <span className={`px-3 py-1 rounded-lg text-xs font-semibold ${
-                      vault.status === 'active'
-                        ? 'bg-green-50 text-green-600 border border-green-100'
-                        : vault.status === 'paused'
-                          ? 'bg-yellow-50 text-yellow-600 border border-yellow-100'
-                          : vault.status === 'completed'
-                            ? 'bg-blue-50 text-blue-600 border border-blue-100'
-                            : 'bg-gray-50 text-gray-600 border border-gray-100'
-                    }`}>
-                      {vault.status.charAt(0).toUpperCase() + vault.status.slice(1)}
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                    <div>
-                      <p className="text-xs font-medium text-gray-500 mb-1">Total Budget</p>
-                      <p className="text-base font-bold text-gray-900">
-                        {new Intl.NumberFormat('en-NG', {
-                          style: 'currency',
-                          currency: 'NGN'
-                        }).format(vault.total_budget || 0)}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xs font-medium text-gray-500 mb-1">Current Balance</p>
-                      <p className="text-base font-bold text-green-600">
-                        {new Intl.NumberFormat('en-NG', {
-                          style: 'currency',
-                          currency: 'NGN'
-                        }).format(vault.current_balance || 0)}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xs font-medium text-gray-500 mb-1">Total Remaining to Fund</p>
-                      <p className="text-base font-bold text-orange-600">
-                        {new Intl.NumberFormat('en-NG', {
-                          style: 'currency',
-                          currency: 'NGN'
-                        }).format((vault.total_budget || 0) - (vault.current_balance || 0))}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xs font-medium text-gray-500 mb-1">Wallet Balance</p>
-                      <p className="text-base font-bold text-gray-900">
-                        {new Intl.NumberFormat('en-NG', {
-                          style: 'currency',
-                          currency: 'NGN'
-                        }).format(vault.plan_wallets?.[0]?.balance || 0)}
-                      </p>
-                    </div>
-                  </div>
-
-                  {vault.auto_topup_enabled && (
-                    <div className="mb-3 p-3 bg-blue-50 rounded-lg border border-blue-100">
-                      <p className="text-xs font-semibold text-blue-700 mb-1">Auto Top-up Enabled</p>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <p className="text-xs text-blue-600">Top-up Amount</p>
-                          <p className="text-sm font-bold text-blue-900">
-                            {new Intl.NumberFormat('en-NG', {
-                              style: 'currency',
-                              currency: 'NGN'
-                            }).format(vault.auto_topup_amount || 0)}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-blue-600">Frequency</p>
-                          <p className="text-sm font-bold text-blue-900 capitalize">
-                            {vault.auto_topup_frequency || 'N/A'}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {vault.start_date && (
-                    <div className="flex items-center gap-4 text-sm text-gray-500">
-                      <div className="flex items-center gap-1">
-                        <Calendar className="h-4 w-4" />
-                        <span>Start: {format(new Date(vault.start_date), 'MMM d, yyyy')}</span>
-                      </div>
-                      {vault.end_date && (
-                        <div className="flex items-center gap-1">
-                          <span>End: {format(new Date(vault.end_date), 'MMM d, yyyy')}</span>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  <div className="mt-4">
-                    <Link
-                      to={`/vaults/${vault.id}`}
-                      className="inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 font-medium"
-                    >
-                      View Vault Details
-                      <ArrowUpRight className="h-4 w-4" />
-                    </Link>
-                  </div>
-                </div>
+              {activePayoutPlans.map((plan: any) => (
+                <PayoutPlanCard
+                  key={plan.id}
+                  userId={id!}
+                  plan={plan}
+                  purpose={purposeMap?.[plan.id]}
+                  endDate={calculateEndDate(plan)}
+                  actions={payoutActions?.plans.find((p) => p.plan_id === plan.id)}
+                  canManage={canManagePayouts}
+                  onBreakdown={() => setBreakdownPlan(plan)}
+                />
               ))}
             </div>
           ) : (
-            <div className="p-12 text-center">
-              <div className="w-16 h-16 rounded-2xl bg-gray-50 flex items-center justify-center mx-auto mb-4">
-                <Wallet className="h-7 w-7 text-gray-400" />
-              </div>
-              <p className="text-gray-500 font-medium">No vaults found</p>
-              <p className="text-gray-400 text-sm mt-1">User hasn't created any vaults yet</p>
-            </div>
+            <EmptyState icon={Calendar} title="No active payout plans" hint="Completed and cancelled plans are under the buttons above" />
           )}
-        </div>
-      </div>
+        </Panel>
+      )}
 
-      <div className="mb-8">
-        <h2 className="text-xl font-bold text-gray-900 mb-4">Recent Transactions</h2>
-        <div className="bg-white rounded-2xl shadow-soft border border-gray-100 overflow-hidden">
-          {transactions.length > 0 ? (
-            <>
-              <div className="divide-y divide-gray-100">
-                {transactions.slice(0, 5).map((transaction: any) => (
-                  <div
-                    key={transaction.id}
-                    onClick={() => handleTransactionClick(transaction)}
-                    className="p-5 hover:bg-gray-50 transition-colors flex justify-between items-center cursor-pointer"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                        transaction.type === 'deposit' ? 'bg-green-50' : 'bg-red-50'
-                      }`}>
-                        {transaction.type === 'deposit' ? (
-                          <ArrowUpRight className="h-5 w-5 text-green-600" />
-                        ) : (
-                          <ArrowDownRight className="h-5 w-5 text-red-600" />
-                        )}
-                      </div>
-                      <div>
-                        <p className="text-base font-semibold text-gray-900 mb-1">
-                          {transaction.type.charAt(0).toUpperCase() + transaction.type.slice(1)}
-                        </p>
-                        <p className="text-sm text-gray-500">
-                          {format(new Date(transaction.created_at), 'MMM d, yyyy h:mm a')}
-                        </p>
-                        <span className={`inline-block px-2 py-1 text-xs font-semibold rounded-lg mt-1.5 ${
-                          transaction.status === 'completed'
-                            ? 'bg-green-50 text-green-600 border border-green-100'
-                            : transaction.status === 'pending'
-                              ? 'bg-yellow-50 text-yellow-600 border border-yellow-100'
-                              : 'bg-red-50 text-red-600 border border-red-100'
-                        }`}>
-                          {transaction.status.charAt(0).toUpperCase() + transaction.status.slice(1)}
-                        </span>
-                        {canManagePayouts && (() => {
-                          const a = payoutActions?.transactions[transaction.id];
-                          const unresolved = transaction.status === 'pending' || transaction.status === 'failed';
-                          return unresolved && a && (a.can_complete || a.can_refund || a.can_retry) ? (
-                            <span className="ml-2 text-xs text-gray-500">Needs attention · open to resolve</span>
-                          ) : null;
-                        })()}
-                      </div>
-                    </div>
-                    <p className={`text-xl font-bold ${
-                      transaction.type === 'deposit' ? 'text-green-600' : 'text-red-600'
-                    }`}>
-                      {transaction.type === 'deposit' ? '+' : '-'}₦{transaction.amount.toLocaleString()}
-                    </p>
-                  </div>
-                ))}
-              </div>
-              <div className="border-t border-gray-100 p-4 text-center bg-gray-50">
-                <Link
-                  to={`/users/${id}/transactions`}
-                  className="inline-flex items-center px-5 py-2.5 bg-gray-900 text-white rounded-xl hover:bg-gray-800 transition-colors shadow-sm font-semibold"
-                >
-                  View All Transactions
-                </Link>
-              </div>
-            </>
+      {tab === 'vaults' && (
+        <Panel
+          title="Vaults"
+          flush
+          action={
+            vaults.length > 0 ? (
+              <Link to="/vaults" className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline">
+                All vaults
+                <ArrowUpRight className="h-4 w-4" />
+              </Link>
+            ) : undefined
+          }
+        >
+          {vaults.length > 0 ? (
+            <div className="divide-y divide-gray-100">
+              {vaults.map((vault: any) => (
+                <VaultCard key={vault.id} vault={vault} />
+              ))}
+            </div>
           ) : (
-            <div className="p-12 text-center">
-              <div className="w-16 h-16 rounded-2xl bg-gray-50 flex items-center justify-center mx-auto mb-4">
-                <ArrowUpRight className="h-7 w-7 text-gray-400" />
-              </div>
-              <p className="text-gray-500 font-medium">No transactions found</p>
-              <p className="text-gray-400 text-sm mt-1">User hasn't made any transactions yet</p>
-            </div>
+            <EmptyState icon={Vault} title="No vaults found" hint="User hasn't created any vaults yet" />
           )}
-        </div>
-      </div>
+        </Panel>
+      )}
 
-      <div>
-        <h2 className="text-xl font-bold text-gray-900 mb-4">User Activity</h2>
-        <div className="grid grid-cols-1 lg:grid-cols-1 gap-6">
-
-          <div className="bg-white rounded-2xl p-6 shadow-soft border border-gray-100">
-            <div className="mb-6">
-              <p className="text-sm text-gray-500 mt-1">
-                Recent events for this user
-              </p>
-            </div>
-            <div className="space-y-3 max-h-[500px] overflow-y-auto">
-              {userActivity?.events && userActivity.events.length > 0 ? (
-                userActivity.events.map((event: any) => (
-                  <div
-                    key={event.id}
-                    className="p-4 rounded-xl border border-gray-100 hover:border-gray-200 hover:shadow-sm transition-all"
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-lg">
-                        {getEventIcon(event.type)}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className="font-semibold text-gray-900 mb-1">{event.title}</h4>
-                        {event.description && (
-                          <p className="text-sm text-gray-600 mb-2 line-clamp-2">{event.description}</p>
-                        )}
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className={`px-2 py-0.5 rounded-md text-xs font-medium ${
-                            event.status === 'completed' ? 'bg-green-50 text-green-700' :
-                            event.status === 'pending' ? 'bg-yellow-50 text-yellow-700' :
-                            event.status === 'failed' ? 'bg-red-50 text-red-700' :
-                            'bg-gray-50 text-gray-700'
-                          }`}>
-                            {event.status}
-                          </span>
-                          <span className="px-2 py-0.5 rounded-md text-xs font-medium bg-gray-50 text-gray-600">
-                            {event.type}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2 text-xs text-gray-400">
-                          <Clock className="h-3 w-3" />
-                          {format(new Date(event.created_at), 'MMM d, yyyy HH:mm:ss')}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="text-center py-8 text-gray-400">
-                  <Zap className="h-12 w-12 mx-auto mb-2 opacity-20" />
-                  <p>No recent events</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {((userActivity?.auditLogs && userActivity.auditLogs.length > 0) ||
-          (userActivity?.events && userActivity.events.length > 0)) && (
-          <div className="mt-6 text-center">
+      {tab === 'transactions' && (
+        <Panel
+          title="Transactions"
+          subtitle="Most recent first"
+          flush
+          action={
             <Link
-              to={`/users/${id}/events`}
-              className="inline-flex items-center px-5 py-2.5 bg-gray-900 text-white rounded-xl hover:bg-gray-800 transition-colors shadow-sm font-semibold"
+              to={`/users/${id}/transactions`}
+              className="inline-flex items-center px-3 py-1.5 rounded-lg bg-gray-900 text-white text-xs font-medium hover:bg-gray-800 transition-colors"
             >
-              View All Events
+              View all
             </Link>
-          </div>
-        )}
-      </div>
+          }
+        >
+          {transactions.length > 0 ? (
+            <TransactionList items={transactions} onOpen={handleTransactionClick} attention={needsAttention} />
+          ) : (
+            transactionsEmpty
+          )}
+        </Panel>
+      )}
+
+      {tab === 'kyc' && <KycPanel kycData={kycData} kycProgress={kycProgress} tier={tier} />}
+
+      {tab === 'activity' && (
+        <Panel
+          title="Activity"
+          subtitle="Recent events for this user"
+          flush
+          action={
+            events.length > 0 || (userActivity?.auditLogs?.length ?? 0) > 0 ? (
+              <Link
+                to={`/users/${id}/events`}
+                className="inline-flex items-center px-3 py-1.5 rounded-lg bg-gray-900 text-white text-xs font-medium hover:bg-gray-800 transition-colors"
+              >
+                View all
+              </Link>
+            ) : undefined
+          }
+        >
+          {events.length > 0 ? <EventList events={events} /> : <EmptyState icon={Zap} title="No recent events" />}
+        </Panel>
+      )}
+
       <TransactionDetailsModal
         transaction={selectedTransaction}
         isOpen={isTransactionModalOpen}
@@ -1227,7 +756,7 @@ export default function UserDetails() {
         <PlanBreakdownModal
           planId={breakdownPlan.id}
           planName={breakdownPlan.name}
-          userName={`${user.first_name || ''} ${user.last_name || ''}`.trim() || user.email}
+          userName={fullName || user.email}
           onClose={() => setBreakdownPlan(null)}
         />
       )}

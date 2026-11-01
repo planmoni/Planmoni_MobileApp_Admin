@@ -132,7 +132,7 @@ export default function Signup() {
             }
           }}
         />
-        <h1 className="text-xl font-bold text-primary text-center mt-2" style={{ display: 'none' }}>
+        <h1 className="text-xl font-semibold text-primary text-center mt-2" style={{ display: 'none' }}>
           Planmoni Admin
         </h1>
         <p className="mt-2 text-center text-sm text-text-secondary">

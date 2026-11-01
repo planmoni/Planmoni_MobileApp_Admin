@@ -61,7 +61,7 @@ function SummaryTile({
         <Icon className={`h-4 w-4 ${alert ? 'text-error' : 'text-gray-500'}`} />
         <span className="text-xs font-medium text-gray-500">{label}</span>
       </div>
-      <p className="text-2xl font-bold text-gray-900 truncate">{value}</p>
+      <p className="text-lg font-semibold text-gray-900 truncate">{value}</p>
       <p className="text-xs text-gray-500 mt-0.5">{hint}</p>
     </div>
   );
@@ -184,7 +184,7 @@ export default function Transactions() {
     <div>
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-1">Transactions</h1>
+          <h1 className="text-3xl font-semibold text-gray-900 mb-1">Transactions</h1>
           <p className="text-gray-500">Every deposit, payout and withdrawal, with where the money came from and went</p>
         </div>
         <button

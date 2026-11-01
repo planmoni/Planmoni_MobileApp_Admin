@@ -97,7 +97,7 @@ export function EditRoleModal({ isOpen, onClose, onSubmit, role, permissions }: 
       <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div>
-            <h2 className="text-xl font-bold text-gray-900">Edit Role</h2>
+            <h2 className="text-xl font-semibold text-gray-900">Edit Role</h2>
             {role.is_system && (
               <p className="text-sm text-blue-600 mt-1">System Role - Some fields are restricted</p>
             )}

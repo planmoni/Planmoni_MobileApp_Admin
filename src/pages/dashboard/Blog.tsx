@@ -358,7 +358,7 @@ export default function Blog() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Blog Management</h1>
+          <h1 className="text-2xl font-semibold text-gray-900">Blog Management</h1>
           <p className="text-gray-600 mt-1">Create and manage blog posts</p>
         </div>
         <Button
@@ -514,7 +514,7 @@ export default function Blog() {
           <div className="bg-white rounded-lg shadow-xl w-full max-w-3xl my-8">
             <div className="p-6 border-b border-gray-200">
               <div className="flex justify-between items-center">
-                <h2 className="text-xl font-bold text-gray-900">
+                <h2 className="text-xl font-semibold text-gray-900">
                   {editingPost ? 'Edit Blog Post' : 'Create New Blog Post'}
                 </h2>
                 <button

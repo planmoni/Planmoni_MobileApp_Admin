@@ -175,7 +175,7 @@ export default function Marketing() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Marketing Campaigns</h1>
+          <h1 className="text-3xl font-semibold text-gray-900">Marketing Campaigns</h1>
           <p className="text-gray-500 mt-1">Create and manage email marketing campaigns</p>
         </div>
         <div className="flex space-x-3">
@@ -201,7 +201,7 @@ export default function Marketing() {
           <div className="flex justify-between items-start mb-4">
             <div className="flex-1">
               <p className="text-sm font-medium text-gray-500 mb-1">Total Campaigns</p>
-              <p className="text-3xl font-bold text-gray-900">{stats?.total_campaigns || 0}</p>
+              <p className="text-lg font-semibold text-gray-900">{stats?.total_campaigns || 0}</p>
             </div>
             <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center">
               <Mail className="w-6 h-6 text-blue-600" />
@@ -213,7 +213,7 @@ export default function Marketing() {
           <div className="flex justify-between items-start mb-4">
             <div className="flex-1">
               <p className="text-sm font-medium text-gray-500 mb-1">Total Sent</p>
-              <p className="text-3xl font-bold text-gray-900">{stats?.total_sent || 0}</p>
+              <p className="text-lg font-semibold text-gray-900">{stats?.total_sent || 0}</p>
             </div>
             <div className="w-12 h-12 rounded-xl bg-green-50 flex items-center justify-center">
               <Send className="w-6 h-6 text-green-600" />
@@ -225,7 +225,7 @@ export default function Marketing() {
           <div className="flex justify-between items-start mb-4">
             <div className="flex-1">
               <p className="text-sm font-medium text-gray-500 mb-1">Total Opens</p>
-              <p className="text-3xl font-bold text-gray-900">{stats?.total_opened || 0}</p>
+              <p className="text-lg font-semibold text-gray-900">{stats?.total_opened || 0}</p>
             </div>
             <div className="w-12 h-12 rounded-xl bg-purple-50 flex items-center justify-center">
               <TrendingUp className="w-6 h-6 text-purple-600" />
@@ -237,7 +237,7 @@ export default function Marketing() {
           <div className="flex justify-between items-start mb-4">
             <div className="flex-1">
               <p className="text-sm font-medium text-gray-500 mb-1">Avg Open Rate</p>
-              <p className="text-3xl font-bold text-gray-900">{stats?.avg_open_rate.toFixed(1) || 0}%</p>
+              <p className="text-lg font-semibold text-gray-900">{stats?.avg_open_rate.toFixed(1) || 0}%</p>
             </div>
             <div className="w-12 h-12 rounded-xl bg-amber-50 flex items-center justify-center">
               <BarChart className="w-6 h-6 text-amber-600" />
@@ -667,7 +667,7 @@ function RecipientsModal({ campaign, onClose }: { campaign: any; onClose: () => 
       <div className="bg-white rounded-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col">
         <div className="p-6 border-b border-gray-100 flex justify-between items-center">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">Campaign Recipients</h2>
+            <h2 className="text-2xl font-semibold text-gray-900">Campaign Recipients</h2>
             <p className="text-sm text-gray-500 mt-1">{campaign.title}</p>
           </div>
           <button
@@ -685,7 +685,7 @@ function RecipientsModal({ campaign, onClose }: { campaign: any; onClose: () => 
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-2">
                 <span className="text-sm font-medium text-gray-700">Total:</span>
-                <span className="text-sm font-bold text-gray-900">{recipients?.length || 0}</span>
+                <span className="text-sm font-semibold text-gray-900">{recipients?.length || 0}</span>
               </div>
               <div className="flex items-center space-x-2">
                 <CheckCircle className="w-4 h-4 text-green-600" />
@@ -876,7 +876,7 @@ function PreviewModal({ campaign, onClose }: { campaign: any; onClose: () => voi
       <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
         <div className="p-6 border-b border-gray-100 flex justify-between items-center">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">Campaign Preview</h2>
+            <h2 className="text-2xl font-semibold text-gray-900">Campaign Preview</h2>
             <p className="text-sm text-gray-500 mt-1">{campaign.title}</p>
           </div>
           <button
@@ -1307,7 +1307,7 @@ function CreateCampaignModal({ campaign, onClose, onSuccess }: { campaign?: any;
         <div className="p-6 border-b border-gray-100">
           <div className="flex justify-between items-start">
             <div>
-              <h2 className="text-2xl font-bold text-gray-900">{campaign ? 'Edit Campaign' : 'Create New Campaign'}</h2>
+              <h2 className="text-2xl font-semibold text-gray-900">{campaign ? 'Edit Campaign' : 'Create New Campaign'}</h2>
               {lastSaved && (
                 <p className="text-xs text-gray-500 mt-1">
                   {isSavingDraft ? 'Saving...' : `Last saved: ${format(lastSaved, 'MMM dd, yyyy h:mm a')}`}
@@ -1450,7 +1450,7 @@ function CreateCampaignModal({ campaign, onClose, onSuccess }: { campaign?: any;
                     <span className="text-sm text-blue-600">Calculating...</span>
                   </div>
                 ) : (
-                  <p className="text-2xl font-bold text-blue-600">{estimatedRecipients}</p>
+                  <p className="text-lg font-semibold text-blue-600">{estimatedRecipients}</p>
                 )}
               </div>
             </div>
@@ -1707,7 +1707,7 @@ function SendCampaignModal({
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl max-w-lg w-full">
         <div className="p-6 border-b border-gray-100">
-          <h2 className="text-2xl font-bold text-gray-900">Send Campaign</h2>
+          <h2 className="text-2xl font-semibold text-gray-900">Send Campaign</h2>
           <p className="text-sm text-gray-500 mt-1">{campaign.title}</p>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
@@ -1892,7 +1892,7 @@ function SegmentModal({
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div className="p-6 border-b border-gray-100">
-          <h2 className="text-2xl font-bold text-gray-900">
+          <h2 className="text-2xl font-semibold text-gray-900">
             {segment ? 'Edit Segment' : 'Create New Segment'}
           </h2>
           <p className="text-sm text-gray-500 mt-1">
@@ -1997,7 +1997,7 @@ function SegmentModal({
                 <p className="text-xs text-gray-500">Based on current filters</p>
               </div>
               <div className="text-right">
-                <p className="text-2xl font-bold text-blue-600">{estimatedUsers}</p>
+                <p className="text-lg font-semibold text-blue-600">{estimatedUsers}</p>
                 <button
                   type="button"
                   onClick={calculateUserCount}

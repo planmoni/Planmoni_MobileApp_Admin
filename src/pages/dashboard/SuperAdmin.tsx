@@ -134,7 +134,7 @@ export default function SuperAdmin() {
           <div className="w-20 h-20 rounded-2xl bg-red-50 flex items-center justify-center mx-auto mb-6">
             <Shield className="h-10 w-10 text-red-600" />
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-3">Access Denied</h2>
+          <h2 className="text-2xl font-semibold text-gray-900 mb-3">Access Denied</h2>
           <p className="text-gray-600 mb-6">
             {error.message || 'You do not have permission to access this page.'}
           </p>
@@ -176,7 +176,7 @@ export default function SuperAdmin() {
         <div>
           <div className="flex items-center gap-3 mb-2">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Super Admin</h1>
+              <h1 className="text-3xl font-semibold text-gray-900">Super Admin</h1>
               <p className="text-gray-500">Manage system roles and permissions</p>
             </div>
           </div>
@@ -227,7 +227,7 @@ export default function SuperAdmin() {
                 <TrendingUp className="h-5 w-5 text-green-500" />
               </div>
               <p className="text-gray-500 text-sm font-medium mb-1">Total Users</p>
-              <p className="text-3xl font-bold text-gray-900">{stats.total_users}</p>
+              <p className="text-lg font-semibold text-gray-900">{stats.total_users}</p>
             </div>
 
             <div className="bg-white rounded-2xl p-6 shadow-soft border border-gray-100">
@@ -240,7 +240,7 @@ export default function SuperAdmin() {
                 </span>
               </div>
               <p className="text-gray-500 text-sm font-medium mb-1">Admin Users</p>
-              <p className="text-3xl font-bold text-gray-900">{stats.total_admins}</p>
+              <p className="text-lg font-semibold text-gray-900">{stats.total_admins}</p>
             </div>
 
             <div className="bg-white rounded-2xl p-6 shadow-soft border border-gray-100">
@@ -250,7 +250,7 @@ export default function SuperAdmin() {
                 </div>
               </div>
               <p className="text-gray-500 text-sm font-medium mb-1">System Roles</p>
-              <p className="text-3xl font-bold text-gray-900">{stats.total_roles}</p>
+              <p className="text-lg font-semibold text-gray-900">{stats.total_roles}</p>
             </div>
 
             <div className="bg-white rounded-2xl p-6 shadow-soft border border-gray-100">
@@ -260,7 +260,7 @@ export default function SuperAdmin() {
                 </div>
               </div>
               <p className="text-gray-500 text-sm font-medium mb-1">Permissions</p>
-              <p className="text-3xl font-bold text-gray-900">{stats.total_permissions}</p>
+              <p className="text-lg font-semibold text-gray-900">{stats.total_permissions}</p>
             </div>
           </div>
 
@@ -271,12 +271,12 @@ export default function SuperAdmin() {
                   <Award className="h-5 w-5 text-blue-600" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-gray-900">Recent Role Assignments</h3>
+                  <h3 className="font-semibold text-gray-900">Recent Role Assignments</h3>
                   <p className="text-sm text-gray-500">Last 7 days</p>
                 </div>
               </div>
               <div className="text-center py-8">
-                <p className="text-5xl font-bold text-gray-900 mb-2">{stats.recent_role_assignments}</p>
+                <p className="text-5xl font-semibold text-gray-900 mb-2">{stats.recent_role_assignments}</p>
                 <p className="text-gray-500">role assignments</p>
               </div>
             </div>
@@ -287,12 +287,12 @@ export default function SuperAdmin() {
                   <AlertTriangle className="h-5 w-5 text-yellow-600" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-gray-900">Security Alerts</h3>
+                  <h3 className="font-semibold text-gray-900">Security Alerts</h3>
                   <p className="text-sm text-gray-500">Today</p>
                 </div>
               </div>
               <div className="text-center py-8">
-                <p className="text-5xl font-bold text-gray-900 mb-2">{stats.failed_login_attempts}</p>
+                <p className="text-5xl font-semibold text-gray-900 mb-2">{stats.failed_login_attempts}</p>
                 <p className="text-gray-500">failed login attempts</p>
               </div>
             </div>
@@ -327,16 +327,16 @@ export default function SuperAdmin() {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                       User
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                       Roles
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                       Status
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                       Joined
                     </th>
                   </tr>
@@ -412,7 +412,7 @@ export default function SuperAdmin() {
       {activeTab === 'roles' && (
         <div className="space-y-6">
           <div className="flex justify-between items-center">
-            <h2 className="text-2xl font-bold text-gray-900">System Roles</h2>
+            <h2 className="text-2xl font-semibold text-gray-900">System Roles</h2>
             <button
               onClick={() => setIsCreateRoleModalOpen(true)}
               className="px-6 py-3 bg-gray-900 text-white rounded-xl hover:bg-gray-800 transition-colors flex items-center gap-2 font-semibold"
@@ -438,7 +438,7 @@ export default function SuperAdmin() {
                         style={{ backgroundColor: role.role_color }}
                       />
                       <div>
-                        <h3 className="font-bold text-gray-900">{role.role_name}</h3>
+                        <h3 className="font-semibold text-gray-900">{role.role_name}</h3>
                         <p className="text-sm text-gray-500">Level {role.role_level}</p>
                       </div>
                     </div>
@@ -470,7 +470,7 @@ export default function SuperAdmin() {
                   </div>
 
                   <div className="mb-4">
-                    <h4 className="text-xs font-bold text-gray-500 uppercase mb-2">
+                    <h4 className="text-xs font-semibold text-gray-500 uppercase mb-2">
                       Permissions
                     </h4>
                     <div className="flex flex-wrap gap-1">
@@ -528,7 +528,7 @@ export default function SuperAdmin() {
       {activeTab === 'emails' && (
         <div className="space-y-6">
           <div className="flex justify-between items-center">
-            <h2 className="text-2xl font-bold text-gray-900">Sender Email Addresses</h2>
+            <h2 className="text-2xl font-semibold text-gray-900">Sender Email Addresses</h2>
             <button
               onClick={() => {
                 setSelectedEmail(null);
@@ -556,7 +556,7 @@ export default function SuperAdmin() {
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
                         <Mail className="h-5 w-5 text-gray-400" />
-                        <h3 className="font-bold text-gray-900">{email.display_name}</h3>
+                        <h3 className="font-semibold text-gray-900">{email.display_name}</h3>
                       </div>
                       <p className="text-sm text-gray-600 mb-3">{email.email}</p>
                       {email.description && (
@@ -786,7 +786,7 @@ function SenderEmailModal({
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl max-w-lg w-full">
         <div className="p-6 border-b border-gray-100">
-          <h2 className="text-2xl font-bold text-gray-900">
+          <h2 className="text-2xl font-semibold text-gray-900">
             {email ? 'Edit Email Address' : 'Add Email Address'}
           </h2>
           <p className="text-sm text-gray-500 mt-1">

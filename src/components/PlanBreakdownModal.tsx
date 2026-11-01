@@ -96,7 +96,7 @@ export default function PlanBreakdownModal({ planId, planName, userName, onClose
         {/* Header */}
         <div className="flex items-start justify-between p-5 md:p-6 border-b border-gray-100">
           <div className="min-w-0 flex-1">
-            <h2 className="text-lg md:text-xl font-bold text-gray-900 truncate">Plan Breakdown</h2>
+            <h2 className="text-lg md:text-xl font-semibold text-gray-900 truncate">Plan Breakdown</h2>
             <p className="text-sm text-gray-500 mt-0.5 truncate">
               {planName} — {userName}
             </p>
@@ -117,28 +117,28 @@ export default function PlanBreakdownModal({ planId, planName, userName, onClose
                 <DollarSign className="h-4 w-4 text-blue-600" />
                 <span className="text-xs font-medium text-blue-600">Total Payouts</span>
               </div>
-              <p className="text-sm font-bold text-gray-900">{formatCurrency(totalPayout)}</p>
+              <p className="text-sm font-semibold text-gray-900">{formatCurrency(totalPayout)}</p>
             </div>
             <div className="bg-orange-50 rounded-xl p-3">
               <div className="flex items-center gap-2 mb-1">
                 <TrendingUp className="h-4 w-4 text-orange-600" />
                 <span className="text-xs font-medium text-orange-600">Total Fees</span>
               </div>
-              <p className="text-sm font-bold text-gray-900">{formatCurrency(totalFees)}</p>
+              <p className="text-sm font-semibold text-gray-900">{formatCurrency(totalFees)}</p>
             </div>
             <div className="bg-green-50 rounded-xl p-3">
               <div className="flex items-center gap-2 mb-1">
                 <CheckCircle className="h-4 w-4 text-green-600" />
                 <span className="text-xs font-medium text-green-600">Completed</span>
               </div>
-              <p className="text-sm font-bold text-gray-900">{completedCount} / {breakdown.length}</p>
+              <p className="text-sm font-semibold text-gray-900">{completedCount} / {breakdown.length}</p>
             </div>
             <div className="bg-amber-50 rounded-xl p-3">
               <div className="flex items-center gap-2 mb-1">
                 <Clock className="h-4 w-4 text-amber-600" />
                 <span className="text-xs font-medium text-amber-600">Due</span>
               </div>
-              <p className="text-sm font-bold text-gray-900">{dueCount}</p>
+              <p className="text-sm font-semibold text-gray-900">{dueCount}</p>
             </div>
           </div>
         )}
@@ -196,9 +196,9 @@ export default function PlanBreakdownModal({ planId, planName, userName, onClose
                   <tfoot className="bg-gray-50 border-t-2 border-gray-200">
                     <tr>
                       <td colSpan={2} className="px-4 py-3 text-sm font-semibold text-gray-900">Total ({breakdown.length} payouts)</td>
-                      <td className="px-4 py-3 text-sm font-bold text-gray-900">{formatCurrency(totalPayout)}</td>
-                      <td className="px-4 py-3 text-sm font-bold text-gray-700">{formatCurrency(totalFees)}</td>
-                      <td className="px-4 py-3 text-sm font-bold text-green-600">{formatCurrency(totalNet)}</td>
+                      <td className="px-4 py-3 text-sm font-semibold text-gray-900">{formatCurrency(totalPayout)}</td>
+                      <td className="px-4 py-3 text-sm font-semibold text-gray-700">{formatCurrency(totalFees)}</td>
+                      <td className="px-4 py-3 text-sm font-semibold text-green-600">{formatCurrency(totalNet)}</td>
                       <td className="px-4 py-3"></td>
                     </tr>
                   </tfoot>
@@ -239,7 +239,7 @@ export default function PlanBreakdownModal({ planId, planName, userName, onClose
                 <div className="border-t-2 border-gray-200 pt-3 space-y-1">
                   <div className="flex justify-between text-sm">
                     <span className="font-semibold text-gray-900">Total ({breakdown.length} payouts)</span>
-                    <span className="font-bold text-gray-900">{formatCurrency(totalPayout)}</span>
+                    <span className="font-semibold text-gray-900">{formatCurrency(totalPayout)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-500">Total Fees</span>
@@ -247,7 +247,7 @@ export default function PlanBreakdownModal({ planId, planName, userName, onClose
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-500">Total Net</span>
-                    <span className="font-bold text-green-600">{formatCurrency(totalNet)}</span>
+                    <span className="font-semibold text-green-600">{formatCurrency(totalNet)}</span>
                   </div>
                 </div>
               </div>

@@ -160,7 +160,7 @@ export default function KycData() {
     <div>
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-1">KYC Data</h1>
+          <h1 className="text-3xl font-semibold text-gray-900 mb-1">KYC Data</h1>
           <p className="text-gray-500">Verification tiers, submitted documents and Tier 3 manual review</p>
         </div>
         <button
@@ -188,7 +188,7 @@ export default function KycData() {
               <div className="flex justify-between items-start mb-3">
                 <div>
                   <p className="text-sm font-medium text-gray-500">{card.label}</p>
-                  <p className="text-3xl font-bold text-gray-900">{card.value.toLocaleString()}</p>
+                  <p className="text-lg font-semibold text-gray-900">{card.value.toLocaleString()}</p>
                 </div>
                 <TierIcon tier={card.tier} className="h-11 w-11" />
               </div>
@@ -206,7 +206,7 @@ export default function KycData() {
           <div className="flex justify-between items-start mb-3">
             <div>
               <p className="text-sm font-medium text-gray-500">Awaiting Tier 3 review</p>
-              <p className="text-3xl font-bold text-gray-900">{(stats?.tier3_pending ?? 0).toLocaleString()}</p>
+              <p className="text-lg font-semibold text-gray-900">{(stats?.tier3_pending ?? 0).toLocaleString()}</p>
             </div>
             <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center">
               <ClipboardCheck className="h-5 w-5 text-gray-600" />

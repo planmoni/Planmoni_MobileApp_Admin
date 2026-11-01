@@ -55,7 +55,7 @@ export function TwoFactorModal({ isOpen, onClose, onVerify, isVerifying }: TwoFa
             <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mx-auto mb-4">
               <Shield className="w-6 h-6 text-blue-600" />
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 text-center mb-2">
+            <h2 className="text-2xl font-semibold text-gray-900 text-center mb-2">
               Two-Factor Authentication
             </h2>
             <p className="text-gray-600 text-center text-sm">

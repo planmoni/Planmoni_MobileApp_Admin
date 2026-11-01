@@ -157,7 +157,7 @@ export default function AuditLogs() {
     <div className="w-full min-w-0">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
         <div className="flex-1 min-w-0">
-          <h1 className="text-3xl font-bold text-gray-900 mb-1">Audit Logs</h1>
+          <h1 className="text-3xl font-semibold text-gray-900 mb-1">Audit Logs</h1>
           <p className="text-gray-500">
             View and monitor system audit logs for KYC and SafeHaven operations
           </p>
@@ -582,7 +582,7 @@ export default function AuditLogs() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
             <div className="p-6 border-b border-gray-200 flex items-center justify-between">
-              <h2 className="text-xl font-bold text-gray-900">Log Details</h2>
+              <h2 className="text-xl font-semibold text-gray-900">Log Details</h2>
               <button
                 onClick={() => setSelectedLog(null)}
                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"

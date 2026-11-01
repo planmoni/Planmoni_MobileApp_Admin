@@ -65,7 +65,7 @@ export default function PostNoDebitDialog({ userId, userName, open, onClose }: P
             </button>
           </div>
 
-          <h2 className="text-xl font-bold text-gray-900 mb-2">
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">
             {isRestricted ? 'Remove Post No Debit' : 'Apply Post No Debit'}
           </h2>
           <p className="text-sm text-gray-600 mb-4">

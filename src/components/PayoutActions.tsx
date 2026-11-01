@@ -52,7 +52,7 @@ function DialogShell({
               <X className="h-5 w-5" />
             </button>
           </div>
-          <h2 className="text-xl font-bold text-gray-900 mb-3">{title}</h2>
+          <h2 className="text-xl font-semibold text-gray-900 mb-3">{title}</h2>
           {children}
         </div>
       </div>

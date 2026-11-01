@@ -171,7 +171,7 @@ export default function Login() {
 
           <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
             <div className="mb-8">
-              <h2 className="text-3xl font-bold text-gray-900 mb-2">Sign in</h2>
+              <h2 className="text-3xl font-semibold text-gray-900 mb-2">Sign in</h2>
               <p className="text-gray-500">Enter your credentials to access your account</p>
             </div>
 

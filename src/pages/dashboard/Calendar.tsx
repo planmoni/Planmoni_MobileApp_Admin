@@ -212,7 +212,7 @@ export default function Calendar() {
     <div>
       <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-1">Calendar</h1>
+          <h1 className="text-3xl font-semibold text-gray-900 mb-1">Calendar</h1>
           <p className="text-gray-500">Deposits, payouts and new plans, day by day</p>
         </div>
 
@@ -282,7 +282,7 @@ export default function Calendar() {
                 <Icon className={`h-4 w-4 ${type === 'payout_failed' && count > 0 ? 'text-error' : 'text-gray-500'}`} />
                 <span className="text-xs font-medium text-gray-500">{plural}</span>
               </div>
-              <p className="text-2xl font-bold text-gray-900">{count.toLocaleString()}</p>
+              <p className="text-lg font-semibold text-gray-900">{count.toLocaleString()}</p>
               <p className="text-xs text-gray-500 mt-0.5">
                 {total > 0 ? `${formatNairaCompact(total)}${type === 'plan_created' ? ' committed' : ''}` : '—'}
               </p>
@@ -321,7 +321,7 @@ export default function Calendar() {
                 >
                   <ChevronLeft className="h-5 w-5 text-gray-600" />
                 </button>
-                <h2 className="text-xl font-bold text-gray-900 min-w-[11rem] text-center">{heading}</h2>
+                <h2 className="text-xl font-semibold text-gray-900 min-w-[11rem] text-center">{heading}</h2>
                 <button
                   onClick={handleNext}
                   className="p-2 rounded-xl hover:bg-gray-50 transition-colors"
@@ -431,7 +431,7 @@ export default function Calendar() {
                       >
                         <p className="text-xs font-medium text-gray-500">{format(day, 'EEE')}</p>
                         <span
-                          className={`inline-flex items-center justify-center text-xl font-bold mb-3 ${
+                          className={`inline-flex items-center justify-center text-xl font-semibold mb-3 ${
                             today ? 'w-8 h-8 rounded-full bg-gray-900 text-white text-base' : 'text-gray-900'
                           }`}
                         >
@@ -475,7 +475,7 @@ export default function Calendar() {
                       return (
                         <div key={group.key} className="p-6">
                           <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-lg font-bold text-gray-900">{format(group.date, 'EEEE, MMMM d, yyyy')}</h3>
+                            <h3 className="text-lg font-semibold text-gray-900">{format(group.date, 'EEEE, MMMM d, yyyy')}</h3>
                             <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-semibold">
                               {group.events.length} event{group.events.length !== 1 ? 's' : ''}
                             </span>
@@ -539,7 +539,7 @@ export default function Calendar() {
           <aside className="w-full lg:w-[28rem] shrink-0">
             <div className="bg-white rounded-2xl shadow-soft border border-gray-100 overflow-hidden lg:sticky lg:top-6">
               <div className="p-6 border-b border-gray-100">
-                <h3 className="text-lg font-bold text-gray-900">{format(selectedDate, 'EEEE, MMMM d')}</h3>
+                <h3 className="text-lg font-semibold text-gray-900">{format(selectedDate, 'EEEE, MMMM d')}</h3>
                 <p className="text-sm text-gray-500">
                   {selectedEvents.length} event{selectedEvents.length !== 1 ? 's' : ''}
                   {selectedIn > 0 && <> · In {formatNaira(selectedIn)}</>}

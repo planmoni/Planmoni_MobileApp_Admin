@@ -76,7 +76,7 @@ export default function PayoutEventRow({
 
   const amountBlock = (
     <>
-      <p className={`text-sm font-bold ${settled ? 'text-gray-900' : 'text-gray-500'}`}>{formatNaira(item.amount)}</p>
+      <p className={`text-sm font-semibold ${settled ? 'text-gray-900' : 'text-gray-500'}`}>{formatNaira(item.amount)}</p>
       <p className="text-xs text-gray-500 mt-0.5">{format(when, 'h:mm a')}</p>
     </>
   );

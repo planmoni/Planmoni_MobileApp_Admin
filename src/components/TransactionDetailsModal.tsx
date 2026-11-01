@@ -113,7 +113,7 @@ export default function TransactionDetailsModal({
         <div className="relative transform overflow-hidden rounded-3xl bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-xl">
           <div className="px-6 pt-6 pb-4">
             <div className="flex items-center justify-between mb-5">
-              <h3 className="text-xl font-bold text-gray-900">Transaction details</h3>
+              <h3 className="text-xl font-semibold text-gray-900">Transaction details</h3>
               <button
                 onClick={onClose}
                 className="rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
@@ -136,7 +136,7 @@ export default function TransactionDetailsModal({
                   <p className="text-base font-semibold text-gray-900">{view.title}</p>
                   <TransactionStatusBadge status={item.status} />
                 </div>
-                <p className="text-3xl font-bold text-gray-900 mt-1">
+                <p className="text-lg font-semibold text-gray-900 mt-1">
                   {amountSign(view, item.status)}
                   {formatNaira(item.amount)}
                 </p>

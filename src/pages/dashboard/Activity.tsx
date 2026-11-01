@@ -73,7 +73,7 @@ function SummaryTile({
         <Icon className="h-4 w-4 text-gray-500" />
         <span className="text-xs font-medium text-gray-500">{label}</span>
       </div>
-      <p className="text-2xl font-bold text-gray-900">{value.toLocaleString()}</p>
+      <p className="text-lg font-semibold text-gray-900">{value.toLocaleString()}</p>
       <p className="text-xs text-gray-500 mt-0.5">{hint}</p>
     </button>
   );
@@ -195,7 +195,7 @@ export default function Activity() {
     <div>
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-1">Activity</h1>
+          <h1 className="text-3xl font-semibold text-gray-900 mb-1">Activity</h1>
           <p className="text-gray-500">Sign-ups, KYC, plans, money movement and admin actions as they happen</p>
         </div>
         <button

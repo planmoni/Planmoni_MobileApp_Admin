@@ -208,7 +208,7 @@ export default function CalendarEventCard({ event }: { event: CalendarEvent }) {
             <p className="text-sm font-semibold text-gray-900">{title}</p>
             <div className="text-right shrink-0">
               {event.amount !== null && (
-                <p className="text-sm font-bold text-gray-900">
+                <p className="text-sm font-semibold text-gray-900">
                   {sign}
                   {formatNaira(event.amount)}
                 </p>

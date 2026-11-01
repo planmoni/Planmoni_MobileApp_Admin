@@ -64,7 +64,7 @@ export default function BannerCarousel({
         {(banner.title || banner.description) && (
           <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-gray-900 via-gray-900/70 to-transparent p-3 sm:p-4 md:p-6 rounded-b-xl sm:rounded-b-2xl">
             {banner.title && (
-              <h3 className="text-white text-xs sm:text-sm md:text-base lg:text-lg font-bold mb-0.5 sm:mb-1 md:mb-1.5 line-clamp-1 drop-shadow-lg">
+              <h3 className="text-white text-xs sm:text-sm md:text-base lg:text-lg font-semibold mb-0.5 sm:mb-1 md:mb-1.5 line-clamp-1 drop-shadow-lg">
                 {banner.title}
               </h3>
             )}
