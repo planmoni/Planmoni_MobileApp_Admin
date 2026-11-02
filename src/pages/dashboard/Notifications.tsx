@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Send, RefreshCw, Search, ChevronDown, ChevronUp } from 'lucide-react';
-import { useNotifications, useNotificationSegments, useNotificationStats, useNotificationDispatchLogs, useRealtimeDispatch, useReengagementStats, useReengagementUsers, useDispatchStats } from '@/hooks/queries/useNotifications';
+import { useNotifications, useNotificationSegments, useNotificationStats, useNotificationDispatchLogs, useReengagementStats, useReengagementUsers, useDispatchStats, useAudiencePreview } from '@/hooks/queries/useNotifications';
+import QueueProgress from '@/components/notifications/QueueProgress';
 import { useRefreshData } from '@/hooks/mutations/useRefreshData';
 import { useToast } from '@/contexts/ToastContext';
 import { supabase } from '@/lib/supabase';
@@ -15,6 +16,35 @@ interface NotificationFormData {
   target_user_ids: string[];
   target_segment_id: string;
   personalize: boolean;
+  respect_marketing: boolean;
+  rate_per_minute: number;
+}
+
+const SPEED_PRESETS = [
+  { value: 500, label: 'Gentle', hint: '500 devices / min' },
+  { value: 1000, label: 'Standard', hint: '1,000 devices / min' },
+  { value: 3000, label: 'Fast', hint: '3,000 devices / min' },
+];
+
+const EMPTY_FORM: NotificationFormData = {
+  title: '',
+  body: '',
+  data: {},
+  target_type: 'all',
+  target_user_ids: [],
+  target_segment_id: '',
+  personalize: false,
+  respect_marketing: false,
+  rate_per_minute: 1000,
+};
+
+function formatDuration(seconds: number): string {
+  if (seconds < 60) return 'under a minute';
+  const minutes = Math.ceil(seconds / 60);
+  if (minutes < 60) return `about ${minutes} minute${minutes === 1 ? '' : 's'}`;
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return `about ${h}h${m ? ` ${m}m` : ''}`;
 }
 
 export default function Notifications() {
@@ -30,17 +60,21 @@ export default function Notifications() {
   const [isSending, setIsSending] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [allUsersCount, setAllUsersCount] = useState<number | null>(null);
+  const [isSendingTest, setIsSendingTest] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  // one id per compose session: a repeated request returns the first send instead of sending twice
+  const [requestId, setRequestId] = useState(() => crypto.randomUUID());
 
-  const [formData, setFormData] = useState<NotificationFormData>({
-    title: '',
-    body: '',
-    data: {},
-    target_type: 'all',
-    target_user_ids: [],
-    target_segment_id: '',
-    personalize: false,
-  });
+  const [formData, setFormData] = useState<NotificationFormData>(EMPTY_FORM);
+
+  const { data: audience, isLoading: audienceLoading, error: audienceError } = useAudiencePreview(
+    {
+      targetType: formData.target_type,
+      segmentId: formData.target_segment_id || undefined,
+      respectMarketing: formData.respect_marketing,
+    },
+    showCreateModal,
+  );
 
   const [dispatchFilters, setDispatchFilters] = useState({
     status: '',
@@ -59,103 +93,100 @@ export default function Notifications() {
   const { data: dispatchStatsData } = useDispatchStats();
   const { data: reengagementUsers } = useReengagementUsers(selectedReengagement || '', !!selectedReengagement && showRecipientsModal);
 
-  const [newDispatches, setNewDispatches] = useState<any[]>([]);
-  const { realtimeEnabled, setRealtimeEnabled } = useRealtimeDispatch((dispatch) => {
-    setNewDispatches((prev) => [dispatch, ...prev.slice(0, 49)]);
-    setTimeout(() => {
-      setNewDispatches((prev) => prev.filter((d) => d.id !== dispatch.id));
-    }, 5000);
-  });
-
   const handleRefresh = () => {
     refreshData.mutate(['push-notifications', 'notification-stats', 'push-notification-segments', 'notification-dispatch-logs', 'reengagement-stats', 'dispatch-stats']);
   };
 
-  useEffect(() => {
-    const fetchAllUsersCount = async () => {
-      try {
-        const { data, error } = await supabase
-          .rpc('get_active_push_token_count');
+  const postToAdminFunction = async (payload: Record<string, unknown>) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) throw new Error('Not authenticated');
 
-        if (!error && data !== null) {
-          setAllUsersCount(data);
-        }
-      } catch (err) {
-        console.error('Error fetching all users count:', err);
-      }
-    };
+    const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-push-notifications`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${session.access_token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || 'Request failed');
+    return result;
+  };
 
-    fetchAllUsersCount();
-  }, []);
+  const validateForm = () => {
+    if (!formData.title.trim() || !formData.body.trim()) {
+      showToast('Please fill in title and message', 'error');
+      return false;
+    }
+    if (formData.target_type === 'segment' && !formData.target_segment_id) {
+      showToast('Please select a segment', 'error');
+      return false;
+    }
+    return true;
+  };
 
-  const handleSendNotification = async () => {
+  const closeCompose = () => {
+    setShowCreateModal(false);
+    setShowConfirm(false);
+    setFormData(EMPTY_FORM);
+    setRequestId(crypto.randomUUID());
+  };
+
+  const handleSendTest = async () => {
     if (!formData.title.trim() || !formData.body.trim()) {
       showToast('Please fill in title and message', 'error');
       return;
     }
-
-    if (formData.target_type === 'segment' && !formData.target_segment_id) {
-      showToast('Please select a segment', 'error');
-      return;
+    setIsSendingTest(true);
+    try {
+      await postToAdminFunction({
+        action: 'send_test',
+        title: formData.title,
+        body: formData.body,
+        data: formData.data,
+        personalize: formData.personalize,
+      });
+      showToast('Test queued for your own devices', 'success');
+      handleRefresh();
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Failed to send test', 'error');
+    } finally {
+      setIsSendingTest(false);
     }
+  };
+
+  const handleSendNotification = async () => {
+    if (!validateForm()) return;
 
     setIsSending(true);
-
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-
-      if (!session) {
-        throw new Error('Not authenticated');
-      }
-
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-push-notifications`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            action: 'send_notification',
-            title: formData.title,
-            body: formData.body,
-            data: formData.data,
-            target_type: formData.target_type,
-            target_user_ids: formData.target_user_ids,
-            target_segment_id: formData.target_segment_id || undefined,
-            personalize: formData.personalize,
-            notification_type: 'manual',
-          }),
-        }
-      );
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || 'Failed to send notification');
-      }
-
-      showToast(result.message || 'Notification sent successfully', 'success');
-      setShowCreateModal(false);
-      setFormData({
-        title: '',
-        body: '',
-        data: {},
-        target_type: 'all',
-        target_user_ids: [],
-        target_segment_id: '',
-        personalize: false,
+      const result = await postToAdminFunction({
+        action: 'send_notification',
+        title: formData.title,
+        body: formData.body,
+        data: formData.data,
+        target_type: formData.target_type,
+        target_user_ids: formData.target_user_ids,
+        target_segment_id: formData.target_segment_id || undefined,
+        personalize: formData.personalize,
+        respect_marketing_pref: formData.respect_marketing,
+        rate_per_minute: formData.rate_per_minute,
+        notification_type: 'manual',
+        request_id: requestId,
       });
+
+      showToast(result.message || 'Notification queued', 'success');
+      closeCompose();
       handleRefresh();
     } catch (err) {
       console.error('Error sending notification:', err);
-      showToast(
-        err instanceof Error ? err.message : 'Failed to send notification',
-        'error'
-      );
+      // a rejected request can be retried as a new send; a dropped connection keeps the id so a retry cannot double-send
+      if (!(err instanceof TypeError)) setRequestId(crypto.randomUUID());
+      showToast(err instanceof Error ? err.message : 'Failed to send notification', 'error');
     } finally {
       setIsSending(false);
+      setShowConfirm(false);
     }
   };
 
@@ -193,7 +224,7 @@ export default function Notifications() {
         throw new Error(result.error || 'Failed to send re-engagement alert');
       }
 
-      showToast(result.message || 'Re-engagement alert sent successfully', 'success');
+      showToast(result.message || 'Re-engagement alert queued', 'success');
       setShowReengagementModal(false);
       setSelectedReengagement(null);
       handleRefresh();
@@ -212,6 +243,8 @@ export default function Notifications() {
     const badges: Record<string, { bg: string; text: string; label: string }> = {
       draft: { bg: 'bg-gray-100', text: 'text-gray-800', label: 'Draft' },
       sending: { bg: 'bg-gray-100', text: 'text-gray-800', label: 'Sending' },
+      paused: { bg: 'bg-gray-100', text: 'text-gray-800', label: 'Paused' },
+      scheduled: { bg: 'bg-gray-100', text: 'text-gray-800', label: 'Scheduled' },
       sent: { bg: 'bg-gray-100', text: 'text-gray-800', label: 'Sent' },
       delivered: { bg: 'bg-gray-100', text: 'text-gray-800', label: 'Delivered' },
       failed: { bg: 'bg-gray-100', text: 'text-gray-800', label: 'Failed' },
@@ -414,7 +447,6 @@ export default function Notifications() {
               }`}
             >
               <span>Live Dispatch</span>
-              {realtimeEnabled && <span className="w-2 h-2 bg-green-500 rounded-full"></span>}
             </button>
           </div>
         </div>
@@ -441,6 +473,8 @@ export default function Notifications() {
                   <option value="all">All Status</option>
                   <option value="sent">Sent</option>
                   <option value="sending">Sending</option>
+                  <option value="paused">Paused</option>
+                  <option value="cancelled">Cancelled</option>
                   <option value="failed">Failed</option>
                   <option value="draft">Draft</option>
                 </select>
@@ -494,11 +528,12 @@ export default function Notifications() {
                               {notification.target_type}
                             </span>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
+                          <td className="px-6 py-4 align-top">
                             {getStatusBadge(notification.status)}
+                            <QueueProgress notification={notification} />
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <span className="text-sm text-gray-900">{notification.total_recipients}</span>
+                            <span className="text-sm text-gray-900">{notification.total_recipients.toLocaleString()}</span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex-1">
@@ -533,17 +568,9 @@ export default function Notifications() {
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900">Live Notification Dispatch</h3>
-                  <p className="text-sm text-gray-600">Real-time view of notifications being sent</p>
+                  <p className="text-sm text-gray-600">Most recent devices notified (latest 100)</p>
                 </div>
-                <label className="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={realtimeEnabled}
-                    onChange={(e) => setRealtimeEnabled(e.target.checked)}
-                    className="h-4 w-4 text-gray-900 focus:ring-gray-900 border-gray-300 rounded"
-                  />
-                  <span className="text-sm text-gray-700">Auto-refresh</span>
-                </label>
+                <span className="text-xs text-gray-500">Refreshes every 10 seconds</span>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
@@ -635,14 +662,13 @@ export default function Notifications() {
                     </tr>
                   ) : dispatchLogs && dispatchLogs.length > 0 ? (
                     dispatchLogs.map((log) => {
-                      const isNew = newDispatches.some(d => d.id === log.id);
                       const isExpanded = expandedLog === log.id;
 
                       return (
                         <>
                           <tr
                             key={log.id}
-                            className={`hover:bg-gray-50 transition-colors ${isNew ? 'bg-green-50' : ''}`}
+                            className="hover:bg-gray-50 transition-colors"
                           >
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                               <div>{format(new Date(log.sent_at), 'HH:mm:ss')}</div>
@@ -808,9 +834,7 @@ export default function Notifications() {
                   onChange={(e) => setFormData({ ...formData, target_type: e.target.value as any })}
                   className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
                 >
-                  <option value="all">
-                    All Users {allUsersCount !== null ? `(${allUsersCount} users)` : ''}
-                  </option>
+                  <option value="all">All users with notifications on</option>
                   <option value="segment">User Segment</option>
                 </select>
               </div>
@@ -835,6 +859,79 @@ export default function Notifications() {
                 </div>
               )}
 
+              <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+                <label className="flex items-start cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.respect_marketing}
+                    onChange={(e) => setFormData({ ...formData, respect_marketing: e.target.checked })}
+                    className="mt-0.5 h-4 w-4 text-gray-900 focus:ring-gray-900 border-gray-300 rounded"
+                  />
+                  <div className="ml-3">
+                    <span className="text-sm font-medium text-gray-900">Respect marketing preference</span>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {formData.respect_marketing
+                        ? 'Only users who switched marketing alerts on. This is usually a very small group.'
+                        : 'Everyone who has notifications on. Users who switched notifications off are always skipped.'}
+                    </p>
+                  </div>
+                </label>
+              </div>
+
+              <div className="border border-gray-200 rounded-xl p-4">
+                <p className="text-sm font-medium text-gray-900 mb-1">Who will receive this</p>
+                {audienceLoading ? (
+                  <p className="text-sm text-gray-500">Counting...</p>
+                ) : audienceError ? (
+                  <p className="text-sm text-red-600">
+                    {audienceError instanceof Error ? audienceError.message : 'Could not count the audience'}
+                  </p>
+                ) : audience ? (
+                  <div className="text-sm text-gray-700 space-y-1">
+                    <p>
+                      <span className="text-xl font-semibold text-gray-900">{audience.users.toLocaleString()}</span> users ·{' '}
+                      <span className="font-semibold text-gray-900">{audience.devices.toLocaleString()}</span> devices
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      {audience.opted_out_users.toLocaleString()} users skipped (notifications off
+                      {formData.respect_marketing ? ' or marketing off' : ''})
+                      {audience.devices_over_cap > 0 &&
+                        ` · ${audience.devices_over_cap.toLocaleString()} older devices skipped (newest 3 per user)`}
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-500">Choose a segment to see the audience</p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Send speed</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {SPEED_PRESETS.map((preset) => (
+                    <button
+                      key={preset.value}
+                      type="button"
+                      onClick={() => setFormData({ ...formData, rate_per_minute: preset.value })}
+                      className={`px-3 py-2 rounded-xl border text-left transition-colors ${
+                        formData.rate_per_minute === preset.value
+                          ? 'border-gray-900 bg-gray-900 text-white'
+                          : 'border-gray-200 text-gray-700 hover:bg-gray-50'
+                      }`}
+                    >
+                      <div className="text-sm font-medium">{preset.label}</div>
+                      <div className={`text-xs ${formData.rate_per_minute === preset.value ? 'text-gray-300' : 'text-gray-500'}`}>
+                        {preset.hint}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+                {audience && audience.devices > 0 && (
+                  <p className="text-xs text-gray-500 mt-2">
+                    Takes {formatDuration((audience.devices / formData.rate_per_minute) * 60)} to reach everyone. You can pause or stop it at any time.
+                  </p>
+                )}
+              </div>
+
               <div className="bg-gray-50 border border-gray-100 rounded-xl p-4">
                 <h3 className="text-sm font-medium text-gray-900 mb-2">Preview</h3>
                 <div className="text-sm text-gray-800">
@@ -854,22 +951,59 @@ export default function Notifications() {
 
             <div className="p-6 border-t border-gray-100 flex justify-end space-x-3">
               <button
-                onClick={() => {
-                  setShowCreateModal(false);
-                  setFormData({
-                    title: '',
-                    body: '',
-                    data: {},
-                    target_type: 'all',
-                    target_user_ids: [],
-                    target_segment_id: '',
-                    personalize: false,
-                  });
-                }}
+                onClick={closeCompose}
                 className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-xl transition-colors"
                 disabled={isSending}
               >
                 Cancel
+              </button>
+              <button
+                onClick={handleSendTest}
+                disabled={isSending || isSendingTest}
+                className="px-4 py-2 text-gray-700 border border-gray-200 hover:bg-gray-50 rounded-xl transition-colors disabled:opacity-50"
+              >
+                {isSendingTest ? 'Sending test...' : 'Send test to me'}
+              </button>
+              <button
+                onClick={() => validateForm() && setShowConfirm(true)}
+                disabled={isSending || audienceLoading || !!audienceError || !audience || audience.devices === 0}
+                className="flex items-center space-x-2 px-6 py-2 bg-gray-900 text-white rounded-xl hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Send className="h-4 w-4" />
+                <span>Review and send</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showConfirm && audience && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full">
+            <div className="p-6 border-b border-gray-100">
+              <h2 className="text-xl font-semibold text-gray-900">Send to {audience.devices.toLocaleString()} devices?</h2>
+            </div>
+            <div className="p-6 space-y-3 text-sm text-gray-700">
+              <p>
+                <span className="font-semibold text-gray-900">{formData.title}</span>
+                <br />
+                {formData.body}
+              </p>
+              <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 space-y-1">
+                <p>{audience.users.toLocaleString()} users · {audience.devices.toLocaleString()} devices</p>
+                <p>Speed: {formData.rate_per_minute.toLocaleString()} devices per minute</p>
+                <p>Takes {formatDuration((audience.devices / formData.rate_per_minute) * 60)}</p>
+                {formData.respect_marketing && <p>Marketing preference respected</p>}
+              </div>
+              <p className="text-xs text-gray-500">Once a device has been notified it cannot be recalled. You can pause or cancel the rest from the history.</p>
+            </div>
+            <div className="p-6 border-t border-gray-100 flex justify-end space-x-3">
+              <button
+                onClick={() => setShowConfirm(false)}
+                className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-xl transition-colors"
+                disabled={isSending}
+              >
+                Back
               </button>
               <button
                 onClick={handleSendNotification}
@@ -879,12 +1013,12 @@ export default function Notifications() {
                 {isSending ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white"></div>
-                    <span>Sending...</span>
+                    <span>Queuing...</span>
                   </>
                 ) : (
                   <>
                     <Send className="h-4 w-4" />
-                    <span>Send Notification</span>
+                    <span>Send now</span>
                   </>
                 )}
               </button>

@@ -95,15 +95,11 @@ export default function SendReengagementButton({
         throw new Error(result.error || 'Failed to send notification');
       }
 
-      const stats = result.stats || {};
-      if (stats.delivered === 0 && stats.failed > 0) {
-        throw new Error('User has no active push tokens or all deliveries failed');
-      }
-
+      const devices = Number(result.queued) || 0;
       showToast(
-        stats.delivered > 0
-          ? `Alert sent successfully to ${stats.delivered} device${stats.delivered > 1 ? 's' : ''}`
-          : 'Alert sent successfully',
+        devices > 0
+          ? `Alert queued for ${devices} device${devices > 1 ? 's' : ''}`
+          : 'Alert queued',
         'success'
       );
       setShowConfirmModal(false);

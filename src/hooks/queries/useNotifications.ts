@@ -1,6 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
-import { useState, useEffect } from 'react';
 
 export interface PushNotification {
   id: string;
@@ -10,7 +9,7 @@ export interface PushNotification {
   target_type: 'all' | 'individual' | 'segment';
   target_user_ids: string[];
   target_segment_id: string | null;
-  status: 'draft' | 'scheduled' | 'sending' | 'sent' | 'failed' | 'cancelled';
+  status: 'draft' | 'scheduled' | 'sending' | 'paused' | 'sent' | 'failed' | 'cancelled';
   scheduled_for: string | null;
   sent_at: string | null;
   total_recipients: number;
@@ -21,6 +20,11 @@ export interface PushNotification {
   updated_at: string;
   notification_type?: string;
   notification_category?: string;
+  queue_enabled?: boolean;
+  rate_per_minute?: number;
+  respect_marketing_pref?: boolean;
+  personalize?: boolean;
+  error?: string | null;
 }
 
 export interface NotificationDispatchLog {
@@ -78,11 +82,15 @@ export function useNotifications() {
       const { data, error } = await supabase
         .from('push_notifications')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(300);
 
       if (error) throw error;
       return data as PushNotification[];
     },
+    // keep the history live while something is being sent
+    refetchInterval: (query) =>
+      (query.state.data as PushNotification[] | undefined)?.some((n) => n.status === 'sending' || n.status === 'paused') ? 5000 : false,
   });
 }
 
@@ -127,7 +135,7 @@ export function useNotificationStats() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('push_notifications')
-        .select('status, total_recipients, delivered_count, failed_count');
+        .select('status, delivered_count, failed_count');
 
       if (error) throw error;
 
@@ -142,21 +150,16 @@ export function useNotificationStats() {
       if (!data) return stats;
 
       data.forEach((notification) => {
-        if (notification.status === 'sent') {
-          stats.total_sent++;
-          stats.total_delivered += notification.delivered_count || 0;
-          stats.total_failed += notification.failed_count || 0;
-        } else if (['draft', 'scheduled', 'sending'].includes(notification.status)) {
-          stats.total_pending++;
-        }
+        if (notification.status === 'sent') stats.total_sent++;
+        if (['draft', 'scheduled', 'sending', 'paused'].includes(notification.status)) stats.total_pending++;
+        // delivered_count = devices Expo accepted (or confirmed), also for sends still in progress
+        stats.total_delivered += notification.delivered_count || 0;
+        stats.total_failed += notification.failed_count || 0;
       });
 
-      const totalRecipients = data
-        .filter(n => n.status === 'sent')
-        .reduce((sum, n) => sum + (n.total_recipients || 0), 0);
-
-      if (totalRecipients > 0) {
-        stats.delivery_rate = Math.round((stats.total_delivered / totalRecipients) * 100);
+      const attempted = stats.total_delivered + stats.total_failed;
+      if (attempted > 0) {
+        stats.delivery_rate = Math.round((stats.total_delivered / attempted) * 100);
       }
 
       return stats;
@@ -213,66 +216,6 @@ export function useNotificationDispatchLogs(
   });
 }
 
-export function useRealtimeDispatch(onNewDispatch?: (dispatch: NotificationDispatchLog) => void) {
-  const [realtimeEnabled, setRealtimeEnabled] = useState(true);
-
-  useEffect(() => {
-    if (!realtimeEnabled || !onNewDispatch) return;
-
-    const channel = supabase
-      .channel('notification-dispatch')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'push_notification_logs',
-        },
-        async (payload) => {
-          const log = payload.new;
-
-          const { data: profileData } = await supabase
-            .from('profiles')
-            .select('email, full_name')
-            .eq('id', log.user_id)
-            .single();
-
-          const { data: notificationData } = await supabase
-            .from('push_notifications')
-            .select('title, body, notification_type, notification_category')
-            .eq('id', log.push_notification_id)
-            .single();
-
-          if (profileData && notificationData) {
-            onNewDispatch({
-              id: log.id,
-              push_notification_id: log.push_notification_id,
-              user_id: log.user_id,
-              user_email: profileData.email,
-              user_full_name: profileData.full_name,
-              notification_title: notificationData.title,
-              notification_body: notificationData.body,
-              notification_type: notificationData.notification_type,
-              notification_category: notificationData.notification_category,
-              status: log.status,
-              error_message: log.error_message,
-              sent_at: log.sent_at,
-              delivered_at: log.delivered_at,
-              created_at: log.created_at,
-            });
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [realtimeEnabled, onNewDispatch]);
-
-  return { realtimeEnabled, setRealtimeEnabled };
-}
-
 export function useReengagementStats() {
   return useQuery({
     queryKey: ['reengagement-stats'],
@@ -320,44 +263,114 @@ export function useReengagementUsers(category: string, enabled: boolean = false)
   });
 }
 
+export interface DispatchStats {
+  total_dispatched: number;
+  total_delivered: number;
+  total_accepted: number;
+  total_failed: number;
+  success_rate: number;
+  avg_delivery_time: number;
+}
+
+// Counted in the database (today, Lagos time) instead of reading log rows through the 1000-row REST limit.
 export function useDispatchStats() {
   return useQuery({
     queryKey: ['dispatch-stats'],
-    queryFn: async () => {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-
-      const { data, error } = await supabase
-        .from('push_notification_logs')
-        .select('status, sent_at, delivered_at')
-        .gte('sent_at', today.toISOString());
-
+    queryFn: async (): Promise<DispatchStats> => {
+      const { data, error } = await supabase.rpc('admin_push_dispatch_stats');
       if (error) throw error;
 
-      const stats = {
-        total_dispatched: data?.length || 0,
-        total_delivered: data?.filter(d => d.status === 'delivered').length || 0,
-        total_failed: data?.filter(d => d.status === 'failed').length || 0,
-        success_rate: 0,
-        avg_delivery_time: 0,
+      const total = Number(data?.total_dispatched) || 0;
+      const delivered = Number(data?.total_delivered) || 0;
+      const accepted = Number(data?.total_accepted) || 0;
+      return {
+        total_dispatched: total,
+        total_delivered: delivered,
+        total_accepted: accepted,
+        total_failed: Number(data?.total_failed) || 0,
+        // accepted by Expo or confirmed delivered, out of everything attempted
+        success_rate: total > 0 ? Math.round(((delivered + accepted) / total) * 100) : 0,
+        avg_delivery_time: Number(data?.avg_delivery_time) || 0,
       };
-
-      if (stats.total_dispatched > 0) {
-        stats.success_rate = Math.round((stats.total_delivered / stats.total_dispatched) * 100);
-      }
-
-      const deliveredLogs = data?.filter(d => d.delivered_at && d.sent_at) || [];
-      if (deliveredLogs.length > 0) {
-        const totalTime = deliveredLogs.reduce((sum, log) => {
-          const sentTime = new Date(log.sent_at!).getTime();
-          const deliveredTime = new Date(log.delivered_at!).getTime();
-          return sum + (deliveredTime - sentTime);
-        }, 0);
-        stats.avg_delivery_time = Math.round(totalTime / deliveredLogs.length / 1000);
-      }
-
-      return stats;
     },
     refetchInterval: 30000,
+  });
+}
+
+export interface AudiencePreview {
+  users: number;
+  devices: number;
+  opted_out_users: number;
+  devices_over_cap: number;
+  users_with_device: number;
+}
+
+export interface AudienceParams {
+  targetType: 'all' | 'individual' | 'segment';
+  segmentId?: string;
+  respectMarketing: boolean;
+}
+
+/** Who a send would reach, counted by the same SQL that builds the queue. */
+export function useAudiencePreview(params: AudienceParams, enabled: boolean) {
+  const ready = enabled && (params.targetType !== 'segment' || !!params.segmentId);
+  return useQuery({
+    queryKey: ['push-audience-preview', params.targetType, params.segmentId ?? null, params.respectMarketing],
+    queryFn: async (): Promise<AudiencePreview> => {
+      const { data, error } = await supabase.rpc('admin_push_audience_preview', {
+        p_target_type: params.targetType,
+        p_segment_id: params.targetType === 'segment' ? params.segmentId : null,
+        p_user_ids: null,
+        p_respect_marketing: params.respectMarketing,
+        p_max_tokens: 3,
+      });
+      if (error) throw error;
+      return data as AudiencePreview;
+    },
+    enabled: ready,
+    staleTime: 15000,
+    retry: false,
+  });
+}
+
+export interface PushProgress {
+  id: string;
+  status: PushNotification['status'];
+  queued: boolean;
+  total: number;
+  counts: Record<string, number>;
+  remaining: number;
+  rate_per_minute: number;
+  eta_seconds: number | null;
+}
+
+export function usePushProgress(notificationId: string, enabled: boolean) {
+  return useQuery({
+    queryKey: ['push-progress', notificationId],
+    queryFn: async (): Promise<PushProgress> => {
+      const { data, error } = await supabase.rpc('admin_push_progress', { p_notification_id: notificationId });
+      if (error) throw error;
+      return data as PushProgress;
+    },
+    enabled,
+    refetchInterval: 5000,
+  });
+}
+
+export type PushControlAction = 'pause' | 'resume' | 'cancel' | 'retry_failed';
+
+export function usePushControl() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, action }: { id: string; action: PushControlAction }) => {
+      const { data, error } = await supabase.rpc(`admin_push_${action}`, { p_notification_id: id });
+      if (error) throw error;
+      return data as Record<string, unknown>;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['push-notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['push-progress'] });
+      queryClient.invalidateQueries({ queryKey: ['notification-stats'] });
+    },
   });
 }
