@@ -16,13 +16,13 @@ export default function MfaGate() {
     <div className="min-h-screen flex items-center justify-center p-6 bg-gray-50">
       <div className="w-full max-w-md">
         <div className="mb-6 text-center">
-          <img src="/assets/images/planmoni_logo_updated.png" alt="Planmoni" className="h-auto w-auto mx-auto mb-4" />
+          <img src="/assets/images/planmoni_logo_updated.png" alt="Planmoni" className="h-[50px] w-auto mx-auto mb-4" />
         </div>
 
         <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
-          <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-4">
+          {/* <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-4">
             <Shield className="w-6 h-6 text-gray-900" />
-          </div>
+          </div> */}
 
           {mfa.status === 'needs_enroll' && (
             <>
@@ -114,7 +114,7 @@ function ChallengeForm({ factorId, onDone }: { factorId: string; onDone: () => P
         value={code}
         onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
         placeholder="123456"
-        className="w-full px-4 py-3 border border-gray-200 rounded-xl text-center text-2xl tracking-[0.5em] font-mono focus:outline-none focus:ring-2 focus:ring-gray-900"
+        className="w-full px-4 py-3 border border-gray-200 rounded-xl text-center text-2xl tracking-[0.5em] focus:outline-none focus:ring-2 focus:ring-gray-900"
         autoFocus
       />
 
@@ -127,7 +127,7 @@ function ChallengeForm({ factorId, onDone }: { factorId: string; onDone: () => P
       </button>
 
       <p className="text-xs text-gray-400 text-center">
-        Lost your phone? Ask a Super Admin to reset your 2FA, then sign in again to set up a new one.
+        Lost access to your authenticator app? Ask a Super Admin to reset your 2FA, then sign in again to set up a new one.
       </p>
     </form>
   );

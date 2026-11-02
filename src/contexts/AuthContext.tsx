@@ -22,7 +22,7 @@ type AuthContextType = {
   refreshMfa: () => Promise<void>;
   signIn: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   signUp: (email: string, password: string, firstName: string, lastName: string) => Promise<{ success: boolean; error?: string }>;
-  signOut: () => Promise<void>;
+  signOut: (options?: { reason?: 'idle' }) => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -244,7 +244,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const signOut = async () => {
+  const signOut = async (options?: { reason?: 'idle' }) => {
     try {
       console.log('Starting sign out process...');
 
@@ -261,10 +261,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.clear();
       sessionStorage.clear();
 
-      showToast('Successfully signed out', 'success');
+      if (!options?.reason) showToast('Successfully signed out', 'success');
 
-      // Force redirect to login page
-      window.location.replace('/login');
+      // Force redirect to login page (the login page explains an automatic sign-out)
+      window.location.replace(options?.reason === 'idle' ? '/login?reason=idle' : '/login');
     } catch (error) {
       console.error('Unexpected sign out error:', error);
       showToast('Failed to sign out', 'error');

@@ -6,6 +6,7 @@ import AuthLayout from './layouts/AuthLayout';
 import DashboardLayout from './layouts/DashboardLayout';
 import Toast from './components/Toast';
 import MfaGate from './components/mfa/MfaGate';
+import IdleLogout from './components/IdleLogout';
 
 // Lazy load pages
 const LoginPage = lazy(() => import('./pages/auth/Login'));
@@ -54,6 +55,7 @@ function App() {
     return (
       <>
         <MfaGate />
+        <IdleLogout />
         <Toast />
       </>
     );
@@ -118,6 +120,7 @@ function App() {
           )}
         </Routes>
       </Suspense>
+      {session && <IdleLogout />}
       <Toast />
     </>
   );

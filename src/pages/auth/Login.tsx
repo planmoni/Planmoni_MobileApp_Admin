@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { Eye, EyeOff, Mail, Lock, ArrowRight, AlertCircle } from 'lucide-react';
@@ -7,6 +7,8 @@ import { supabase } from '@/lib/supabase';
 
 export default function Login() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const signedOutForIdle = searchParams.get('reason') === 'idle';
   const { signIn } = useAuth();
   const { showToast } = useToast();
   const [email, setEmail] = useState('');
@@ -91,6 +93,14 @@ export default function Login() {
               <h2 className="text-3xl font-semibold text-gray-900 mb-2">Sign in</h2>
               <p className="text-gray-500">Enter your credentials to access your account</p>
             </div>
+
+            {signedOutForIdle && !error && (
+              <div className="mb-6 rounded-xl bg-gray-50 border border-gray-200 p-4">
+                <p className="text-sm text-gray-700 leading-relaxed">
+                  You were signed out after 5 minutes of inactivity. Sign in again to continue.
+                </p>
+              </div>
+            )}
 
             {error && (
               <div className="mb-6 rounded-xl bg-red-50 border border-red-100 p-4">
