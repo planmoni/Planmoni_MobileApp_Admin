@@ -51,7 +51,7 @@ export default function Notifications() {
   const { data: notifications, isLoading, error } = useNotifications();
   const { data: segments } = useNotificationSegments();
   const { data: stats } = useNotificationStats();
-  const { data: reengagementStats } = useReengagementStats();
+  const { data: reengagementStats, error: reengagementError, refetch: refetchReengagement } = useReengagementStats();
   const refreshData = useRefreshData();
   const { showToast } = useToast();
 
@@ -380,11 +380,18 @@ export default function Notifications() {
         <div className="mb-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-1">Re-engagement Alerts</h3>
           <p className="text-sm text-gray-500">Send targeted notifications to bring users back</p>
+          {reengagementError && (
+            <p className="text-sm text-red-600 mt-2">
+              Could not load the eligible counts{reengagementError instanceof Error ? `: ${reengagementError.message}` : ''}.{' '}
+              <button onClick={() => refetchReengagement()} className="underline">Try again</button>
+            </p>
+          )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {REENGAGEMENT_CATEGORIES.map((category) => {
             const count = getReengagementCount(category.id);
+            const unavailable = !!reengagementError || !reengagementStats;
             return (
               <div key={category.id} className="bg-gray-50 rounded-xl p-4 border border-gray-100">
                 <div className="mb-3">
@@ -393,7 +400,7 @@ export default function Notifications() {
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="text-sm">
-                    <span className="font-semibold text-xl text-gray-900">{count}</span>
+                    <span className="font-semibold text-xl text-gray-900">{unavailable ? '-' : count.toLocaleString()}</span>
                     <span className="text-gray-600 ml-1">eligible</span>
                   </div>
                   <div className="flex space-x-2">
@@ -403,7 +410,7 @@ export default function Notifications() {
                         setShowRecipientsModal(true);
                       }}
                       className="px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-100 rounded-lg transition-colors border border-gray-200"
-                      disabled={count === 0}
+                      disabled={unavailable || count === 0}
                     >
                       Preview
                     </button>
@@ -413,7 +420,7 @@ export default function Notifications() {
                         setShowReengagementModal(true);
                       }}
                       className="px-3 py-1.5 text-xs bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                      disabled={count === 0}
+                      disabled={unavailable || count === 0}
                     >
                       Send
                     </button>

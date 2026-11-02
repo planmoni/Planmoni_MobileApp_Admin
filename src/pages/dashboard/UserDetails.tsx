@@ -361,7 +361,8 @@ export default function UserDetails() {
 
   const userBalance = user.wallets?.[0]?.balance || 0;
   const hasDeposits = totalDeposits > 0;
-  const hasUnfundedVaults = (userVaults || []).some((v: any) => v.is_active && (!v.plan_wallets?.[0]?.balance || v.plan_wallets[0].balance === 0));
+  // a vault is a budget_plans row; unfunded = active with no balance
+  const hasUnfundedVaults = (userVaults || []).some((v: any) => v.status === 'active' && Number(v.current_balance || 0) === 0);
 
   // Calculate if user is inactive (14+ days since last seen)
   const isInactive = (() => {
