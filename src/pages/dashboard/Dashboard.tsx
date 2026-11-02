@@ -4,6 +4,7 @@ import {
   ArrowDownToLine,
   Banknote,
   CalendarClock,
+  AlertTriangle,
   CalendarPlus,
   ClipboardCheck,
   Lock,
@@ -35,6 +36,7 @@ import {
 import { format, formatDistanceToNow } from 'date-fns';
 import { Link } from 'react-router-dom';
 import { useDashboardData } from '@/hooks/queries/useDashboardData';
+import { useDuePayoutSummary } from '@/hooks/queries/useProcessPayouts';
 import { useKycTierStats, useTier3Queue } from '@/hooks/queries/useKycData';
 import { TierBadge } from '@/components/KycBadges';
 import KycCompletedToday from '@/components/KycCompletedToday';
@@ -56,6 +58,8 @@ export default function Dashboard() {
   const canSeeKycStats =
     isSuperAdmin || hasPermission('dashboard', 'stats.kyc_completed') || hasPermission('kyc', 'stats');
   const canReviewKyc = isSuperAdmin || hasPermission('kyc', 'approve') || hasPermission('kyc', 'reject');
+  const canProcessPayouts = isSuperAdmin || hasPermission('payouts', 'process');
+  const { data: pastDue, isLoading: pastDueLoading, isError: pastDueError } = useDuePayoutSummary(canProcessPayouts);
   const { data: kycStats, isLoading: kycStatsLoading } = useKycTierStats(canSeeKycStats);
   const {
     data: tier3Queue,
@@ -322,6 +326,25 @@ export default function Dashboard() {
 
           {(isSuperAdmin || hasPermission('dashboard', 'stats.payout_due_today')) && (
             <StatCard to="/payout-events" icon={Banknote} label="Payouts Due Amount" value={formatCurrency(stats.todayPayoutsDueAmount)} />
+          )}
+
+          {canProcessPayouts && (
+            <StatCard to="/process-payouts" icon={AlertTriangle} label="Past Due Payouts">
+              {pastDueLoading ? (
+                <p className="mt-0.5 text-base md:text-2xl font-semibold text-gray-300">...</p>
+              ) : pastDueError || !pastDue ? (
+                <p className="mt-0.5 text-sm font-medium text-gray-400">Could not load</p>
+              ) : (
+                <>
+                  <p className={`mt-0.5 text-base md:text-2xl font-semibold leading-snug ${pastDue.count > 0 ? 'text-red-600' : 'text-gray-900'}`}>
+                    {pastDue.count.toLocaleString()}
+                  </p>
+                  <p className="mt-1.5 text-[11px] text-gray-500">
+                    {pastDue.count > 0 ? `${formatCurrency(pastDue.amount)} to process` : 'Nothing past due'}
+                  </p>
+                </>
+              )}
+            </StatCard>
           )}
 
           {(isSuperAdmin || hasPermission('dashboard', 'stats.payout_due_today')) && (

@@ -47,6 +47,21 @@ export const useDuePayoutCount = (enabled = true) =>
     staleTime: 60 * 1000,
   });
 
+/** Count and amount of every due payout that is not finished yet (all time). For the dashboard card. */
+export const useDuePayoutSummary = (enabled = true) =>
+  useQuery({
+    queryKey: ['due-payouts', 'summary'],
+    enabled,
+    queryFn: async () => {
+      const page = await fetchDuePayouts({ from: null, to: null, state: 'all', search: '', page: 1 });
+      return {
+        count: page.total,
+        amount: page.facets.reduce((sum, f) => sum + (Number(f.amount) || 0), 0),
+      };
+    },
+    staleTime: 60 * 1000,
+  });
+
 export class ProcessPayoutError extends Error {
   constructor(message: string, public code?: string) {
     super(message);
