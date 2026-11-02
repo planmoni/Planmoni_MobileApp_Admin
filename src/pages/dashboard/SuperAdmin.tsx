@@ -21,6 +21,7 @@ import {
   XCircle
 } from 'lucide-react';
 import { useSuperAdminData } from '@/hooks/queries/useSuperAdminData';
+import { useAdminUserSearch } from '@/hooks/queries/useAdminUserSearch';
 import { useRefreshData } from '@/hooks/mutations/useRefreshData';
 import { useCreateRole, useAssignRoles, useDeleteRole, useUpdateRole } from '@/hooks/mutations/useRoleManagement';
 import { CreateRoleModal } from '@/components/CreateRoleModal';
@@ -53,6 +54,8 @@ export default function SuperAdmin() {
   const { showToast } = useToast();
 
   const { data: superAdminData, isLoading, error } = useSuperAdminData();
+  // searches all users on the server; with nothing typed it lists the staff (admins and role holders)
+  const userSearch = useAdminUserSearch(searchQuery, { enabled: activeTab === 'users' });
   const { data: senderEmails, isLoading: emailsLoading, refetch: refetchEmails } = useSenderEmails(true);
   const refreshData = useRefreshData();
   const createRole = useCreateRole();
@@ -137,13 +140,10 @@ export default function SuperAdmin() {
     );
   }
 
-  const { stats, roles, users, permissions } = superAdminData || { stats: null, roles: [], users: [], permissions: [] };
+  const { stats, roles, permissions } = superAdminData || { stats: null, roles: [], permissions: [] };
 
-  const filteredUsers = users.filter(user =>
-    user.first_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    user.last_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    user.email?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredUsers = userSearch.data?.users ?? [];
+  const userTotal = userSearch.data?.total ?? 0;
 
   
 
@@ -299,6 +299,16 @@ export default function SuperAdmin() {
             </button>
           </div>
 
+          <p className="text-sm text-gray-500">
+            {userSearch.error
+              ? 'Could not search users.'
+              : userSearch.isSearching
+                ? userSearch.isLoading || userSearch.isTyping
+                  ? 'Searching all users...'
+                  : `${userTotal.toLocaleString()} match${userTotal === 1 ? '' : 'es'}${userTotal > filteredUsers.length ? `, showing the first ${filteredUsers.length}. Keep typing to narrow it down.` : ''}`
+                : 'Showing admins and role holders. Type a name or email to search all users.'}
+          </p>
+
           <div className="bg-white rounded-2xl shadow-soft border border-gray-100 overflow-hidden">
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
@@ -379,7 +389,9 @@ export default function SuperAdmin() {
             {filteredUsers.length === 0 && (
               <div className="text-center py-12">
                 <Users className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                <p className="text-gray-500 font-medium">No users found</p>
+                <p className="text-gray-500 font-medium">
+                  {userSearch.isLoading || userSearch.isTyping ? 'Searching...' : 'No users found'}
+                </p>
               </div>
             )}
           </div>
@@ -632,7 +644,6 @@ export default function SuperAdmin() {
         isOpen={isAssignRoleModalOpen}
         onClose={() => setIsAssignRoleModalOpen(false)}
         onSubmit={handleAssignRoles}
-        users={users}
         roles={roles}
       />
 

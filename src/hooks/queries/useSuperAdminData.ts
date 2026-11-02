@@ -86,31 +86,21 @@ const fetchSuperAdminData = async () => {
     permissions = permissionsData || [];
   }
 
-  // Fetch users with their roles
-  const { data: usersData, error: usersError } = await supabase
-    .from('profiles')
-    .select('id, first_name, last_name, email, is_admin, created_at')
-    .order('created_at', { ascending: false });
-  
+  // Staff only (admins and anyone holding a role). The Users tab and Assign Roles search the full user base
+  // on the server (useAdminUserSearch); loading every profile here hit the 1,000 row limit and cost one call per user.
+  const { data: staffData, error: staffError } = await supabase.rpc('admin_search_users', {
+    p_query: null,
+    p_only_staff: true,
+    p_limit: 50,
+  });
+
   let users: User[] = [];
-  if (usersError) {
-    console.error('Error fetching users:', usersError);
+  if (staffError) {
+    console.error('Error fetching staff:', staffError);
   } else {
-    // Fetch roles for each user
-    users = await Promise.all(
-      (usersData || []).map(async (user) => {
-        const { data: userRoles, error: rolesError } = await supabase.rpc('get_user_roles', {
-          target_user_id: user.id
-        });
-        
-        return {
-          ...user,
-          roles: rolesError ? [] : (userRoles || [])
-        };
-      })
-    );
+    users = ((staffData as any)?.users ?? []) as User[];
   }
-  
+
   return {
     stats,
     roles,

@@ -1,20 +1,12 @@
 import { useState } from 'react';
 import { X, UserPlus, Search } from 'lucide-react';
+import { type AdminSearchUser, useAdminUserSearch } from '@/hooks/queries/useAdminUserSearch';
 
 interface AssignRoleModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (userId: string, roleIds: string[]) => void;
-  users: User[];
   roles: Role[];
-}
-
-interface User {
-  id: string;
-  first_name: string;
-  last_name: string;
-  email: string;
-  roles: any[];
 }
 
 interface Role {
@@ -24,22 +16,24 @@ interface Role {
   role_description: string;
 }
 
-export function AssignRoleModal({ isOpen, onClose, onSubmit, users, roles }: AssignRoleModalProps) {
-  const [selectedUserId, setSelectedUserId] = useState('');
+export function AssignRoleModal({ isOpen, onClose, onSubmit, roles }: AssignRoleModalProps) {
+  const [selectedUser, setSelectedUser] = useState<AdminSearchUser | null>(null);
   const [selectedRoleIds, setSelectedRoleIds] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
 
-  const filteredUsers = users.filter(user =>
-    user.first_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    user.last_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    user.email?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // searched on the server across all users; with nothing typed it lists the current staff
+  const { data: searchResult, isLoading: searchLoading, isTyping, isSearching, error: searchError } =
+    useAdminUserSearch(searchQuery, { enabled: isOpen });
+  const filteredUsers = searchResult?.users ?? [];
+  const selectedUserId = selectedUser?.id ?? '';
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (selectedUserId && selectedRoleIds.length > 0) {
-      onSubmit(selectedUserId, selectedRoleIds);
-      setSelectedUserId('');
+    if (selectedUser && selectedRoleIds.length > 0) {
+      // the save replaces the user's role set, so keep the roles they already have
+      const existing = selectedUser.roles.map(r => r.role_id);
+      onSubmit(selectedUser.id, Array.from(new Set([...existing, ...selectedRoleIds])));
+      setSelectedUser(null);
       setSelectedRoleIds([]);
       setSearchQuery('');
     }
@@ -53,7 +47,6 @@ export function AssignRoleModal({ isOpen, onClose, onSubmit, users, roles }: Ass
     );
   };
 
-  const selectedUser = users.find(u => u.id === selectedUserId);
   const userExistingRoles = selectedUser?.roles.map(r => r.role_id) || [];
 
   if (!isOpen) return null;
@@ -87,6 +80,13 @@ export function AssignRoleModal({ isOpen, onClose, onSubmit, users, roles }: Ass
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
+              <p className="text-xs text-gray-500 mb-2">
+                {isSearching
+                  ? searchResult
+                    ? `${searchResult.total.toLocaleString()} match${searchResult.total === 1 ? '' : 'es'}${searchResult.total > filteredUsers.length ? `, showing the first ${filteredUsers.length}. Keep typing to narrow it down.` : ''}`
+                    : 'Searching...'
+                  : 'Showing current admins and role holders. Type a name or email to search all users.'}
+              </p>
               <div className="border border-gray-200 rounded-lg max-h-60 overflow-y-auto">
                 {filteredUsers.map((user) => (
                   <label
@@ -100,7 +100,7 @@ export function AssignRoleModal({ isOpen, onClose, onSubmit, users, roles }: Ass
                       name="user"
                       value={user.id}
                       checked={selectedUserId === user.id}
-                      onChange={(e) => setSelectedUserId(e.target.value)}
+                      onChange={() => { setSelectedUser(user); setSelectedRoleIds([]); }}
                       className="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
                     />
                     <div className="h-10 w-10 rounded-full bg-gray-900 flex items-center justify-center text-white text-sm font-medium flex-shrink-0">
@@ -134,7 +134,11 @@ export function AssignRoleModal({ isOpen, onClose, onSubmit, users, roles }: Ass
                 ))}
                 {filteredUsers.length === 0 && (
                   <div className="p-6 text-center text-gray-500">
-                    No users found
+                    {searchError
+                      ? 'Could not search users'
+                      : searchLoading || isTyping
+                        ? 'Searching...'
+                        : 'No users found'}
                   </div>
                 )}
               </div>
