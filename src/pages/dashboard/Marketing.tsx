@@ -1,3 +1,4 @@
+import { logAdminAction } from '@/lib/adminActivity';
 import { useState, useEffect, useCallback } from 'react';
 import { Plus, RefreshCw, Mail, TrendingUp, Send, Users, BarChart, Edit2, Eye, Save, CheckCircle, XCircle, Clock, Search, RotateCcw, Trash2, Filter, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useMarketingCampaigns, useCampaignStats } from '@/hooks/queries/useMarketingCampaigns';
@@ -98,6 +99,7 @@ export default function Marketing() {
         throw new Error(result.message || 'Failed to delete campaigns');
       }
 
+      void logAdminAction('Deleted marketing campaigns', { count: campaignIdsArray.length });
       showToast(`Successfully deleted ${campaignIdsArray.length} campaign(s)`, 'success');
       setSelectedCampaignIds(new Set());
       handleRefresh();
@@ -696,6 +698,7 @@ function RecipientsModal({ campaign, onClose }: { campaign: any; onClose: () => 
         throw new Error(result.message || 'Failed to retry campaign');
       }
 
+      void logAdminAction('Retried a marketing campaign', { id: campaign.id, name: campaign.name });
       showToast(result.message || 'Emails re-queued', 'success');
       refreshAll();
     } catch (error) {
@@ -1415,6 +1418,7 @@ function CreateCampaignModal({ campaign, onClose, onSuccess }: { campaign?: any;
         throw new Error('Failed to create campaign');
       }
 
+      void logAdminAction('Created a marketing campaign');
       showToast('Campaign created successfully', 'success');
       onSuccess();
     } catch (error) {
@@ -1820,6 +1824,7 @@ function SendCampaignModal({
         throw new Error(result.message || 'Failed to send campaign');
       }
 
+      void logAdminAction(isScheduled ? 'Scheduled a marketing campaign' : 'Sent a marketing campaign', { id: campaign.id, name: campaign.name });
       showToast(result.message || 'Campaign queued', 'success');
       onSuccess();
     } catch (error) {
@@ -2036,6 +2041,7 @@ function SegmentModal({
 
       if (error) throw error;
 
+      void logAdminAction(segment ? 'Updated a marketing segment' : 'Created a marketing segment', { name: formData.name });
       showToast(
         segment ? 'Segment updated successfully' : 'Segment created successfully',
         'success'

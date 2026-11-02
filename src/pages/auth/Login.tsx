@@ -4,11 +4,18 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { Eye, EyeOff, Mail, Lock, ArrowRight, AlertCircle } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { logSignIn, setAdminSessionToken } from '@/lib/adminActivity';
+
+const SIGN_OUT_NOTICES: Record<string, string> = {
+  idle: 'You were signed out after 5 minutes of inactivity. Sign in again to continue.',
+  logged_out: 'A Super Admin ended your session. Sign in again to continue.',
+  suspended: 'Your admin access has been suspended. Contact a Super Admin if you think this is a mistake.',
+};
 
 export default function Login() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const signedOutForIdle = searchParams.get('reason') === 'idle';
+  const signOutNotice = SIGN_OUT_NOTICES[searchParams.get('reason') ?? ''];
   const { signIn } = useAuth();
   const { showToast } = useToast();
   const [email, setEmail] = useState('');
@@ -37,12 +44,7 @@ export default function Login() {
         return;
       }
 
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        throw new Error('No user found after login');
-      }
-
-      await createSession(user.id);
+      await createSession();
       
       // Use React Router navigation to avoid full page reload
       // This maintains React state and prevents race conditions
@@ -55,21 +57,16 @@ export default function Login() {
     }
   };
 
-  const createSession = async (userId: string) => {
+  // Starts this browser's tracked session (the server ties it to the sign-in so it can be ended remotely)
+  const createSession = async () => {
     try {
-      const sessionToken = crypto.randomUUID();
-      const expiresAt = new Date();
-      expiresAt.setHours(expiresAt.getHours() + 24);
-
-      await supabase.from('admin_sessions').insert({
-        user_id: userId,
-        session_token: sessionToken,
-        ip_address: null,
-        user_agent: navigator.userAgent,
-        expires_at: expiresAt.toISOString(),
-      });
-
-      localStorage.setItem('admin_session_token', sessionToken);
+      // a token left over from an earlier sign-in must not be reused
+      localStorage.removeItem('admin_session_token');
+      const { data, error } = await supabase.rpc('admin_heartbeat', { p_session_token: null, p_path: '/login' });
+      if (error) throw error;
+      const token = (data as { session_token?: string } | null)?.session_token;
+      if (token) setAdminSessionToken(token);
+      await logSignIn();
     } catch (error) {
       console.error('Error creating session:', error);
     }
@@ -94,11 +91,9 @@ export default function Login() {
               <p className="text-gray-500">Enter your credentials to access your account</p>
             </div>
 
-            {signedOutForIdle && !error && (
+            {signOutNotice && !error && (
               <div className="mb-6 rounded-xl bg-gray-50 border border-gray-200 p-4">
-                <p className="text-sm text-gray-700 leading-relaxed">
-                  You were signed out after 5 minutes of inactivity. Sign in again to continue.
-                </p>
+                <p className="text-sm text-gray-700 leading-relaxed">{signOutNotice}</p>
               </div>
             )}
 

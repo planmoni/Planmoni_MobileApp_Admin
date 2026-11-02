@@ -37,6 +37,7 @@ export const useCreateBanner = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
+    meta: { activity: 'Created a banner' },
     mutationFn: async (banner: Omit<Banner, 'id' | 'created_at' | 'updated_at'>) => {
       const { data, error } = await supabase
         .from('banners')
@@ -57,6 +58,7 @@ export const useUpdateBanner = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
+    meta: { activity: 'Updated a banner' },
     mutationFn: async ({ id, ...updates }: Partial<Banner> & { id: string }) => {
       const { data, error } = await supabase
         .from('banners')
@@ -78,6 +80,7 @@ export const useDeleteBanner = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
+    meta: { activity: 'Deleted a banner' },
     mutationFn: async (id: string) => {
       const { error } = await supabase
         .from('banners')
@@ -96,6 +99,7 @@ export const useReorderBanners = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
+    meta: { activity: 'Reordered banners' },
     mutationFn: async (bannerIds: string[]) => {
       // Update each banner with its new order index
       const updates = bannerIds.map((id, index) => ({

@@ -2,9 +2,11 @@ import { Outlet } from 'react-router-dom';
 import { useState } from 'react';
 import Sidebar from '../components/Sidebar';
 import TopBar from '../components/TopBar';
+import { useAdminActivityTracker } from '../hooks/useAdminActivityTracker';
 
 export default function DashboardLayout() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  useAdminActivityTracker();
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);

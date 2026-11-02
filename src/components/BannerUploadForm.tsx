@@ -1,3 +1,4 @@
+import { logAdminAction } from '@/lib/adminActivity';
 import { useState } from 'react';
 import { Upload, X, ExternalLink, Link as LinkIcon } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
@@ -120,6 +121,7 @@ export default function BannerUploadForm() {
         throw insertError;
       }
 
+      void logAdminAction('Uploaded a banner', { title: title.trim() });
       showToast('Banner uploaded successfully!', 'success');
       
       // Reset form

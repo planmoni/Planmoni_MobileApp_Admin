@@ -40,6 +40,7 @@ export function ActiveSessionsManager() {
           )
         `)
         .eq('is_active', true)
+        .gt('expires_at', new Date().toISOString())
         .order('last_active', { ascending: false });
 
       if (error) throw error;

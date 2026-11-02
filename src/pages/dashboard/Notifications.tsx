@@ -1,3 +1,4 @@
+import { logAdminAction } from '@/lib/adminActivity';
 import { useState } from 'react';
 import { Send, RefreshCw, Search, ChevronDown, ChevronUp } from 'lucide-react';
 import { useNotifications, useNotificationSegments, useNotificationStats, useNotificationDispatchLogs, useReengagementStats, useReengagementUsers, useDispatchStats, useAudiencePreview } from '@/hooks/queries/useNotifications';
@@ -147,6 +148,7 @@ export default function Notifications() {
         data: formData.data,
         personalize: formData.personalize,
       });
+      void logAdminAction('Sent a test push notification', { title: formData.title });
       showToast('Test queued for your own devices', 'success');
       handleRefresh();
     } catch (err) {
@@ -176,6 +178,7 @@ export default function Notifications() {
         request_id: requestId,
       });
 
+      void logAdminAction('Sent a push notification', { title: formData.title, audience: formData.target_type, queued: result.queued });
       showToast(result.message || 'Notification queued', 'success');
       closeCompose();
       handleRefresh();
@@ -224,6 +227,7 @@ export default function Notifications() {
         throw new Error(result.error || 'Failed to send re-engagement alert');
       }
 
+      void logAdminAction('Sent a re-engagement alert', { category: categoryId, queued: result.queued });
       showToast(result.message || 'Re-engagement alert queued', 'success');
       setShowReengagementModal(false);
       setSelectedReengagement(null);

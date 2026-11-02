@@ -1,3 +1,4 @@
+import { logAdminAction } from '@/lib/adminActivity';
 import { useState } from 'react';
 import { Bell, Send, ChevronDown } from 'lucide-react';
 import { useToast } from '@/contexts/ToastContext';
@@ -96,6 +97,7 @@ export default function SendReengagementButton({
       }
 
       const devices = Number(result.queued) || 0;
+      void logAdminAction('Sent a re-engagement alert to a user', { category: selectedCategory, id: userId, queued: devices });
       showToast(
         devices > 0
           ? `Alert queued for ${devices} device${devices > 1 ? 's' : ''}`

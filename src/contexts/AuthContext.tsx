@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect, useCallback, ReactNode 
 import { supabase } from '../lib/supabase';
 import { Session } from '@supabase/supabase-js';
 import { useToast } from './ToastContext';
+import { logSignOut } from '../lib/adminActivity';
 
 // Where the signed-in admin is in the two-factor flow (Supabase MFA / TOTP):
 //   loading          checking the session's assurance level
@@ -22,8 +23,11 @@ type AuthContextType = {
   refreshMfa: () => Promise<void>;
   signIn: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   signUp: (email: string, password: string, firstName: string, lastName: string) => Promise<{ success: boolean; error?: string }>;
-  signOut: (options?: { reason?: 'idle' }) => Promise<void>;
+  signOut: (options?: { reason?: SignOutReason }) => Promise<void>;
 };
+
+// idle: 5 minutes without activity. logged_out / suspended: a Super Admin ended this session or suspended the account.
+export type SignOutReason = 'idle' | 'logged_out' | 'suspended';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -182,6 +186,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { success: false, error: 'Authentication failed' };
       }
 
+      // A suspended admin is turned away before anything else loads
+      const { data: access } = await supabase.rpc('admin_access_status');
+      if ((access as { blocked?: boolean } | null)?.blocked) {
+        const reason = (access as { reason?: string }).reason;
+        await supabase.auth.signOut({ scope: 'local' });
+        return {
+          success: false,
+          error: `Your admin access has been suspended${reason ? `: ${reason}` : '.'} Contact a Super Admin if you think this is a mistake.`,
+        };
+      }
+
       console.log('Authentication successful, checking user roles...');
 
       // Check if user has required role for admin dashboard access
@@ -244,9 +259,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const signOut = async (options?: { reason?: 'idle' }) => {
+  const signOut = async (options?: { reason?: SignOutReason }) => {
     try {
       console.log('Starting sign out process...');
+
+      // Record a deliberate or idle sign-out. When a Super Admin ended the session the server already closed it.
+      if (!options?.reason || options.reason === 'idle') {
+        await Promise.race([logSignOut(options?.reason), new Promise((resolve) => setTimeout(resolve, 1500))]);
+      }
 
       // Clear session immediately
       setSession(null);
@@ -264,7 +284,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!options?.reason) showToast('Successfully signed out', 'success');
 
       // Force redirect to login page (the login page explains an automatic sign-out)
-      window.location.replace(options?.reason === 'idle' ? '/login?reason=idle' : '/login');
+      window.location.replace(options?.reason ? `/login?reason=${options.reason}` : '/login');
     } catch (error) {
       console.error('Unexpected sign out error:', error);
       showToast('Failed to sign out', 'error');

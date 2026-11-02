@@ -102,6 +102,7 @@ function useRefreshAfterAction(userId: string) {
 export const usePausePayoutPlan = (userId: string) => {
   const refresh = useRefreshAfterAction(userId);
   return useMutation({
+    meta: { activity: 'Paused a payout plan' },
     mutationFn: async ({ planId, reason }: { planId: string; reason?: string }) => {
       const { error } = await supabase.rpc('admin_pause_payout_plan', {
         p_plan_id: planId,
@@ -116,6 +117,7 @@ export const usePausePayoutPlan = (userId: string) => {
 export const useResumePayoutPlan = (userId: string) => {
   const refresh = useRefreshAfterAction(userId);
   return useMutation({
+    meta: { activity: 'Resumed a payout plan' },
     mutationFn: async ({ planId }: { planId: string }) => {
       const { data, error } = await supabase.rpc('admin_resume_payout_plan', { p_plan_id: planId });
       if (error) throw error;
@@ -128,6 +130,7 @@ export const useResumePayoutPlan = (userId: string) => {
 export const useCancelPayoutPlan = (userId: string) => {
   const refresh = useRefreshAfterAction(userId);
   return useMutation({
+    meta: { activity: 'Cancelled a payout plan' },
     mutationFn: async ({ planId, reason }: { planId: string; reason?: string }) => {
       const { data, error } = await supabase.rpc('admin_cancel_payout_plan', {
         p_plan_id: planId,
@@ -143,6 +146,7 @@ export const useCancelPayoutPlan = (userId: string) => {
 export const useCompletePayoutTransaction = (userId: string) => {
   const refresh = useRefreshAfterAction(userId);
   return useMutation({
+    meta: { activity: 'Marked a payout as completed' },
     mutationFn: async ({ transactionId, reference, notes }: { transactionId: string; reference: string; notes?: string }) => {
       const { error } = await supabase.rpc('admin_complete_payout_transaction', {
         p_transaction_id: transactionId,
@@ -158,6 +162,7 @@ export const useCompletePayoutTransaction = (userId: string) => {
 export const useRefundPayoutTransaction = (userId: string) => {
   const refresh = useRefreshAfterAction(userId);
   return useMutation({
+    meta: { activity: 'Refunded a payout' },
     mutationFn: async ({ transactionId, reason, pausePlan }: { transactionId: string; reason: string; pausePlan: boolean }) => {
       const { data, error } = await supabase.rpc('admin_refund_payout_transaction', {
         p_transaction_id: transactionId,
@@ -185,6 +190,7 @@ export type RetryOutcome =
 export const useRetryPayout = (userId: string) => {
   const refresh = useRefreshAfterAction(userId);
   return useMutation({
+    meta: { activity: 'Retried a failed payout' },
     mutationFn: async ({
       automatedPayoutId,
       planId,

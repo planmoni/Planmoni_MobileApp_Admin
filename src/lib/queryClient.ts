@@ -1,6 +1,14 @@
-import { QueryClient } from '@tanstack/react-query';
+import { MutationCache, QueryClient } from '@tanstack/react-query';
+import { logAdminAction } from './adminActivity';
 
 export const queryClient = new QueryClient({
+  // Every mutation that declares `meta: { activity: '...' }` is recorded in the Super Admin team feed once it succeeds.
+  mutationCache: new MutationCache({
+    onSuccess: (_data, variables, _context, mutation) => {
+      const label = mutation.meta?.activity;
+      if (label) void logAdminAction(label, typeof variables === 'string' ? { id: variables } : variables);
+    },
+  }),
   defaultOptions: {
     queries: {
       staleTime: 5 * 60 * 1000, // 5 minutes

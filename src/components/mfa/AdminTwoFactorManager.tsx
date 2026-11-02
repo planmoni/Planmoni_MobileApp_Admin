@@ -39,6 +39,7 @@ export function AdminTwoFactorManager() {
   });
 
   const setEnforcement = useMutation({
+    meta: { activity: 'Changed 2FA enforcement' },
     mutationFn: async (enabled: boolean) => {
       const { error } = await supabase.rpc('admin_set_mfa_enforcement', { p_enabled: enabled });
       if (error) throw new Error(error.message);
@@ -51,6 +52,7 @@ export function AdminTwoFactorManager() {
   });
 
   const reset = useMutation({
+    meta: { activity: 'Reset a team member\'s 2FA' },
     mutationFn: async (userId: string) => {
       const { error } = await supabase.rpc('admin_reset_user_2fa', { p_user_id: userId });
       if (error) throw new Error(error.message);

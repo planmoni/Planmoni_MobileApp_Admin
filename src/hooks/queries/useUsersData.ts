@@ -273,6 +273,7 @@ export const useSetPostNoDebit = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
+    meta: { activity: 'Changed a user\'s post-no-debit setting' },
     mutationFn: async (input: SetPostNoDebitInput) => {
       const changes = input.enable
         ? {
@@ -384,6 +385,7 @@ export const useDeleteUser = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
+    meta: { activity: 'Deleted a user' },
     mutationFn: async ({ userId, confirmEmail }: { userId: string; confirmEmail: string }) => {
       const { error } = await supabase.rpc('admin_delete_user', {
         p_user_id: userId,

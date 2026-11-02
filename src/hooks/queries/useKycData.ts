@@ -266,6 +266,7 @@ export function useReviewTier3() {
   const queryClient = useQueryClient();
 
   return useMutation({
+    meta: { activity: 'Reviewed a Tier 3 KYC submission' },
     mutationFn: async ({
       userId,
       decision,

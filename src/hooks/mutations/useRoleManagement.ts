@@ -28,6 +28,7 @@ export function useCreateRole() {
   const { showToast } = useToast();
 
   return useMutation({
+    meta: { activity: 'Created a role' },
     mutationFn: async (data: CreateRoleData) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
@@ -84,6 +85,7 @@ export function useAssignRoles() {
   const { showToast } = useToast();
 
   return useMutation({
+    meta: { activity: 'Assigned roles to a user' },
     mutationFn: async (data: AssignRolesData) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
@@ -138,6 +140,7 @@ export function useUpdateRole() {
   const { showToast } = useToast();
 
   return useMutation({
+    meta: { activity: 'Updated a role' },
     mutationFn: async ({ roleId, data }: { roleId: string; data: UpdateRoleData }) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
@@ -199,6 +202,7 @@ export function useDeleteRole() {
   const { showToast } = useToast();
 
   return useMutation({
+    meta: { activity: 'Deleted a role' },
     mutationFn: async (roleId: string) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');

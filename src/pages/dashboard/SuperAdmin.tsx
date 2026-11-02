@@ -18,7 +18,8 @@ import {
   Lock,
   Mail,
   CheckCircle,
-  XCircle
+  XCircle,
+  Activity
 } from 'lucide-react';
 import { useSuperAdminData } from '@/hooks/queries/useSuperAdminData';
 import { useAdminUserSearch } from '@/hooks/queries/useAdminUserSearch';
@@ -29,10 +30,11 @@ import { AssignRoleModal } from '@/components/AssignRoleModal';
 import { EditRoleModal } from '@/components/EditRoleModal';
 import { TwoFactorSetup } from '@/components/TwoFactorSetup';
 import { AdminTwoFactorManager } from '@/components/mfa/AdminTwoFactorManager';
-import { ActiveSessionsManager } from '@/components/ActiveSessionsManager';
+import TeamMonitor from '@/components/team/TeamMonitor';
 import { useSenderEmails, type SenderEmail } from '@/hooks/queries/useSenderEmails';
 import { useToast } from '@/contexts/ToastContext';
 import { supabase } from '@/lib/supabase';
+import { logAdminAction } from '@/lib/adminActivity';
 
 const formatPermissionName = (name: string): string => {
   return name
@@ -42,7 +44,7 @@ const formatPermissionName = (name: string): string => {
 };
 
 export default function SuperAdmin() {
-  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'roles' | 'security' | 'emails'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'roles' | 'team' | 'security' | 'emails'>('overview');
   const [searchQuery, setSearchQuery] = useState('');
   const [isCreateRoleModalOpen, setIsCreateRoleModalOpen] = useState(false);
   const [isAssignRoleModalOpen, setIsAssignRoleModalOpen] = useState(false);
@@ -173,6 +175,7 @@ export default function SuperAdmin() {
           { id: 'overview', label: 'Overview', icon: BarChart3 },
           { id: 'users', label: 'Users', icon: Users },
           { id: 'roles', label: 'Roles', icon: Key },
+          { id: 'team', label: 'Team', icon: Activity },
           { id: 'emails', label: 'Email Settings', icon: Mail },
           { id: 'security', label: 'Security', icon: Lock },
         ].map((tab) => (
@@ -595,6 +598,7 @@ export default function SuperAdmin() {
                                 .eq('id', email.id);
                               
                               if (error) throw error;
+                              void logAdminAction('Deleted a sender email address', { id: email.id, email: email.email });
                               showToast('Email address deleted successfully', 'success');
                               refetchEmails();
                             } catch (error) {
@@ -629,9 +633,10 @@ export default function SuperAdmin() {
         <div className="space-y-6">
           <TwoFactorSetup />
           <AdminTwoFactorManager />
-          <ActiveSessionsManager />
         </div>
       )}
+
+      {activeTab === 'team' && <TeamMonitor />}
 
       <CreateRoleModal
         isOpen={isCreateRoleModalOpen}
@@ -725,6 +730,7 @@ function SenderEmailModal({
           console.error('Update error:', error);
           throw new Error(error.message || 'Failed to update email address');
         }
+        void logAdminAction('Updated a sender email address', { id: email.id, email: email.email });
         showToast('Email address updated successfully', 'success');
       } else {
         // Create new email
@@ -756,6 +762,7 @@ function SenderEmailModal({
         }
         
         console.log('Email created successfully:', data);
+        void logAdminAction('Added a sender email address', { email: payload.email });
         showToast('Email address created successfully', 'success');
       }
 

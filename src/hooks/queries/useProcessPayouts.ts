@@ -112,6 +112,7 @@ export const useInspectDuePayout = (planId: string | null) =>
 export const useProcessDuePayout = () => {
   const queryClient = useQueryClient();
   return useMutation({
+    meta: { activity: 'Processed a due payout' },
     mutationFn: async (input: { planId: string; fingerprint: string; expectedKind: string; confirm: string }): Promise<ProcessResult> =>
       callProcessFunction<ProcessResult>({
         action: 'process',

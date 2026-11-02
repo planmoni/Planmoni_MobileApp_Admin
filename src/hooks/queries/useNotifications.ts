@@ -1,3 +1,4 @@
+import { logAdminAction } from '@/lib/adminActivity';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 
@@ -367,7 +368,14 @@ export function usePushControl() {
       if (error) throw error;
       return data as Record<string, unknown>;
     },
-    onSuccess: () => {
+    onSuccess: (_data, { id, action }) => {
+      const labels: Record<PushControlAction, string> = {
+        pause: 'Paused a push send',
+        resume: 'Resumed a push send',
+        cancel: 'Cancelled a push send',
+        retry_failed: 'Retried failed push deliveries',
+      };
+      void logAdminAction(labels[action], { id });
       queryClient.invalidateQueries({ queryKey: ['push-notifications'] });
       queryClient.invalidateQueries({ queryKey: ['push-progress'] });
       queryClient.invalidateQueries({ queryKey: ['notification-stats'] });

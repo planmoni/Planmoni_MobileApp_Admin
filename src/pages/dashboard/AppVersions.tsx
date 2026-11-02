@@ -1,3 +1,4 @@
+import { logAdminAction } from '@/lib/adminActivity';
 import { useState, useEffect } from 'react';
 import { RefreshCw, Smartphone, Save, AlertTriangle } from 'lucide-react';
 import { useAppVersions } from '@/hooks/queries/useAppVersions';
@@ -72,6 +73,7 @@ export default function AppVersions() {
 
       if (error) throw error;
 
+      void logAdminAction('Updated the Android app version');
       showToast('Android version updated successfully', 'success');
       refreshData.mutate(['app-versions']);
     } catch (error) {
@@ -100,6 +102,7 @@ export default function AppVersions() {
 
       if (error) throw error;
 
+      void logAdminAction('Updated the iOS app version');
       showToast('iOS version updated successfully', 'success');
       refreshData.mutate(['app-versions']);
     } catch (error) {
@@ -125,6 +128,7 @@ export default function AppVersions() {
 
       if (error) throw error;
 
+      void logAdminAction('Updated the app update message');
       showToast('Update message saved successfully', 'success');
       refreshData.mutate(['app-versions']);
     } catch (error) {

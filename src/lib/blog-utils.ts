@@ -1,3 +1,4 @@
+import { logAdminAction } from '@/lib/adminActivity';
 import { supabase } from './supabase';
 import type {
   BlogPost,
@@ -145,6 +146,7 @@ export async function createBlogPost(post: BlogPostInsert): Promise<BlogPostWith
     .single();
 
   if (error) throw error;
+  void logAdminAction('Created a blog post', { id: data.id, title: post.title });
   return addImageUrlToPost(data);
 }
 
@@ -157,6 +159,7 @@ export async function updateBlogPost(id: string, updates: BlogPostUpdate): Promi
     .single();
 
   if (error) throw error;
+  void logAdminAction('Updated a blog post', { id });
   return addImageUrlToPost(data);
 }
 
@@ -167,6 +170,7 @@ export async function deleteBlogPost(id: string): Promise<void> {
     .eq('id', id);
 
   if (error) throw error;
+  void logAdminAction('Deleted a blog post', { id });
 }
 
 export async function uploadBlogImage(file: File, path: string): Promise<string> {

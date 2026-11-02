@@ -49,6 +49,7 @@ export default function BannerDisplay({ showAdminControls = false, className = '
   });
 
   const toggleActiveMutation = useMutation({
+    meta: { activity: 'Switched a banner on or off' },
     mutationFn: async ({ id, is_active }: { id: string; is_active: boolean }) => {
       const { error } = await supabase
         .from('banners')
@@ -68,6 +69,7 @@ export default function BannerDisplay({ showAdminControls = false, className = '
   });
 
   const deleteMutation = useMutation({
+    meta: { activity: 'Deleted a banner' },
     mutationFn: async (id: string) => {
       const { error } = await supabase
         .from('banners')
