@@ -1,7 +1,7 @@
 import { logAdminAction } from '@/lib/adminActivity';
 import { useState } from 'react';
 import { Send, RefreshCw, Search, ChevronDown, ChevronUp } from 'lucide-react';
-import { useNotifications, useNotificationSegments, useNotificationStats, useNotificationDispatchLogs, useReengagementStats, useReengagementUsers, useDispatchStats, useAudiencePreview } from '@/hooks/queries/useNotifications';
+import { useNotifications, useNotificationSegments, useNotificationStats, useNotificationDispatchLogs, useReengagementStats, useReengagementUsers, useDispatchStats, useAudiencePreview, SENDABLE_SEGMENT_TYPES } from '@/hooks/queries/useNotifications';
 import QueueProgress from '@/components/notifications/QueueProgress';
 import { useRefreshData } from '@/hooks/mutations/useRefreshData';
 import { useToast } from '@/contexts/ToastContext';
@@ -17,7 +17,6 @@ interface NotificationFormData {
   target_user_ids: string[];
   target_segment_id: string;
   personalize: boolean;
-  respect_marketing: boolean;
   rate_per_minute: number;
 }
 
@@ -35,7 +34,6 @@ const EMPTY_FORM: NotificationFormData = {
   target_user_ids: [],
   target_segment_id: '',
   personalize: false,
-  respect_marketing: false,
   rate_per_minute: 1000,
 };
 
@@ -72,7 +70,6 @@ export default function Notifications() {
     {
       targetType: formData.target_type,
       segmentId: formData.target_segment_id || undefined,
-      respectMarketing: formData.respect_marketing,
     },
     showCreateModal,
   );
@@ -172,7 +169,6 @@ export default function Notifications() {
         target_user_ids: formData.target_user_ids,
         target_segment_id: formData.target_segment_id || undefined,
         personalize: formData.personalize,
-        respect_marketing_pref: formData.respect_marketing,
         rate_per_minute: formData.rate_per_minute,
         notification_type: 'manual',
         request_id: requestId,
@@ -861,33 +857,19 @@ export default function Notifications() {
                     className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
                   >
                     <option value="">Choose a segment</option>
-                    {segments?.map((segment) => (
-                      <option key={segment.id} value={segment.id}>
-                        {segment.name} ({segment.user_count} users)
-                      </option>
-                    ))}
+                    {segments?.map((segment) => {
+                      const sendable = SENDABLE_SEGMENT_TYPES.includes(segment.filter_criteria?.type);
+                      return (
+                        <option key={segment.id} value={segment.id} disabled={!sendable}>
+                          {sendable
+                            ? `${segment.name} (${segment.user_count.toLocaleString()} reachable users)`
+                            : `${segment.name} (not available yet)`}
+                        </option>
+                      );
+                    })}
                   </select>
                 </div>
               )}
-
-              <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
-                <label className="flex items-start cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={formData.respect_marketing}
-                    onChange={(e) => setFormData({ ...formData, respect_marketing: e.target.checked })}
-                    className="mt-0.5 h-4 w-4 text-gray-900 focus:ring-gray-900 border-gray-300 rounded"
-                  />
-                  <div className="ml-3">
-                    <span className="text-sm font-medium text-gray-900">Respect marketing preference</span>
-                    <p className="text-xs text-gray-500 mt-1">
-                      {formData.respect_marketing
-                        ? 'Only users who switched marketing alerts on. This is usually a very small group.'
-                        : 'Everyone who has notifications on. Users who switched notifications off are always skipped.'}
-                    </p>
-                  </div>
-                </label>
-              </div>
 
               <div className="border border-gray-200 rounded-xl p-4">
                 <p className="text-sm font-medium text-gray-900 mb-1">Who will receive this</p>
@@ -904,8 +886,7 @@ export default function Notifications() {
                       <span className="font-semibold text-gray-900">{audience.devices.toLocaleString()}</span> devices
                     </p>
                     <p className="text-xs text-gray-500">
-                      {audience.opted_out_users.toLocaleString()} users skipped (notifications off
-                      {formData.respect_marketing ? ' or marketing off' : ''})
+                      {audience.opted_out_users.toLocaleString()} users skipped (notifications off)
                       {audience.devices_over_cap > 0 &&
                         ` · ${audience.devices_over_cap.toLocaleString()} older devices skipped (newest 3 per user)`}
                     </p>
@@ -1004,7 +985,6 @@ export default function Notifications() {
                 <p>{audience.users.toLocaleString()} users · {audience.devices.toLocaleString()} devices</p>
                 <p>Speed: {formData.rate_per_minute.toLocaleString()} devices per minute</p>
                 <p>Takes {formatDuration((audience.devices / formData.rate_per_minute) * 60)}</p>
-                {formData.respect_marketing && <p>Marketing preference respected</p>}
               </div>
               <p className="text-xs text-gray-500">Once a device has been notified it cannot be recalled. You can pause or cancel the rest from the history.</p>
             </div>

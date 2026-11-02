@@ -95,11 +95,14 @@ export function useNotifications() {
   });
 }
 
+/** Segment types a send can use; others are listed but cannot be picked. */
+export const SENDABLE_SEGMENT_TYPES = ['all', 'has_active_plans', 'kyc_approved', 'joined_recently'];
+
 export function useNotificationSegments() {
   return useQuery({
     queryKey: ['push-notification-segments'],
     queryFn: async () => {
-      // First, update segment counts to ensure they're accurate
+      // Counts come from the same SQL that builds a send: people who match, have notifications on and a usable device
       const { error: updateError } = await supabase.rpc('update_all_segment_user_counts');
       if (updateError) {
         console.warn('Error updating segment counts (non-critical):', updateError);
@@ -112,18 +115,6 @@ export function useNotificationSegments() {
         .order('name', { ascending: true });
 
       if (error) throw error;
-      
-      // Calculate "All Users" count separately (users with active push tokens)
-      const { count: allUsersCount } = await supabase
-        .from('user_push_tokens')
-        .select('*', { count: 'exact', head: true })
-        .eq('is_active', true);
-      
-      // Update "All Users" segment count if it exists
-      const allUsersSegment = data?.find(s => s.filter_criteria?.type === 'all');
-      if (allUsersSegment && allUsersCount !== undefined) {
-        allUsersSegment.user_count = allUsersCount;
-      }
       
       return data as PushNotificationSegment[];
     },
@@ -309,20 +300,19 @@ export interface AudiencePreview {
 export interface AudienceParams {
   targetType: 'all' | 'individual' | 'segment';
   segmentId?: string;
-  respectMarketing: boolean;
 }
 
 /** Who a send would reach, counted by the same SQL that builds the queue. */
 export function useAudiencePreview(params: AudienceParams, enabled: boolean) {
   const ready = enabled && (params.targetType !== 'segment' || !!params.segmentId);
   return useQuery({
-    queryKey: ['push-audience-preview', params.targetType, params.segmentId ?? null, params.respectMarketing],
+    queryKey: ['push-audience-preview', params.targetType, params.segmentId ?? null],
     queryFn: async (): Promise<AudiencePreview> => {
       const { data, error } = await supabase.rpc('admin_push_audience_preview', {
         p_target_type: params.targetType,
         p_segment_id: params.targetType === 'segment' ? params.segmentId : null,
         p_user_ids: null,
-        p_respect_marketing: params.respectMarketing,
+        p_respect_marketing: false, // everyone with notifications on; marketing preference is not used
         p_max_tokens: 3,
       });
       if (error) throw error;

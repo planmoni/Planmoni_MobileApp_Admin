@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from 'npm:@supabase/supabase-js@2.39.7';
+import { marketingEmailText, renderMarketingEmail, validateMarketingEmail, type MarketingEmailInput } from './marketingEmail.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -9,21 +10,37 @@ const corsHeaders = {
 
 interface CreateCampaignRequest {
   action: 'create_campaign';
-  title: string;
-  subject: string;
-  html_content: string;
+  title?: string;
+  subject?: string;
+  /** The simple composer: rendered here with the shared Planmoni email layout. */
+  email?: MarketingEmailInput;
+  /** Older callers that send ready-made HTML. */
+  html_content?: string;
   plain_text_content?: string;
   category: string;
   from_email_id?: string | null;
   metadata?: Record<string, any>;
 }
 
+interface RenderEmailRequest {
+  action: 'render_email';
+  email: MarketingEmailInput;
+}
+
+interface SendTestEmailRequest {
+  action: 'send_test_email';
+  email: MarketingEmailInput;
+  to: string;
+  from_email_id?: string | null;
+}
+
 interface UpdateCampaignRequest {
   action: 'update_campaign';
   campaign_id: string;
-  title: string;
-  subject: string;
-  html_content: string;
+  title?: string;
+  subject?: string;
+  email?: MarketingEmailInput;
+  html_content?: string;
   plain_text_content?: string;
   category: string;
   from_email_id?: string | null;
@@ -61,7 +78,7 @@ interface DeleteCampaignsRequest {
   campaign_ids: string[];
 }
 
-type RequestBody = CreateCampaignRequest | UpdateCampaignRequest | SendCampaignRequest | ScheduleCampaignRequest | RetryCampaignRequest | DeleteCampaignsRequest;
+type RequestBody = CreateCampaignRequest | UpdateCampaignRequest | RenderEmailRequest | SendTestEmailRequest | SendCampaignRequest | ScheduleCampaignRequest | RetryCampaignRequest | DeleteCampaignsRequest;
 
 async function sendEmailViaResend(
   to: string,
@@ -347,6 +364,7 @@ function estimateSeconds(emails: number, batchSize: number, delaySeconds: number
   return Math.max(0, Math.ceil(emails / Math.max(1, batchSize)) - 1) * delaySeconds + 5;
 }
 
+const EMAIL_RE = /^[^\s@<>"',;]+@[^\s@<>"',;]+\.[^\s@<>"',;]+$/;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 Deno.serve(async (req: Request) => {
@@ -468,18 +486,66 @@ Deno.serve(async (req: Request) => {
       
       console.log('Received action:', body.action);
 
+      if (body.action === 'render_email') {
+        // The exact HTML a campaign would be sent with; used by the Preview button
+        const html = renderMarketingEmail(body.email);
+        return new Response(JSON.stringify({ success: true, html }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      if (body.action === 'send_test_email') {
+        if (!resendApiKey) {
+          throw new Error('RESEND_API_KEY not configured');
+        }
+        const to = typeof body.to === 'string' ? body.to.trim() : '';
+        if (!EMAIL_RE.test(to) || to.length > 254) {
+          throw new Error('Enter a valid email address');
+        }
+        const email = validateMarketingEmail(body.email);
+        const html = renderMarketingEmail(email);
+        const from = await resolveFromAddress(supabase, body.from_email_id || null);
+        const result = await sendEmailViaResend(to, `[Test] ${email.subject}`, html, resendApiKey, from);
+        if (!result.success) {
+          throw new Error(result.error || 'Could not send the test email');
+        }
+        return new Response(
+          JSON.stringify({ success: true, message: `Test email sent to ${to}`, id: result.id }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
       if (body.action === 'create_campaign') {
+        let content: { title: string; subject: string; html_content: string; plain_text_content: string; metadata: Record<string, any> };
+        if (body.email) {
+          const email = validateMarketingEmail(body.email);
+          content = {
+            title: body.title?.trim() || email.subject,
+            subject: email.subject,
+            html_content: renderMarketingEmail(email),
+            plain_text_content: marketingEmailText(email),
+            metadata: { ...(body.metadata || {}), email },
+          };
+        } else {
+          if (!body.title || !body.subject || !body.html_content) {
+            throw new Error('Title, subject and content are required');
+          }
+          content = {
+            title: body.title,
+            subject: body.subject,
+            html_content: body.html_content,
+            plain_text_content: body.plain_text_content || '',
+            metadata: body.metadata || {},
+          };
+        }
+
         const { data: campaign, error } = await supabase
           .from('marketing_campaigns')
           .insert([
             {
-              title: body.title,
-              subject: body.subject,
-              html_content: body.html_content,
-              plain_text_content: body.plain_text_content || '',
+              ...content,
               category: body.category,
               from_email_id: body.from_email_id || null,
-              metadata: body.metadata || {},
               created_by: user.id,
             },
           ])
@@ -490,28 +556,50 @@ Deno.serve(async (req: Request) => {
 
         return new Response(
           JSON.stringify({ success: true, campaign }),
-          {
-            headers: {
-              ...corsHeaders,
-              'Content-Type': 'application/json',
-            },
-          }
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
 
       if (body.action === 'update_campaign') {
-        const { campaign_id, ...updateData } = body;
+        const { campaign_id } = body;
+
+        const { data: existing, error: existingError } = await supabase
+          .from('marketing_campaigns')
+          .select('id, status, metadata')
+          .eq('id', campaign_id)
+          .single();
+        if (existingError) throw existingError;
+
+        let content: Record<string, any>;
+        if (body.email) {
+          if (['sending', 'sent'].includes(existing.status)) {
+            throw new Error('This campaign has already been sent and can no longer be edited');
+          }
+          const email = validateMarketingEmail(body.email);
+          content = {
+            title: body.title?.trim() || email.subject,
+            subject: email.subject,
+            html_content: renderMarketingEmail(email),
+            plain_text_content: marketingEmailText(email),
+            // keep what is already stored (audience filters) and add the composer fields
+            metadata: { ...(existing.metadata || {}), ...(body.metadata || {}), email },
+          };
+        } else {
+          content = {
+            title: body.title,
+            subject: body.subject,
+            html_content: body.html_content,
+            plain_text_content: body.plain_text_content || '',
+            metadata: body.metadata || {},
+          };
+        }
 
         const { data: campaign, error } = await supabase
           .from('marketing_campaigns')
           .update({
-            title: updateData.title,
-            subject: updateData.subject,
-            html_content: updateData.html_content,
-            plain_text_content: updateData.plain_text_content || '',
-            category: updateData.category,
-            from_email_id: updateData.from_email_id || null,
-            metadata: updateData.metadata || {},
+            ...content,
+            category: body.category,
+            from_email_id: body.from_email_id || null,
             updated_at: new Date().toISOString(),
           })
           .eq('id', campaign_id)
@@ -522,12 +610,7 @@ Deno.serve(async (req: Request) => {
 
         return new Response(
           JSON.stringify({ success: true, campaign }),
-          {
-            headers: {
-              ...corsHeaders,
-              'Content-Type': 'application/json',
-            },
-          }
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
 
