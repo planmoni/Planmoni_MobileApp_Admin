@@ -1,6 +1,12 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from 'npm:@supabase/supabase-js@2.39.7';
-import { marketingEmailText, renderMarketingEmail, validateMarketingEmail, type MarketingEmailInput } from './marketingEmail.ts';
+import {
+  marketingEmailText,
+  personalizeMarketingHtml,
+  renderMarketingEmail,
+  validateMarketingEmail,
+  type MarketingEmailInput,
+} from './marketingEmail.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -134,9 +140,8 @@ async function sendEmailViaResend(
 // One Resend request for up to 100 emails. Each email still goes to its own single recipient.
 // Resend accepts or rejects the whole batch (for example one malformed address rejects all of it).
 async function sendBatchViaResend(
-  recipients: { id: string; email: string }[],
+  recipients: { id: string; email: string; html: string }[],
   subject: string,
-  htmlContent: string,
   resendApiKey: string,
   fromAddress: string
 ): Promise<{ success: boolean; ids?: (string | undefined)[]; error?: string; retryable?: boolean; status?: number }> {
@@ -148,7 +153,7 @@ async function sendBatchViaResend(
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(
-        recipients.map((r) => ({ from: fromAddress, to: r.email, subject, html: htmlContent }))
+        recipients.map((r) => ({ from: fromAddress, to: r.email, subject, html: r.html }))
       ),
     });
 
@@ -283,16 +288,31 @@ async function runQueueWorker(supabase: any, resendApiKey: string): Promise<void
     }
     if (claim.state !== 'send' || !Array.isArray(claim.recipients) || claim.recipients.length === 0) continue;
 
-    const recipients = claim.recipients as { id: string; email: string }[];
+    const claimed = claim.recipients as { id: string; email: string; user_id?: string | null }[];
+    // Look up first names so each email can say "Hi Ada," instead of "Hi there,"
+    const userIds = [...new Set(claimed.map((r) => r.user_id).filter((id): id is string => !!id))];
+    const nameByUser = new Map<string, string>();
+    if (userIds.length > 0) {
+      const { data: profiles } = await supabase.from('profiles').select('id, first_name').in('id', userIds);
+      for (const p of profiles || []) {
+        if (p?.id && p.first_name) nameByUser.set(p.id, p.first_name);
+      }
+    }
+    const recipients = claimed.map((r) => ({
+      id: r.id,
+      email: r.email,
+      html: personalizeMarketingHtml(content.html, r.user_id ? nameByUser.get(r.user_id) : null),
+    }));
+
     type Outcome = { id: string; ok: boolean | null; resend_id?: string; error?: string };
     const outcomes: Outcome[] = [];
 
-    let batch = await sendBatchViaResend(recipients, content.subject, content.html, resendApiKey, content.from);
+    let batch = await sendBatchViaResend(recipients, content.subject, resendApiKey, content.from);
     for (const delay of RETRY_DELAYS_MS) {
       if (batch.success || !batch.retryable) break;
       console.log(`Retrying batch in ${delay} ms: ${batch.error}`);
       await sleep(delay);
-      batch = await sendBatchViaResend(recipients, content.subject, content.html, resendApiKey, content.from);
+      batch = await sendBatchViaResend(recipients, content.subject, resendApiKey, content.from);
     }
 
     if (batch.success) {
@@ -309,11 +329,11 @@ async function runQueueWorker(supabase: any, resendApiKey: string): Promise<void
           outcomes.push({ id: r.id, ok: null }); // out of time: back in the queue for the next worker
           continue;
         }
-        let single = await sendEmailViaResend(r.email, content.subject, content.html, resendApiKey, content.from);
+        let single = await sendEmailViaResend(r.email, content.subject, r.html, resendApiKey, content.from);
         for (const delay of RETRY_DELAYS_MS) {
           if (single.success || !single.retryable || timeLeft() < 5_000) break;
           await sleep(delay);
-          single = await sendEmailViaResend(r.email, content.subject, content.html, resendApiKey, content.from);
+          single = await sendEmailViaResend(r.email, content.subject, r.html, resendApiKey, content.from);
         }
         outcomes.push(
           single.success
@@ -487,8 +507,8 @@ Deno.serve(async (req: Request) => {
       console.log('Received action:', body.action);
 
       if (body.action === 'render_email') {
-        // The exact HTML a campaign would be sent with; used by the Preview button
-        const html = renderMarketingEmail(body.email);
+        // Preview shows a sample first name so admins see how personalization looks
+        const html = personalizeMarketingHtml(renderMarketingEmail(body.email), 'Alex');
         return new Response(JSON.stringify({ success: true, html }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
@@ -503,7 +523,13 @@ Deno.serve(async (req: Request) => {
           throw new Error('Enter a valid email address');
         }
         const email = validateMarketingEmail(body.email);
-        const html = renderMarketingEmail(email);
+        // Prefer the recipient's real first name when they have a Planmoni profile
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('first_name')
+          .ilike('email', to)
+          .maybeSingle();
+        const html = personalizeMarketingHtml(renderMarketingEmail(email), profile?.first_name || null);
         const from = await resolveFromAddress(supabase, body.from_email_id || null);
         const result = await sendEmailViaResend(to, `[Test] ${email.subject}`, html, resendApiKey, from);
         if (!result.success) {
