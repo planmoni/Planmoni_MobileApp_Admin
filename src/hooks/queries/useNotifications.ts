@@ -341,11 +341,15 @@ export interface PushProgress {
   total: number;
   counts: Record<string, number>;
   remaining: number;
+  /** failed devices that can still be retried (their token is still active) */
+  retryable: number;
+  /** failed devices whose app was removed or token expired; they can never be reached */
+  unreachable: number;
   rate_per_minute: number;
   eta_seconds: number | null;
 }
 
-export function usePushProgress(notificationId: string, enabled: boolean) {
+export function usePushProgress(notificationId: string, enabled: boolean, live = true) {
   return useQuery({
     queryKey: ['push-progress', notificationId],
     queryFn: async (): Promise<PushProgress> => {
@@ -354,7 +358,7 @@ export function usePushProgress(notificationId: string, enabled: boolean) {
       return data as PushProgress;
     },
     enabled,
-    refetchInterval: 5000,
+    refetchInterval: live ? 5000 : false,
   });
 }
 

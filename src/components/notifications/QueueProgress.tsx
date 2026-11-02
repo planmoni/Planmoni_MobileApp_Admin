@@ -21,7 +21,10 @@ export default function QueueProgress({ notification }: { notification: PushNoti
   const canControl = isSuperAdmin || hasPermission('notifications.send') || hasPermission('notifications.create');
 
   const active = notification.status === 'sending' || notification.status === 'paused';
-  const { data: progress } = usePushProgress(notification.id, !!notification.queue_enabled && active);
+  const finished = notification.status === 'sent' || notification.status === 'failed';
+  const hasFailures = finished && notification.failed_count > 0;
+  // while sending: live progress; after: one look at how many failed devices can still be retried
+  const { data: progress } = usePushProgress(notification.id, !!notification.queue_enabled && (active || hasFailures), active);
 
   if (!notification.queue_enabled) return null;
 
@@ -32,7 +35,20 @@ export default function QueueProgress({ notification }: { notification: PushNoti
       {
         onSuccess: (result) => {
           if (action === 'retry_failed') {
-            showToast(`${Number(result?.requeued) || 0} failed devices put back in the queue`, 'success');
+            const requeued = Number(result?.requeued) || 0;
+            const unreachable = Number(result?.unreachable) || 0;
+            if (requeued > 0) {
+              showToast(
+                `${requeued.toLocaleString()} device${requeued === 1 ? '' : 's'} put back in the queue` +
+                  (unreachable > 0 ? `; ${unreachable.toLocaleString()} can't be reached` : ''),
+                'success',
+              );
+            } else {
+              showToast(
+                `Nothing to retry: ${unreachable.toLocaleString()} failed device${unreachable === 1 ? '' : 's'} can't be reached (app uninstalled or token expired)`,
+                'warning',
+              );
+            }
           } else {
             showToast(action === 'pause' ? 'Send paused' : action === 'resume' ? 'Send resumed' : 'Send cancelled', 'success');
           }
@@ -64,6 +80,15 @@ export default function QueueProgress({ notification }: { notification: PushNoti
         </>
       )}
 
+      {hasFailures && progress && progress.unreachable > 0 && (
+        <div
+          className="mt-2 text-xs text-gray-500"
+          title="Their app was uninstalled or the device token expired. These devices are switched off and are not retried."
+        >
+          {progress.unreachable.toLocaleString()} device{progress.unreachable === 1 ? '' : 's'} unreachable (app removed)
+        </div>
+      )}
+
       {canControl && (
         <div className="mt-2 flex flex-wrap gap-2">
           {notification.status === 'sending' && (
@@ -84,10 +109,10 @@ export default function QueueProgress({ notification }: { notification: PushNoti
               <span>Cancel</span>
             </button>
           )}
-          {(notification.status === 'sent' || notification.status === 'failed') && notification.failed_count > 0 && (
+          {hasFailures && (progress?.retryable ?? 0) > 0 && (
             <button className={button} disabled={control.isPending} onClick={() => run('retry_failed')}>
               <RotateCcw className="h-3 w-3" />
-              <span>Retry {notification.failed_count.toLocaleString()} failed</span>
+              <span>Retry {progress!.retryable.toLocaleString()} failed</span>
             </button>
           )}
         </div>
