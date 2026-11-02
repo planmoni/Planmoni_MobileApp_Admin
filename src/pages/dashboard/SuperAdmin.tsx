@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
   Shield,
   Users,
@@ -27,6 +27,7 @@ import { CreateRoleModal } from '@/components/CreateRoleModal';
 import { AssignRoleModal } from '@/components/AssignRoleModal';
 import { EditRoleModal } from '@/components/EditRoleModal';
 import { TwoFactorSetup } from '@/components/TwoFactorSetup';
+import { AdminTwoFactorManager } from '@/components/mfa/AdminTwoFactorManager';
 import { ActiveSessionsManager } from '@/components/ActiveSessionsManager';
 import { useSenderEmails, type SenderEmail } from '@/hooks/queries/useSenderEmails';
 import { useToast } from '@/contexts/ToastContext';
@@ -47,7 +48,6 @@ export default function SuperAdmin() {
   const [isEditRoleModalOpen, setIsEditRoleModalOpen] = useState(false);
   const [selectedRole, setSelectedRole] = useState<any>(null);
   const [expandedRoleId, setExpandedRoleId] = useState<string | null>(null);
-  const [is2FAEnabled, setIs2FAEnabled] = useState(false);
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
   const [selectedEmail, setSelectedEmail] = useState<SenderEmail | null>(null);
   const { showToast } = useToast();
@@ -103,29 +103,6 @@ export default function SuperAdmin() {
   const toggleRoleExpand = (roleId: string) => {
     setExpandedRoleId(expandedRoleId === roleId ? null : roleId);
   };
-
-  useEffect(() => {
-    const check2FAStatus = async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
-
-        const { data, error } = await supabase
-          .from('admin_2fa_settings')
-          .select('is_enabled')
-          .eq('user_id', user.id)
-          .maybeSingle();
-
-        if (!error && data) {
-          setIs2FAEnabled(data.is_enabled);
-        }
-      } catch (error) {
-        console.error('Error checking 2FA status:', error);
-      }
-    };
-
-    check2FAStatus();
-  }, []);
 
   if (error) {
     return (
@@ -638,10 +615,8 @@ export default function SuperAdmin() {
 
       {activeTab === 'security' && (
         <div className="space-y-6">
-          <TwoFactorSetup
-            isEnabled={is2FAEnabled}
-            onToggle={() => setIs2FAEnabled(!is2FAEnabled)}
-          />
+          <TwoFactorSetup />
+          <AdminTwoFactorManager />
           <ActiveSessionsManager />
         </div>
       )}

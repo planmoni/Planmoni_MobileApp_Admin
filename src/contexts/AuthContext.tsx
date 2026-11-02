@@ -1,11 +1,25 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { supabase } from '../lib/supabase';
 import { Session } from '@supabase/supabase-js';
 import { useToast } from './ToastContext';
 
+// Where the signed-in admin is in the two-factor flow (Supabase MFA / TOTP):
+//   loading          checking the session's assurance level
+//   ready            signed in with password + authenticator code (aal2): dashboard unlocked
+//   needs_challenge  has an authenticator, must enter a code for this session
+//   needs_enroll     has no authenticator yet, must set one up (every admin has to)
+//   error            could not check (network / MFA not available)
+export type MfaState = {
+  status: 'loading' | 'ready' | 'needs_challenge' | 'needs_enroll' | 'error';
+  factorId?: string;
+  error?: string;
+};
+
 type AuthContextType = {
   session: Session | null;
   isLoading: boolean;
+  mfa: MfaState;
+  refreshMfa: () => Promise<void>;
   signIn: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   signUp: (email: string, password: string, firstName: string, lastName: string) => Promise<{ success: boolean; error?: string }>;
   signOut: () => Promise<void>;
@@ -16,7 +30,44 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [mfa, setMfa] = useState<MfaState>({ status: 'loading' });
   const { showToast } = useToast();
+
+  const refreshMfa = useCallback(async () => {
+    try {
+      const { data, error } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+      if (error) throw error;
+      if (data.currentLevel === 'aal2') {
+        setMfa({ status: 'ready' });
+        return;
+      }
+      const { data: factors, error: factorsError } = await supabase.auth.mfa.listFactors();
+      if (factorsError) throw factorsError;
+      const factor = factors?.totp?.[0]; // listFactors().totp only holds verified factors
+      if (factor) {
+        setMfa({ status: 'needs_challenge', factorId: factor.id });
+      } else {
+        setMfa({ status: 'needs_enroll' });
+      }
+    } catch (err) {
+      console.error('Error checking two-factor status:', err);
+      setMfa({
+        status: 'error',
+        error: err instanceof Error ? err.message : 'Could not check two-factor status',
+      });
+    }
+  }, []);
+
+  // Re-check when the signed-in user changes (not on every token refresh)
+  const userId = session?.user?.id ?? null;
+  useEffect(() => {
+    if (!userId) {
+      setMfa({ status: 'loading' });
+      return;
+    }
+    setMfa({ status: 'loading' });
+    void refreshMfa();
+  }, [userId, refreshMfa]);
 
   useEffect(() => {
     let isMounted = true;
@@ -223,7 +274,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ session, isLoading, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ session, isLoading, mfa, refreshMfa, signIn, signUp, signOut }}>
       {children}
     </AuthContext.Provider>
   );

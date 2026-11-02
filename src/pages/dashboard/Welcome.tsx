@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePermissions } from '@/contexts/PermissionsContext';
 import { supabase } from '@/lib/supabase';
-import { Home, Users, CreditCard, BarChart3, Activity, FileText, DollarSign, CalendarDays, Repeat, TriangleAlert as AlertTriangle, Image, Smartphone, ScrollText, Mail, Bell, BookOpen, Vault } from 'lucide-react';
+import { Home, Users, CreditCard, BarChart3, Activity, FileText, DollarSign, CalendarDays, Repeat, Send, TriangleAlert as AlertTriangle, Image, Smartphone, ScrollText, Mail, Bell, BookOpen, Vault } from 'lucide-react';
 
 export default function Welcome() {
   const { session } = useAuth();
@@ -117,6 +117,15 @@ export default function Welcome() {
       action: 'list',
       description: 'Manage payout events',
       color: 'from-emerald-500 to-emerald-600'
+    },
+    {
+      name: 'Process Payouts',
+      path: '/process-payouts',
+      icon: Send,
+      resource: 'payouts',
+      action: 'process',
+      description: 'Review and pay due payouts',
+      color: 'from-lime-500 to-lime-600'
     },
     {
       name: 'Payout Plans',

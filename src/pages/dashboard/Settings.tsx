@@ -3,6 +3,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { Shield, Bell, Database, Key, LogOut } from 'lucide-react';
 import Card from '../../components/Card';
 import Button from '../../components/Button';
+import { TwoFactorSetup } from '../../components/TwoFactorSetup';
 
 export default function Settings() {
   const { signOut } = useAuth();
@@ -50,6 +51,9 @@ export default function Settings() {
 
         <div>
           <h2 className="text-lg font-semibold text-text mb-4">Security</h2>
+          <div className="mb-4">
+            <TwoFactorSetup />
+          </div>
           <Card className="overflow-hidden divide-y divide-border">
             <div className="p-4 flex items-center justify-between">
               <div className="flex items-center">

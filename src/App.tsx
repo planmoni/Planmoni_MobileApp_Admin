@@ -5,6 +5,7 @@ import LoadingScreen from './components/LoadingScreen';
 import AuthLayout from './layouts/AuthLayout';
 import DashboardLayout from './layouts/DashboardLayout';
 import Toast from './components/Toast';
+import MfaGate from './components/mfa/MfaGate';
 
 // Lazy load pages
 const LoginPage = lazy(() => import('./pages/auth/Login'));
@@ -19,6 +20,7 @@ const AnalyticsPage = lazy(() => import('./pages/dashboard/Analytics'));
 const ActivityPage = lazy(() => import('./pages/dashboard/Activity'));
 const KycDataPage = lazy(() => import('./pages/dashboard/KycData'));
 const PayoutEventsPage = lazy(() => import('./pages/dashboard/PayoutEvents'));
+const ProcessPayoutsPage = lazy(() => import('./pages/dashboard/ProcessPayouts'));
 const PayoutPlansPage = lazy(() => import('./pages/dashboard/PayoutPlans'));
 const VaultsPage = lazy(() => import('./pages/dashboard/Vaults'));
 const VaultDetailsPage = lazy(() => import('./pages/dashboard/VaultDetails'));
@@ -39,11 +41,22 @@ const UserEventsPage = lazy(() => import('./pages/dashboard/UserEvents'));
 const NotFoundPage = lazy(() => import('./pages/NotFound'));
 
 function App() {
-  const { session, isLoading } = useAuth();
+  const { session, isLoading, mfa } = useAuth();
 
   // Show loading screen while auth is initializing
   if (isLoading) {
     return <LoadingScreen />;
+  }
+
+  // Signed in with a password but not yet with the authenticator code (or no authenticator set up
+  // yet): nothing of the dashboard renders until 2FA is done
+  if (session && mfa.status !== 'ready') {
+    return (
+      <>
+        <MfaGate />
+        <Toast />
+      </>
+    );
   }
 
   return (
@@ -86,6 +99,7 @@ function App() {
                 <Route path="activity" element={<ActivityPage />} />
                 <Route path="kyc-data" element={<KycDataPage />} />
                 <Route path="payout-events" element={<PayoutEventsPage />} />
+                <Route path="process-payouts" element={<ProcessPayoutsPage />} />
                 <Route path="payout-plans" element={<PayoutPlansPage />} />
                 <Route path="vaults" element={<VaultsPage />} />
                 <Route path="vaults/:id" element={<VaultDetailsPage />} />

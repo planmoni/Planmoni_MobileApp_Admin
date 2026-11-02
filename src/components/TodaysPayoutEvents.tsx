@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { TriangleAlert } from 'lucide-react';
+import { Send, TriangleAlert } from 'lucide-react';
+import { usePermissions } from '@/contexts/PermissionsContext';
 import PayoutEventDetailsModal from '@/components/PayoutEventDetailsModal';
 import PayoutEventRow from '@/components/PayoutEventRow';
 import { useTodayPayoutEvents } from '@/hooks/queries/usePayoutEventsList';
@@ -13,6 +14,8 @@ const money = (amount: number) => (Math.abs(amount) >= 1_000_000 ? formatNairaCo
 /** The dashboard's "Today's Payout Events": what was paid out since midnight, problems first. */
 export default function TodaysPayoutEvents() {
   const { data, isLoading, error } = useTodayPayoutEvents();
+  const { isSuperAdmin, hasPermission } = usePermissions();
+  const canProcess = isSuperAdmin || hasPermission('payouts', 'process');
   const [selected, setSelected] = useState<PayoutEventItem | null>(null);
 
   const rows = useMemo(() => pickEventHighlights(data?.rows ?? [], SHOWN), [data?.rows]);
@@ -63,6 +66,16 @@ export default function TodaysPayoutEvents() {
         >
           <TriangleAlert className="h-4 w-4" />
           {attention.toLocaleString()} {attention === 1 ? 'payout needs' : 'payouts need'} attention today
+        </Link>
+      )}
+
+      {canProcess && attention > 0 && (
+        <Link
+          to="/process-payouts"
+          className="flex items-center justify-center gap-2 border-t border-amber-200 px-4 py-2.5 text-xs md:text-sm font-medium text-gray-900 bg-white hover:bg-gray-50 transition-colors"
+        >
+          <Send className="h-4 w-4" />
+          Review and process due payouts
         </Link>
       )}
 

@@ -6,12 +6,14 @@ import {
   Clock,
   RefreshCw,
   Search,
+  Send,
   TriangleAlert,
   User,
   X,
   XCircle,
 } from 'lucide-react';
-import { useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
+import { usePermissions } from '@/contexts/PermissionsContext';
 import { format, isToday, isYesterday } from 'date-fns';
 import DateRangePicker from '@/components/DateRangePicker';
 import PayoutEventDetailsModal from '@/components/PayoutEventDetailsModal';
@@ -83,6 +85,8 @@ function SummaryTile({
 
 export default function PayoutEvents() {
   const location = useLocation();
+  const { isSuperAdmin, hasPermission } = usePermissions();
+  const canProcess = isSuperAdmin || hasPermission('payouts', 'process');
 
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
@@ -211,14 +215,25 @@ export default function PayoutEvents() {
           <h1 className="text-3xl font-semibold text-gray-900 mb-1">Payout Events</h1>
           <p className="text-gray-500">Every scheduled payout as it is paid out, and the ones that need a person</p>
         </div>
-        <button
-          onClick={() => refreshData.mutate(['payout-events'])}
-          className="p-3 rounded-xl bg-white hover:bg-gray-50 transition-colors shadow-soft border border-gray-100"
-          disabled={refreshData.isPending}
-          title="Refresh"
-        >
-          <RefreshCw className={`h-5 w-5 text-gray-600 ${refreshData.isPending || isFetching ? 'animate-spin' : ''}`} />
-        </button>
+        <div className="flex items-center gap-2">
+          {canProcess && (
+            <Link
+              to="/process-payouts"
+              className="inline-flex items-center px-4 py-3 rounded-xl text-sm font-medium bg-gray-900 text-white hover:bg-gray-800 transition-colors"
+            >
+              <Send className="h-4 w-4 mr-2" />
+              Process due payouts
+            </Link>
+          )}
+          <button
+            onClick={() => refreshData.mutate(['payout-events'])}
+            className="p-3 rounded-xl bg-white hover:bg-gray-50 transition-colors shadow-soft border border-gray-100"
+            disabled={refreshData.isPending}
+            title="Refresh"
+          >
+            <RefreshCw className={`h-5 w-5 text-gray-600 ${refreshData.isPending || isFetching ? 'animate-spin' : ''}`} />
+          </button>
+        </div>
       </div>
 
       {/* Search */}
