@@ -21,18 +21,27 @@ export function TierBadge({ tier, size = 'md' }: { tier: KycTier; size?: 'sm' | 
   );
 }
 
-const reviewStyles: Record<KycReviewStatus, { label: string; className: string; Icon: typeof Clock }> = {
+const reviewStyles: Record<
+  Exclude<KycReviewStatus, 'not_submitted'>,
+  { label: string; className: string; Icon: typeof Clock }
+> = {
   pending: { label: 'Awaiting review', className: 'bg-gray-100 text-gray-700', Icon: Clock },
   approved: { label: 'Approved', className: 'bg-primary text-white', Icon: CheckCircle },
   rejected: { label: 'Rejected', className: 'bg-white text-gray-700 border border-gray-300', Icon: XCircle },
 };
 
-export function ReviewStatusBadge({ status }: { status: KycReviewStatus | null }) {
-  if (!status) {
+export function ReviewStatusBadge({ status }: { status: KycReviewStatus | string | null }) {
+  // DB uses not_submitted (and older rows may still be null) for users who have not sent a bill
+  if (!status || status === 'not_submitted') {
     return <span className="text-xs text-gray-400">Not submitted</span>;
   }
 
-  const { label, className, Icon } = reviewStyles[status];
+  const style = reviewStyles[status as keyof typeof reviewStyles];
+  if (!style) {
+    return <span className="text-xs text-gray-400 capitalize">{String(status).replace(/_/g, ' ')}</span>;
+  }
+
+  const { label, className, Icon } = style;
 
   return (
     <span className={`inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-medium ${className}`}>

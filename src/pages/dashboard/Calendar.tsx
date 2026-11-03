@@ -36,6 +36,28 @@ const LIST_DAYS_PER_PAGE = 10;
 
 const dayKey = (date: Date) => format(date, 'yyyy-MM-dd');
 
+/** Compact money line under each period-stat tile (paid out, due, …). */
+function formatStatAmount(type: CalendarEventType, total: number): string {
+  if (total <= 0) return '—';
+  const money = formatNairaCompact(total);
+  switch (type) {
+    case 'deposit':
+      return `${money} received`;
+    case 'payout_completed':
+      return `${money} paid out`;
+    case 'payout_scheduled':
+      return `${money} due`;
+    case 'payout_failed':
+      return `${money} failed`;
+    case 'plan_created':
+      return `${money} committed`;
+    case 'withdrawal':
+      return `${money} withdrawn`;
+    default:
+      return money;
+  }
+}
+
 /** Deposits first, then payouts, ...; newest first within a type; undated entries last. */
 const compareWithinDay = (a: CalendarEvent, b: CalendarEvent) =>
   TYPE_ORDER.indexOf(a.type) - TYPE_ORDER.indexOf(b.type) ||
@@ -126,19 +148,23 @@ export default function Calendar() {
 
   const eventsOn = (date: Date) => eventsByDay.get(dayKey(date)) || [];
 
-  // the month overview ignores the type filter (so the tiles can switch between types) but follows the search
-  const monthStats = useMemo(() => {
+  // Stats follow the day you click (including future days), so picking tomorrow shows that day's due payouts.
+  // Type filter is ignored so the tiles can still switch between kinds; search still applies.
+  const periodLabel = format(selectedDate, 'EEEE, MMM d, yyyy');
+
+  const periodStats = useMemo(() => {
     const stats = Object.fromEntries(TYPE_ORDER.map((t) => [t, { count: 0, total: 0 }])) as Record<
       CalendarEventType,
       { count: number; total: number }
     >;
+    const key = dayKey(selectedDate);
     for (const event of allEvents || []) {
-      if (!isSameMonth(event.date, currentDate) || !matchesSearch(event, query)) continue;
+      if (dayKey(event.date) !== key || !matchesSearch(event, query)) continue;
       stats[event.type].count += 1;
       stats[event.type].total += event.amount ?? 0;
     }
     return stats;
-  }, [allEvents, currentDate, query]);
+  }, [allEvents, selectedDate, query]);
 
   const monthStart = startOfMonth(currentDate);
   const calendarDays = eachDayOfInterval({
@@ -263,11 +289,12 @@ export default function Calendar() {
         </div>
       )}
 
-      {/* Month overview. Click a tile to show only that kind of event. */}
+      {/* Selected-day overview. Click a tile to show only that kind of event. */}
+      <p className="text-xs text-gray-500 mb-2">Totals for {periodLabel}</p>
       <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 mb-2">
         {TYPE_ORDER.map((type) => {
           const { plural, Icon } = EVENT_TYPE_META[type];
-          const { count, total } = monthStats[type];
+          const { count, total } = periodStats[type];
           const active = typeFilter === type;
           return (
             <button
@@ -283,9 +310,7 @@ export default function Calendar() {
                 <span className="text-xs font-medium text-gray-500">{plural}</span>
               </div>
               <p className="text-lg font-semibold text-gray-900">{count.toLocaleString()}</p>
-              <p className="text-xs text-gray-500 mt-0.5">
-                {total > 0 ? `${formatNairaCompact(total)}${type === 'plan_created' ? ' committed' : ''}` : '—'}
-              </p>
+              <p className="text-xs text-gray-500 mt-0.5">{formatStatAmount(type, total)}</p>
             </button>
           );
         })}

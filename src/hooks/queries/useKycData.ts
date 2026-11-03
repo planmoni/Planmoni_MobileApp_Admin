@@ -2,7 +2,7 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tansta
 import { supabase } from '@/lib/supabase';
 
 export type KycTier = 0 | 1 | 2 | 3;
-export type KycReviewStatus = 'pending' | 'approved' | 'rejected';
+export type KycReviewStatus = 'pending' | 'approved' | 'rejected' | 'not_submitted';
 
 /** Light row returned by the admin_list_kyc RPC (no document bodies, no raw BVN/NIN). */
 export interface KycListRow {
@@ -284,7 +284,22 @@ export function useReviewTier3() {
       if (error) throw error;
       return data as { user_id: string; decision: string; review_status: KycReviewStatus; tier: number };
     },
-    onSuccess: async () => {
+    onSuccess: async (data, vars) => {
+      // Update the open drawer immediately so Approve/Reject hide without waiting on refetch
+      queryClient.setQueryData<KycDetail | null>(['kyc-data', 'detail', vars.userId], (old) => {
+        if (!old?.kyc) return old;
+        return {
+          ...old,
+          tier: (data.tier ?? old.tier) as KycTier,
+          kyc: {
+            ...old.kyc,
+            utility_bill_review_status: data.review_status,
+            utility_bill_rejection_reason:
+              vars.decision === 'reject' ? vars.reason?.trim() || old.kyc.utility_bill_rejection_reason : null,
+            utility_bill_reviewed_at: new Date().toISOString(),
+          },
+        };
+      });
       await Promise.all(
         KYC_QUERY_KEYS.map((key) => queryClient.invalidateQueries({ queryKey: [key] }))
       );

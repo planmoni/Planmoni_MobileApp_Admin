@@ -381,7 +381,7 @@ export default function KycData() {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="space-y-1">
                           <ReviewStatusBadge status={row.review_status} />
-                          {row.bill_type_label && row.review_status && (
+                          {row.bill_type_label && row.review_status && row.review_status !== 'not_submitted' && (
                             <div className="text-xs text-gray-500">{row.bill_type_label}</div>
                           )}
                         </div>
