@@ -26,6 +26,10 @@ export interface KycListRow {
   submitted_at: string;
   reviewed_at: string | null;
   rejection_reason: string | null;
+  bvn_review_status: KycReviewStatus | null;
+  bvn_submitted_at: string | null;
+  bvn_reviewed_at: string | null;
+  bvn_rejection_reason: string | null;
   created_at: string;
   updated_at: string;
   tier: KycTier;
@@ -47,6 +51,8 @@ export interface KycTierStats {
   tier3: number;
   tier3_pending: number;
   tier3_rejected: number;
+  tier1_bvn_pending: number;
+  tier1_bvn_rejected: number;
 }
 
 export interface KycListFilters {
@@ -54,6 +60,8 @@ export interface KycListFilters {
   tier?: KycTier | null;
   /** 'none' = never submitted Tier 3 documents */
   reviewStatus?: KycReviewStatus | 'none' | null;
+  /** 'none' = never requested Tier 1 BVN face review */
+  bvnReviewStatus?: KycReviewStatus | 'none' | null;
   page?: number;
   pageSize?: number;
 }
@@ -99,6 +107,13 @@ export interface KycDetailRecord {
   utility_bill_reviewed_by: string | null;
   utility_bill_reviewed_at: string | null;
   utility_bill_rejection_reason: string | null;
+  bvn_face_review_status: KycReviewStatus | null;
+  bvn_face_review_submitted_at: string | null;
+  bvn_face_reviewed_by: string | null;
+  bvn_face_reviewed_at: string | null;
+  bvn_face_rejection_reason: string | null;
+  bvn_face_review_note: string | null;
+  bvn_face_review_selfie_url: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -121,22 +136,31 @@ export interface KycDetail {
   email: string | null;
   tier: KycTier;
   reviewer_name: string | null;
+  bvn_reviewer_name: string | null;
 }
 
 export const KYC_PAGE_SIZE = 25;
 
-const KYC_QUERY_KEYS = ['kyc-data', 'kyc-tier-stats', 'kyc-tier3-queue', 'dashboard'] as const;
+const KYC_QUERY_KEYS = ['kyc-data', 'kyc-tier-stats', 'kyc-tier3-queue', 'kyc-tier1-bvn-queue', 'dashboard'] as const;
 
 export function useKycData(filters: KycListFilters = {}) {
-  const { search = '', tier = null, reviewStatus = null, page = 0, pageSize = KYC_PAGE_SIZE } = filters;
+  const {
+    search = '',
+    tier = null,
+    reviewStatus = null,
+    bvnReviewStatus = null,
+    page = 0,
+    pageSize = KYC_PAGE_SIZE,
+  } = filters;
 
   return useQuery({
-    queryKey: ['kyc-data', 'list', search, tier, reviewStatus, page, pageSize],
+    queryKey: ['kyc-data', 'list', search, tier, reviewStatus, bvnReviewStatus, page, pageSize],
     queryFn: async (): Promise<KycListResult> => {
       const { data, error } = await supabase.rpc('admin_list_kyc', {
         p_search: search.trim() || null,
         p_tier: tier,
         p_review_status: reviewStatus,
+        p_bvn_review_status: bvnReviewStatus,
         p_limit: pageSize,
         p_offset: page * pageSize,
       });
@@ -169,6 +193,8 @@ export function useKycTierStats(enabled = true) {
         tier3: Number(stats.tier3 ?? 0),
         tier3_pending: Number(stats.tier3_pending ?? 0),
         tier3_rejected: Number(stats.tier3_rejected ?? 0),
+        tier1_bvn_pending: Number(stats.tier1_bvn_pending ?? 0),
+        tier1_bvn_rejected: Number(stats.tier1_bvn_rejected ?? 0),
       };
     },
     enabled,
@@ -233,6 +259,33 @@ export function useTier3Queue(limit = 8, enabled = true) {
         p_search: null,
         p_tier: null,
         p_review_status: 'pending',
+        p_bvn_review_status: null,
+        p_limit: limit,
+        p_offset: 0,
+      });
+
+      if (error) throw error;
+
+      return {
+        rows: (data?.rows ?? []) as KycListRow[],
+        total: Number(data?.total ?? 0),
+      };
+    },
+    enabled,
+    staleTime: 30 * 1000,
+  });
+}
+
+/** Oldest-first queue of users awaiting Tier 1 BVN face-mismatch review. */
+export function useTier1BvnQueue(limit = 8, enabled = true) {
+  return useQuery({
+    queryKey: ['kyc-tier1-bvn-queue', limit],
+    queryFn: async (): Promise<KycListResult> => {
+      const { data, error } = await supabase.rpc('admin_list_kyc', {
+        p_search: null,
+        p_tier: null,
+        p_review_status: null,
+        p_bvn_review_status: 'pending',
         p_limit: limit,
         p_offset: 0,
       });
@@ -298,6 +351,56 @@ export function useReviewTier3() {
               vars.decision === 'reject' ? vars.reason?.trim() || old.kyc.utility_bill_rejection_reason : null,
             utility_bill_reviewed_at: new Date().toISOString(),
           },
+        };
+      });
+      await Promise.all(
+        KYC_QUERY_KEYS.map((key) => queryClient.invalidateQueries({ queryKey: [key] }))
+      );
+    },
+  });
+}
+
+export function useReviewTier1Bvn() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    meta: { activity: 'Reviewed a Tier 1 BVN face mismatch' },
+    mutationFn: async ({
+      userId,
+      decision,
+      reason,
+    }: {
+      userId: string;
+      decision: 'approve' | 'reject';
+      reason?: string;
+    }) => {
+      const { data, error } = await supabase.rpc('admin_review_tier1_bvn', {
+        p_user_id: userId,
+        p_decision: decision,
+        p_reason: reason ?? null,
+      });
+      if (error) throw error;
+      return data as { user_id: string; decision: string; review_status: KycReviewStatus; tier: number };
+    },
+    onSuccess: async (data, vars) => {
+      queryClient.setQueryData<KycDetail | null>(['kyc-data', 'detail', vars.userId], (old) => {
+        if (!old?.kyc) return old;
+        return {
+          ...old,
+          tier: (data.tier ?? old.tier) as KycTier,
+          kyc: {
+            ...old.kyc,
+            bvn_face_review_status: data.review_status,
+            bvn_face_rejection_reason:
+              vars.decision === 'reject' ? vars.reason?.trim() || old.kyc.bvn_face_rejection_reason : null,
+            bvn_face_reviewed_at: new Date().toISOString(),
+          },
+          progress: old.progress
+            ? {
+                ...old.progress,
+                bvn_verified: vars.decision === 'approve' ? true : old.progress.bvn_verified,
+              }
+            : old.progress,
         };
       });
       await Promise.all(

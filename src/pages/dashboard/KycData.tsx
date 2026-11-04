@@ -26,7 +26,7 @@ import { ReviewStatusBadge, TierBadge } from '@/components/KycBadges';
 import { TierIcon } from '@/components/TierIcon';
 import KycReviewDrawer from '@/components/KycReviewDrawer';
 
-type Tab = 'all' | 'review';
+type Tab = 'all' | 'review' | 'tier1';
 type ReviewFilter = KycReviewStatus | 'none' | 'all';
 
 const parseTier = (value: string | null): KycTier | null => {
@@ -64,12 +64,21 @@ export default function KycData() {
   const { hasPermission, isSuperAdmin } = usePermissions();
   const refreshData = useRefreshData();
 
-  const tab: Tab = searchParams.get('tab') === 'review' ? 'review' : 'all';
+  const tabParam = searchParams.get('tab');
+  const tab: Tab = tabParam === 'review' ? 'review' : tabParam === 'tier1' ? 'tier1' : 'all';
   const tierFilter = parseTier(searchParams.get('tier'));
   const statusParam = searchParams.get('status');
+  const bvnStatusParam = searchParams.get('bvnStatus');
   const reviewFilter: ReviewFilter =
     statusParam === 'pending' || statusParam === 'approved' || statusParam === 'rejected' || statusParam === 'none'
       ? statusParam
+      : 'all';
+  const bvnReviewFilter: ReviewFilter =
+    bvnStatusParam === 'pending' ||
+    bvnStatusParam === 'approved' ||
+    bvnStatusParam === 'rejected' ||
+    bvnStatusParam === 'none'
+      ? bvnStatusParam
       : 'all';
   const openUserId = searchParams.get('review');
 
@@ -107,12 +116,15 @@ export default function KycData() {
   );
 
   const effectiveReviewStatus: KycReviewStatus | 'none' | null =
-    tab === 'review' ? 'pending' : reviewFilter === 'all' ? null : reviewFilter;
+    tab === 'review' ? 'pending' : tab === 'tier1' ? null : reviewFilter === 'all' ? null : reviewFilter;
+  const effectiveBvnReviewStatus: KycReviewStatus | 'none' | null =
+    tab === 'tier1' ? 'pending' : tab === 'review' ? null : bvnReviewFilter === 'all' ? null : bvnReviewFilter;
 
   const { data, isLoading, isFetching, error } = useKycData({
     search,
     tier: tierFilter,
     reviewStatus: effectiveReviewStatus,
+    bvnReviewStatus: effectiveBvnReviewStatus,
     page,
   });
   const { data: stats } = useKycTierStats();
@@ -120,10 +132,13 @@ export default function KycData() {
   const rows = data?.rows ?? [];
   const total = data?.total ?? 0;
   const pageCount = Math.max(1, Math.ceil(total / KYC_PAGE_SIZE));
-  const hasFilters = !!search || tierFilter !== null || (tab === 'all' && reviewFilter !== 'all');
+  const hasFilters =
+    !!search ||
+    tierFilter !== null ||
+    (tab === 'all' && (reviewFilter !== 'all' || bvnReviewFilter !== 'all'));
 
   const handleRefresh = () => {
-    refreshData.mutate(['kyc-data', 'kyc-tier-stats', 'kyc-tier3-queue']);
+    refreshData.mutate(['kyc-data', 'kyc-tier-stats', 'kyc-tier3-queue', 'kyc-tier1-bvn-queue']);
   };
 
   const openDrawer = (userId: string) => updateParamsKeepPage({ review: userId });
@@ -147,8 +162,10 @@ export default function KycData() {
   const clearFilters = () => {
     setSearchInput('');
     setSearch('');
-    updateParams({ tier: null, status: null });
+    updateParams({ tier: null, status: null, bvnStatus: null });
   };
+
+  const drawerFocus = tab === 'tier1' ? 'tier1' : tab === 'review' ? 'tier3' : null;
 
   const tierCards: Array<{ tier: KycTier; label: string; value: number; description: string }> = [
     { tier: 1, label: 'Tier 1', value: stats?.tier1 ?? 0, description: 'BVN, liveness and ID match' },
@@ -161,7 +178,7 @@ export default function KycData() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-semibold text-gray-900 mb-1">KYC Data</h1>
-          <p className="text-gray-500">Verification tiers, submitted documents and Tier 3 manual review</p>
+          <p className="text-gray-500">Verification tiers, Tier 1 BVN face review and Tier 3 proof of address</p>
         </div>
         <button
           onClick={handleRefresh}
@@ -174,7 +191,7 @@ export default function KycData() {
       </div>
 
       {/* Tier stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
         {tierCards.map((card) => {
           const active = tab === 'all' && tierFilter === card.tier;
           return (
@@ -198,7 +215,27 @@ export default function KycData() {
         })}
 
         <button
-          onClick={() => updateParams({ tab: 'review', tier: null, status: null })}
+          onClick={() => updateParams({ tab: 'tier1', tier: null, status: null, bvnStatus: null })}
+          className={`text-left bg-white rounded-2xl p-5 shadow-soft border transition-colors ${
+            tab === 'tier1' ? 'border-gray-900' : 'border-gray-100 hover:border-gray-200'
+          }`}
+        >
+          <div className="flex justify-between items-start mb-3">
+            <div>
+              <p className="text-sm font-medium text-gray-500">Awaiting Tier 1 review</p>
+              <p className="text-lg font-semibold text-gray-900">
+                {(stats?.tier1_bvn_pending ?? 0).toLocaleString()}
+              </p>
+            </div>
+            <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center">
+              <ClipboardCheck className="h-5 w-5 text-gray-600" />
+            </div>
+          </div>
+          <p className="text-xs text-gray-500">BVN face mismatches to verify</p>
+        </button>
+
+        <button
+          onClick={() => updateParams({ tab: 'review', tier: null, status: null, bvnStatus: null })}
           className={`text-left bg-white rounded-2xl p-5 shadow-soft border transition-colors ${
             tab === 'review' ? 'border-gray-900' : 'border-gray-100 hover:border-gray-200'
           }`}
@@ -217,15 +254,22 @@ export default function KycData() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 mb-4 border-b border-gray-200">
+      <div className="flex gap-1 mb-4 border-b border-gray-200 overflow-x-auto">
         {([
-          { id: 'all', label: 'All submissions', count: stats?.total },
-          { id: 'review', label: 'Tier 3 review', count: stats?.tier3_pending },
-        ] as const).map((t) => (
+          { id: 'all' as const, label: 'All submissions', count: stats?.total },
+          { id: 'tier1' as const, label: 'Tier 1 BVN review', count: stats?.tier1_bvn_pending },
+          { id: 'review' as const, label: 'Tier 3 review', count: stats?.tier3_pending },
+        ]).map((t) => (
           <button
             key={t.id}
-            onClick={() => updateParams({ tab: t.id === 'review' ? 'review' : null })}
-            className={`px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${
+            onClick={() =>
+              updateParams({
+                tab: t.id === 'all' ? null : t.id,
+                status: null,
+                bvnStatus: null,
+              })
+            }
+            className={`px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap ${
               tab === t.id
                 ? 'border-gray-900 text-gray-900'
                 : 'border-transparent text-gray-500 hover:text-gray-700'
@@ -235,7 +279,9 @@ export default function KycData() {
             {t.count !== undefined && (
               <span
                 className={`ml-2 px-2 py-0.5 rounded-full text-xs ${
-                  t.id === 'review' && t.count > 0 ? 'bg-primary text-white' : 'bg-gray-100 text-gray-600'
+                  (t.id === 'review' || t.id === 'tier1') && t.count > 0
+                    ? 'bg-primary text-white'
+                    : 'bg-gray-100 text-gray-600'
                 }`}
               >
                 {t.count.toLocaleString()}
@@ -273,18 +319,32 @@ export default function KycData() {
           </select>
 
           {tab === 'all' && (
-            <select
-              value={reviewFilter}
-              onChange={(e) => updateParams({ status: e.target.value === 'all' ? null : e.target.value })}
-              className="px-3 py-3 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-gray-900"
-              aria-label="Filter by Tier 3 status"
-            >
-              <option value="all">Any Tier 3 status</option>
-              <option value="pending">Awaiting review</option>
-              <option value="approved">Approved</option>
-              <option value="rejected">Rejected</option>
-              <option value="none">Not submitted</option>
-            </select>
+            <>
+              <select
+                value={bvnReviewFilter}
+                onChange={(e) => updateParams({ bvnStatus: e.target.value === 'all' ? null : e.target.value })}
+                className="px-3 py-3 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-gray-900"
+                aria-label="Filter by Tier 1 BVN status"
+              >
+                <option value="all">Any Tier 1 BVN status</option>
+                <option value="pending">Awaiting review</option>
+                <option value="approved">Approved</option>
+                <option value="rejected">Rejected</option>
+                <option value="none">Not requested</option>
+              </select>
+              <select
+                value={reviewFilter}
+                onChange={(e) => updateParams({ status: e.target.value === 'all' ? null : e.target.value })}
+                className="px-3 py-3 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-gray-900"
+                aria-label="Filter by Tier 3 status"
+              >
+                <option value="all">Any Tier 3 status</option>
+                <option value="pending">Awaiting review</option>
+                <option value="approved">Approved</option>
+                <option value="rejected">Rejected</option>
+                <option value="none">Not submitted</option>
+              </select>
+            </>
           )}
         </div>
 
@@ -323,9 +383,11 @@ export default function KycData() {
             <p className="text-gray-500">
               {tab === 'review'
                 ? 'No Tier 3 submissions are waiting for review'
-                : hasFilters
-                  ? 'No KYC data matches your filters'
-                  : 'No KYC data available'}
+                : tab === 'tier1'
+                  ? 'No Tier 1 BVN face reviews are waiting'
+                  : hasFilters
+                    ? 'No KYC data matches your filters'
+                    : 'No KYC data available'}
             </p>
           </div>
         ) : (
@@ -334,7 +396,14 @@ export default function KycData() {
               <table className="w-full">
                 <thead className="bg-gray-50 border-b border-gray-100">
                   <tr>
-                    {['User', 'Tier', 'Verification', 'Tier 3', 'Submitted', ''].map((h) => (
+                    {[
+                      'User',
+                      'Tier',
+                      'Verification',
+                      tab === 'tier1' ? 'Tier 1 BVN' : 'Tier 3',
+                      'Submitted',
+                      '',
+                    ].map((h) => (
                       <th
                         key={h || 'action'}
                         className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider"
@@ -380,23 +449,38 @@ export default function KycData() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="space-y-1">
-                          <ReviewStatusBadge status={row.review_status} />
-                          {row.bill_type_label && row.review_status && row.review_status !== 'not_submitted' && (
-                            <div className="text-xs text-gray-500">{row.bill_type_label}</div>
+                          {tab === 'tier1' ? (
+                            <>
+                              <ReviewStatusBadge status={row.bvn_review_status} />
+                              <div className="text-xs text-gray-500">BVN face match</div>
+                            </>
+                          ) : (
+                            <>
+                              <ReviewStatusBadge status={row.review_status} />
+                              {row.bill_type_label && row.review_status && row.review_status !== 'not_submitted' && (
+                                <div className="text-xs text-gray-500">{row.bill_type_label}</div>
+                              )}
+                            </>
                           )}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center gap-2 text-sm text-gray-500">
                           <Calendar className="h-3 w-3" />
-                          {row.review_status === 'pending'
-                            ? formatDistanceToNow(new Date(row.submitted_at), { addSuffix: true })
-                            : format(new Date(row.created_at), 'MMM d, yyyy')}
+                          {tab === 'tier1' && row.bvn_review_status === 'pending' && row.bvn_submitted_at
+                            ? formatDistanceToNow(new Date(row.bvn_submitted_at), { addSuffix: true })
+                            : row.review_status === 'pending'
+                              ? formatDistanceToNow(new Date(row.submitted_at), { addSuffix: true })
+                              : format(new Date(row.created_at), 'MMM d, yyyy')}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right">
                         <span className="text-sm font-medium text-primary">
-                          {row.review_status === 'pending' && canReview ? 'Review' : 'View'}
+                          {((tab === 'tier1' && row.bvn_review_status === 'pending') ||
+                            (tab !== 'tier1' && row.review_status === 'pending')) &&
+                          canReview
+                            ? 'Review'
+                            : 'View'}
                         </span>
                       </td>
                     </tr>
@@ -429,11 +513,15 @@ export default function KycData() {
                   </div>
                   <Checklist row={row} />
                   <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
-                    <ReviewStatusBadge status={row.review_status} />
+                    <ReviewStatusBadge
+                      status={tab === 'tier1' ? row.bvn_review_status : row.review_status}
+                    />
                     <span className="text-xs text-gray-500">
-                      {row.review_status === 'pending'
-                        ? `Submitted ${formatDistanceToNow(new Date(row.submitted_at), { addSuffix: true })}`
-                        : format(new Date(row.created_at), 'MMM d, yyyy')}
+                      {tab === 'tier1' && row.bvn_review_status === 'pending' && row.bvn_submitted_at
+                        ? `Requested ${formatDistanceToNow(new Date(row.bvn_submitted_at), { addSuffix: true })}`
+                        : row.review_status === 'pending'
+                          ? `Submitted ${formatDistanceToNow(new Date(row.submitted_at), { addSuffix: true })}`
+                          : format(new Date(row.created_at), 'MMM d, yyyy')}
                     </span>
                   </div>
                 </button>
@@ -470,7 +558,7 @@ export default function KycData() {
         )}
       </div>
 
-      <KycReviewDrawer userId={openUserId} onClose={closeDrawer} />
+      <KycReviewDrawer userId={openUserId} onClose={closeDrawer} focus={drawerFocus} />
     </div>
   );
 }

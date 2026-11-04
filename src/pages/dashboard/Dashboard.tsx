@@ -37,7 +37,7 @@ import { format, formatDistanceToNow } from 'date-fns';
 import { Link } from 'react-router-dom';
 import { useDashboardData } from '@/hooks/queries/useDashboardData';
 import { useDuePayoutSummary } from '@/hooks/queries/useProcessPayouts';
-import { useTier3Queue } from '@/hooks/queries/useKycData';
+import { useTier1BvnQueue, useTier3Queue } from '@/hooks/queries/useKycData';
 import { TierBadge } from '@/components/KycBadges';
 import KycCompletedToday from '@/components/KycCompletedToday';
 import { useRefreshData } from '@/hooks/mutations/useRefreshData';
@@ -59,6 +59,11 @@ export default function Dashboard() {
   const canReviewKyc = isSuperAdmin || hasPermission('kyc', 'approve') || hasPermission('kyc', 'reject');
   const canProcessPayouts = isSuperAdmin || hasPermission('payouts', 'process');
   const { data: pastDue, isLoading: pastDueLoading, isError: pastDueError } = useDuePayoutSummary(canProcessPayouts);
+  const {
+    data: tier1BvnQueue,
+    isLoading: tier1BvnQueueLoading,
+    error: tier1BvnQueueError,
+  } = useTier1BvnQueue(6, canReviewKyc);
   const {
     data: tier3Queue,
     isLoading: tier3QueueLoading,
@@ -86,7 +91,7 @@ export default function Dashboard() {
   }, [session]);
 
   const handleRefresh = () => {
-    refreshData.mutate(['dashboard', 'kyc-completed-today', 'kyc-tier3-queue']);
+    refreshData.mutate(['dashboard', 'kyc-completed-today', 'kyc-tier1-bvn-queue', 'kyc-tier3-queue']);
   };
 
   const formatCurrency = (amount: number) => {
@@ -377,79 +382,152 @@ export default function Dashboard() {
             </Link>
           </div>
 
-          <div className={`grid grid-cols-1 gap-4 items-start ${canReviewKyc ? 'lg:grid-cols-2' : ''}`}>
+          <div className="space-y-4">
             <KycCompletedToday enabled={canSeeKycStats} />
 
             {canReviewKyc && (
-            <div className="bg-white rounded-2xl shadow-soft border border-gray-100 overflow-hidden">
-              <div className="flex items-center justify-between px-4 md:px-6 py-4 border-b border-gray-100">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center">
-                    <ClipboardCheck className="h-5 w-5 text-gray-600" />
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
+              <div className="bg-white rounded-2xl shadow-soft border border-gray-100 overflow-hidden">
+                <div className="flex items-center justify-between px-4 md:px-6 py-4 border-b border-gray-100">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center">
+                      <ClipboardCheck className="h-5 w-5 text-gray-600" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-gray-900">Tier 1 BVN awaiting review</h3>
+                      <p className="text-xs text-gray-500">
+                        {tier1BvnQueue
+                          ? `${tier1BvnQueue.total} face mismatch${tier1BvnQueue.total === 1 ? '' : 'es'} to verify`
+                          : 'Users who requested BVN face review'}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="font-semibold text-gray-900">Tier 3 awaiting review</h3>
-                    <p className="text-xs text-gray-500">
-                      {tier3Queue
-                        ? `${tier3Queue.total} submission${tier3Queue.total === 1 ? '' : 's'} to verify manually`
-                        : 'Users who submitted proof of address'}
+                  {tier1BvnQueue && tier1BvnQueue.total > tier1BvnQueue.rows.length && (
+                    <Link to="/kyc-data?tab=tier1" className="text-sm font-medium text-primary hover:underline">
+                      See all {tier1BvnQueue.total}
+                    </Link>
+                  )}
+                </div>
+
+                {tier1BvnQueueError ? (
+                  <div className="px-6 py-6 text-sm">
+                    <p className="text-error">Could not load the review queue.</p>
+                    <p className="mt-1 text-xs text-gray-500 break-words">
+                      {(tier1BvnQueueError as { message?: string })?.message ?? 'Unknown error'}
                     </p>
                   </div>
-                </div>
-                {tier3Queue && tier3Queue.total > tier3Queue.rows.length && (
-                  <Link to="/kyc-data?tab=review" className="text-sm font-medium text-primary hover:underline">
-                    See all {tier3Queue.total}
-                  </Link>
+                ) : tier1BvnQueueLoading ? (
+                  <p className="px-6 py-6 text-sm text-gray-500">Loading...</p>
+                ) : !tier1BvnQueue || tier1BvnQueue.rows.length === 0 ? (
+                  <p className="px-6 py-6 text-sm text-gray-500">No Tier 1 BVN reviews are waiting.</p>
+                ) : (
+                  <ul className="divide-y divide-gray-100">
+                    {tier1BvnQueue.rows.map((row) => (
+                      <li key={row.id}>
+                        <Link
+                          to={`/kyc-data?tab=tier1&review=${row.user_id}`}
+                          className="flex items-center justify-between gap-3 px-4 md:px-6 py-3 hover:bg-gray-50 transition-colors"
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="flex-shrink-0 w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-primary-light flex items-center justify-center text-white">
+                              <span className="text-xs font-semibold">
+                                {row.first_name?.[0]}
+                                {row.last_name?.[0]}
+                              </span>
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-sm font-medium text-gray-900 truncate">
+                                {row.first_name} {row.last_name}
+                              </p>
+                              <p className="text-xs text-gray-500 truncate">
+                                BVN face mismatch · requested{' '}
+                                {row.bvn_submitted_at
+                                  ? formatDistanceToNow(new Date(row.bvn_submitted_at), { addSuffix: true })
+                                  : 'recently'}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-3 flex-shrink-0">
+                            <TierBadge tier={row.tier} size="sm" />
+                            <span className="text-sm font-medium text-primary">Review</span>
+                          </div>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
                 )}
               </div>
 
-              {tier3QueueError ? (
-                <div className="px-6 py-6 text-sm">
-                  <p className="text-error">Could not load the review queue.</p>
-                  <p className="mt-1 text-xs text-gray-500 break-words">
-                    {(tier3QueueError as { message?: string })?.message ?? 'Unknown error'}
-                  </p>
+              <div className="bg-white rounded-2xl shadow-soft border border-gray-100 overflow-hidden">
+                <div className="flex items-center justify-between px-4 md:px-6 py-4 border-b border-gray-100">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center">
+                      <ClipboardCheck className="h-5 w-5 text-gray-600" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-gray-900">Tier 3 awaiting review</h3>
+                      <p className="text-xs text-gray-500">
+                        {tier3Queue
+                          ? `${tier3Queue.total} submission${tier3Queue.total === 1 ? '' : 's'} to verify manually`
+                          : 'Users who submitted proof of address'}
+                      </p>
+                    </div>
+                  </div>
+                  {tier3Queue && tier3Queue.total > tier3Queue.rows.length && (
+                    <Link to="/kyc-data?tab=review" className="text-sm font-medium text-primary hover:underline">
+                      See all {tier3Queue.total}
+                    </Link>
+                  )}
                 </div>
-              ) : tier3QueueLoading ? (
-                <p className="px-6 py-6 text-sm text-gray-500">Loading...</p>
-              ) : !tier3Queue || tier3Queue.rows.length === 0 ? (
-                <p className="px-6 py-6 text-sm text-gray-500">No Tier 3 submissions are waiting for review.</p>
-              ) : (
-                <ul className="divide-y divide-gray-100">
-                  {tier3Queue.rows.map((row) => (
-                    <li key={row.id}>
-                      <Link
-                        to={`/kyc-data?tab=review&review=${row.user_id}`}
-                        className="flex items-center justify-between gap-3 px-4 md:px-6 py-3 hover:bg-gray-50 transition-colors"
-                      >
-                        <div className="flex items-center gap-3 min-w-0">
-                          <div className="flex-shrink-0 w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-primary-light flex items-center justify-center text-white">
-                            <span className="text-xs font-semibold">
-                              {row.first_name?.[0]}
-                              {row.last_name?.[0]}
-                            </span>
+
+                {tier3QueueError ? (
+                  <div className="px-6 py-6 text-sm">
+                    <p className="text-error">Could not load the review queue.</p>
+                    <p className="mt-1 text-xs text-gray-500 break-words">
+                      {(tier3QueueError as { message?: string })?.message ?? 'Unknown error'}
+                    </p>
+                  </div>
+                ) : tier3QueueLoading ? (
+                  <p className="px-6 py-6 text-sm text-gray-500">Loading...</p>
+                ) : !tier3Queue || tier3Queue.rows.length === 0 ? (
+                  <p className="px-6 py-6 text-sm text-gray-500">No Tier 3 submissions are waiting for review.</p>
+                ) : (
+                  <ul className="divide-y divide-gray-100">
+                    {tier3Queue.rows.map((row) => (
+                      <li key={row.id}>
+                        <Link
+                          to={`/kyc-data?tab=review&review=${row.user_id}`}
+                          className="flex items-center justify-between gap-3 px-4 md:px-6 py-3 hover:bg-gray-50 transition-colors"
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="flex-shrink-0 w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-primary-light flex items-center justify-center text-white">
+                              <span className="text-xs font-semibold">
+                                {row.first_name?.[0]}
+                                {row.last_name?.[0]}
+                              </span>
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-sm font-medium text-gray-900 truncate">
+                                {row.first_name} {row.last_name}
+                              </p>
+                              <p className="text-xs text-gray-500 truncate">
+                                {row.bill_type_label || 'Proof of address'} · submitted{' '}
+                                {formatDistanceToNow(new Date(row.submitted_at), { addSuffix: true })}
+                              </p>
+                            </div>
                           </div>
-                          <div className="min-w-0">
-                            <p className="text-sm font-medium text-gray-900 truncate">
-                              {row.first_name} {row.last_name}
-                            </p>
-                            <p className="text-xs text-gray-500 truncate">
-                              {row.bill_type_label || 'Proof of address'} · submitted{' '}
-                              {formatDistanceToNow(new Date(row.submitted_at), { addSuffix: true })}
-                            </p>
+                          <div className="flex items-center gap-3 flex-shrink-0">
+                            <TierBadge tier={row.tier} size="sm" />
+                            <span className="text-sm font-medium text-primary">Review</span>
                           </div>
-                        </div>
-                        <div className="flex items-center gap-3 flex-shrink-0">
-                          <TierBadge tier={row.tier} size="sm" />
-                          <span className="text-sm font-medium text-primary">Review</span>
-                        </div>
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          )}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+              </div>
+            )}
           </div>
         </div>
       )}

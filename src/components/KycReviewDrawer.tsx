@@ -14,7 +14,12 @@ import {
   AlertTriangle,
   Loader2,
 } from 'lucide-react';
-import { useKycDetail, useReviewTier3 } from '@/hooks/queries/useKycData';
+import {
+  useKycDetail,
+  useReviewTier1Bvn,
+  useReviewTier3,
+  type KycReviewStatus,
+} from '@/hooks/queries/useKycData';
 import { usePermissions } from '@/contexts/PermissionsContext';
 import { useToast } from '@/contexts/ToastContext';
 import { ReviewStatusBadge, TierBadge } from '@/components/KycBadges';
@@ -22,6 +27,8 @@ import { ReviewStatusBadge, TierBadge } from '@/components/KycBadges';
 interface KycReviewDrawerProps {
   userId: string | null;
   onClose: () => void;
+  /** Which review queue opened the drawer — focuses the matching action section. */
+  focus?: 'tier1' | 'tier3' | null;
 }
 
 interface DocItem {
@@ -44,14 +51,17 @@ const formatDate = (value?: string | null, pattern = 'MMM d, yyyy h:mm a') => {
   return isNaN(date.getTime()) ? '-' : format(date, pattern);
 };
 
-export default function KycReviewDrawer({ userId, onClose }: KycReviewDrawerProps) {
+export default function KycReviewDrawer({ userId, onClose, focus = null }: KycReviewDrawerProps) {
   const { data, isLoading, error } = useKycDetail(userId);
   const reviewMutation = useReviewTier3();
+  const bvnReviewMutation = useReviewTier1Bvn();
   const { hasPermission, isSuperAdmin } = usePermissions();
   const { showToast } = useToast();
 
   const [mode, setMode] = useState<'approve' | 'reject' | null>(null);
+  const [bvnMode, setBvnMode] = useState<'approve' | 'reject' | null>(null);
   const [reason, setReason] = useState('');
+  const [bvnReason, setBvnReason] = useState('');
   const [lightbox, setLightbox] = useState<{ url: string; label: string } | null>(null);
 
   const canApprove = isSuperAdmin || hasPermission('kyc', 'approve');
@@ -60,7 +70,9 @@ export default function KycReviewDrawer({ userId, onClose }: KycReviewDrawerProp
   // Reset local state whenever a different user is opened
   useEffect(() => {
     setMode(null);
+    setBvnMode(null);
     setReason('');
+    setBvnReason('');
     setLightbox(null);
   }, [userId]);
 
@@ -81,19 +93,21 @@ export default function KycReviewDrawer({ userId, onClose }: KycReviewDrawerProp
   const progress = data?.progress;
   const tier = data?.tier ?? 0;
   const status = kyc?.utility_bill_review_status ?? null;
+  const bvnStatus = kyc?.bvn_face_review_status ?? null;
   const fullName = kyc ? [kyc.first_name, kyc.middle_name, kyc.last_name].filter(Boolean).join(' ') : '';
   const documentName =
     kyc && kyc.document_type && typeof kyc.document_type === 'object'
       ? kyc.document_type.document_name
       : (kyc?.document_type as string | null | undefined);
 
+  const reviewSelfie = kyc?.bvn_face_review_selfie_url || kyc?.selfie_url;
   const documents: DocItem[] = kyc
     ? [
+        { key: 'selfie', label: 'Selfie (for BVN match)', url: reviewSelfie },
         { key: 'utility', label: 'Proof of address (utility bill)', url: kyc.utility_bill_url, tier3: true },
         { key: 'house', label: 'House photo', url: kyc.house_url, tier3: true },
         { key: 'front', label: 'ID front', url: kyc.document_front_url },
         { key: 'back', label: 'ID back', url: kyc.document_back_url },
-        { key: 'selfie', label: 'Selfie', url: kyc.selfie_url },
       ]
     : [];
 
@@ -135,8 +149,37 @@ export default function KycReviewDrawer({ userId, onClose }: KycReviewDrawerProp
     }
   };
 
+  const handleBvnReview = async (decision: 'approve' | 'reject') => {
+    if (!userId) return;
+    if (decision === 'reject' && !bvnReason.trim()) {
+      showToast('Please enter a reason for rejecting', 'warning');
+      return;
+    }
+
+    try {
+      const result = await bvnReviewMutation.mutateAsync({
+        userId,
+        decision,
+        reason: decision === 'reject' ? bvnReason.trim() : undefined,
+      });
+      showToast(
+        decision === 'approve'
+          ? `Approved. User is now Tier ${result.tier}.`
+          : 'Tier 1 BVN face review rejected.',
+        'success'
+      );
+      setBvnMode(null);
+      setBvnReason('');
+    } catch (err: any) {
+      showToast(err?.message || 'Failed to save review', 'error', 5000);
+    }
+  };
+
   const showActions = status === 'pending' && (canApprove || canReject);
+  const showBvnActions = bvnStatus === 'pending' && (canApprove || canReject);
   const submittedAt = kyc?.utility_bill_validation_result?.submitted_at;
+  const showBvnSection = !!bvnStatus && bvnStatus !== 'not_submitted';
+  const tier1First = focus === 'tier1' || (showBvnActions && focus !== 'tier3');
 
   return (
     <>
@@ -192,6 +235,29 @@ export default function KycReviewDrawer({ userId, onClose }: KycReviewDrawerProp
 
           {kyc && (
             <>
+              {showBvnSection && tier1First && (
+                <Tier1BvnReviewSection
+                  status={bvnStatus}
+                  submittedAt={kyc.bvn_face_review_submitted_at}
+                  reviewedAt={kyc.bvn_face_reviewed_at}
+                  rejectionReason={kyc.bvn_face_rejection_reason}
+                  reviewerName={data?.bvn_reviewer_name}
+                  bvnMasked={maskId(kyc.bvn)}
+                  hasSelfie={!!reviewSelfie}
+                  livenessDone={!!progress?.liveness_test_completed}
+                  personalInfoDone={!!progress?.personal_info_completed}
+                  showActions={showBvnActions}
+                  mode={bvnMode}
+                  setMode={setBvnMode}
+                  reason={bvnReason}
+                  setReason={setBvnReason}
+                  canApprove={canApprove}
+                  canReject={canReject}
+                  isPending={bvnReviewMutation.isPending}
+                  onConfirm={handleBvnReview}
+                />
+              )}
+
               {/* Tier 3 review */}
               <section className="bg-white rounded-2xl border border-gray-100 p-5">
                 <div className="flex items-center justify-between mb-3">
@@ -332,6 +398,29 @@ export default function KycReviewDrawer({ userId, onClose }: KycReviewDrawerProp
                 )}
               </section>
 
+              {showBvnSection && !tier1First && (
+                <Tier1BvnReviewSection
+                  status={bvnStatus}
+                  submittedAt={kyc.bvn_face_review_submitted_at}
+                  reviewedAt={kyc.bvn_face_reviewed_at}
+                  rejectionReason={kyc.bvn_face_rejection_reason}
+                  reviewerName={data?.bvn_reviewer_name}
+                  bvnMasked={maskId(kyc.bvn)}
+                  hasSelfie={!!reviewSelfie}
+                  livenessDone={!!progress?.liveness_test_completed}
+                  personalInfoDone={!!progress?.personal_info_completed}
+                  showActions={showBvnActions}
+                  mode={bvnMode}
+                  setMode={setBvnMode}
+                  reason={bvnReason}
+                  setReason={setBvnReason}
+                  canApprove={canApprove}
+                  canReject={canReject}
+                  isPending={bvnReviewMutation.isPending}
+                  onConfirm={handleBvnReview}
+                />
+              )}
+
               {/* Documents */}
               <section className="bg-white rounded-2xl border border-gray-100 p-5">
                 <h3 className="font-semibold text-gray-900 mb-3">Documents</h3>
@@ -427,6 +516,183 @@ export default function KycReviewDrawer({ userId, onClose }: KycReviewDrawerProp
         </div>
       )}
     </>
+  );
+}
+
+function Tier1BvnReviewSection({
+  status,
+  submittedAt,
+  reviewedAt,
+  rejectionReason,
+  reviewerName,
+  bvnMasked,
+  hasSelfie,
+  livenessDone,
+  personalInfoDone,
+  showActions,
+  mode,
+  setMode,
+  reason,
+  setReason,
+  canApprove,
+  canReject,
+  isPending,
+  onConfirm,
+}: {
+  status: KycReviewStatus | null;
+  submittedAt?: string | null;
+  reviewedAt?: string | null;
+  rejectionReason?: string | null;
+  reviewerName?: string | null;
+  bvnMasked: string | null;
+  hasSelfie: boolean;
+  livenessDone: boolean;
+  personalInfoDone: boolean;
+  showActions: boolean;
+  mode: 'approve' | 'reject' | null;
+  setMode: (mode: 'approve' | 'reject' | null) => void;
+  reason: string;
+  setReason: (value: string) => void;
+  canApprove: boolean;
+  canReject: boolean;
+  isPending: boolean;
+  onConfirm: (decision: 'approve' | 'reject') => void;
+}) {
+  const canApproveNow = personalInfoDone && livenessDone && hasSelfie && !!bvnMasked;
+
+  return (
+    <section className="bg-white rounded-2xl border border-gray-100 p-5">
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="font-semibold text-gray-900">Tier 1 BVN face review</h3>
+        <ReviewStatusBadge status={status} />
+      </div>
+
+      <dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
+        <div>
+          <dt className="text-gray-500">BVN on file</dt>
+          <dd className="font-medium text-gray-900 font-mono">{bvnMasked || 'Missing'}</dd>
+        </div>
+        <div>
+          <dt className="text-gray-500">Requested</dt>
+          <dd className="font-medium text-gray-900">{formatDate(submittedAt)}</dd>
+        </div>
+        <div className="col-span-2">
+          <dt className="text-gray-500">Why it needs review</dt>
+          <dd className="font-medium text-gray-900">
+            Automatic BVN face match failed. Confirm the selfie matches the BVN identity.
+          </dd>
+        </div>
+        {status !== 'pending' && (
+          <>
+            <div>
+              <dt className="text-gray-500">Reviewed by</dt>
+              <dd className="font-medium text-gray-900">{reviewerName || '-'}</dd>
+            </div>
+            <div>
+              <dt className="text-gray-500">Reviewed</dt>
+              <dd className="font-medium text-gray-900">{formatDate(reviewedAt)}</dd>
+            </div>
+          </>
+        )}
+        {status === 'rejected' && rejectionReason && (
+          <div className="col-span-2 rounded-lg bg-gray-50 p-3 text-gray-700">
+            <span className="font-medium">Reason: </span>
+            {rejectionReason}
+          </div>
+        )}
+      </dl>
+
+      {status === 'pending' && !canApproveNow && (
+        <div className="mt-4 flex gap-2 rounded-lg bg-gray-50 border border-gray-200 p-3 text-sm text-gray-700">
+          <AlertTriangle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+          {!bvnMasked || !hasSelfie
+            ? 'BVN or selfie is missing, so this review cannot be approved yet.'
+            : 'User must complete personal info and liveness before Tier 1 can be approved.'}
+        </div>
+      )}
+
+      {showActions && mode === null && (
+        <div className="mt-4 flex gap-3">
+          {canApprove && (
+            <button
+              onClick={() => setMode('approve')}
+              className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-white font-medium hover:bg-primary-light transition-colors"
+            >
+              <CheckCircle className="h-4 w-4" />
+              Approve Tier 1
+            </button>
+          )}
+          {canReject && (
+            <button
+              onClick={() => setMode('reject')}
+              className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 text-gray-900 font-medium hover:bg-gray-50 transition-colors"
+            >
+              <XCircle className="h-4 w-4" />
+              Reject
+            </button>
+          )}
+        </div>
+      )}
+
+      {mode === 'approve' && (
+        <div className="mt-4 rounded-xl border border-gray-200 bg-gray-50 p-4">
+          <p className="text-sm text-gray-700 mb-3">
+            Confirm the selfie matches the BVN identity. The user will be marked BVN-verified and receive a Nomba
+            deposit account.
+          </p>
+          <div className="flex gap-2">
+            <button
+              onClick={() => onConfirm('approve')}
+              disabled={isPending}
+              className="px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary-light disabled:opacity-50 inline-flex items-center gap-2"
+            >
+              {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+              Confirm approval
+            </button>
+            <button
+              onClick={() => setMode(null)}
+              disabled={isPending}
+              className="px-4 py-2 rounded-lg text-sm text-gray-700 hover:bg-white"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {mode === 'reject' && (
+        <div className="mt-4 rounded-xl border border-gray-200 bg-gray-50 p-4">
+          <label htmlFor="kyc-tier1-reject-reason" className="block text-sm font-medium text-gray-900 mb-2">
+            Reason for rejection (required)
+          </label>
+          <textarea
+            id="kyc-tier1-reject-reason"
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            rows={3}
+            placeholder="e.g. Selfie does not match BVN photo"
+            className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+          />
+          <div className="flex gap-2 mt-3">
+            <button
+              onClick={() => onConfirm('reject')}
+              disabled={isPending || !reason.trim()}
+              className="px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary-light disabled:opacity-50 inline-flex items-center gap-2"
+            >
+              {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+              Confirm rejection
+            </button>
+            <button
+              onClick={() => setMode(null)}
+              disabled={isPending}
+              className="px-4 py-2 rounded-lg text-sm text-gray-700 hover:bg-white"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+    </section>
   );
 }
 

@@ -174,6 +174,8 @@ const ADMIN_ACTIONS: Record<string, string> = {
   'payout.retry_released': 'released a failed payout for retry',
   'kyc.tier3.approved': 'approved a Tier 3 verification',
   'kyc.tier3.rejected': 'rejected a Tier 3 verification',
+  'kyc.tier1.bvn_face.approved': 'approved a Tier 1 BVN face review',
+  'kyc.tier1.bvn_face.rejected': 'rejected a Tier 1 BVN face review',
   'user.deleted': 'deleted a user account',
   assign_super_admin_role: 'made someone a Super Admin',
 };
