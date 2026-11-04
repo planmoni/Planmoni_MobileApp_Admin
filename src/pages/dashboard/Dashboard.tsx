@@ -37,10 +37,9 @@ import { format, formatDistanceToNow } from 'date-fns';
 import { Link } from 'react-router-dom';
 import { useDashboardData } from '@/hooks/queries/useDashboardData';
 import { useDuePayoutSummary } from '@/hooks/queries/useProcessPayouts';
-import { useKycTierStats, useTier3Queue } from '@/hooks/queries/useKycData';
+import { useTier3Queue } from '@/hooks/queries/useKycData';
 import { TierBadge } from '@/components/KycBadges';
 import KycCompletedToday from '@/components/KycCompletedToday';
-import { TierIcon } from '@/components/TierIcon';
 import { useRefreshData } from '@/hooks/mutations/useRefreshData';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePermissions } from '@/contexts/PermissionsContext';
@@ -60,7 +59,6 @@ export default function Dashboard() {
   const canReviewKyc = isSuperAdmin || hasPermission('kyc', 'approve') || hasPermission('kyc', 'reject');
   const canProcessPayouts = isSuperAdmin || hasPermission('payouts', 'process');
   const { data: pastDue, isLoading: pastDueLoading, isError: pastDueError } = useDuePayoutSummary(canProcessPayouts);
-  const { data: kycStats, isLoading: kycStatsLoading } = useKycTierStats(canSeeKycStats);
   const {
     data: tier3Queue,
     isLoading: tier3QueueLoading,
@@ -88,7 +86,7 @@ export default function Dashboard() {
   }, [session]);
 
   const handleRefresh = () => {
-    refreshData.mutate(['dashboard', 'kyc-tier-stats', 'kyc-tier3-queue']);
+    refreshData.mutate(['dashboard', 'kyc-completed-today', 'kyc-tier3-queue']);
   };
 
   const formatCurrency = (amount: number) => {
@@ -379,36 +377,10 @@ export default function Dashboard() {
             </Link>
           </div>
 
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-            {([
-              { tier: 0, label: 'Unverified', value: kycStats?.tier0, hint: 'Started KYC, not yet Tier 1' },
-              { tier: 1, label: 'Tier 1', value: kycStats?.tier1, hint: 'BVN, liveness and ID match' },
-              { tier: 2, label: 'Tier 2', value: kycStats?.tier2, hint: 'Personal info and ID documents' },
-              { tier: 3, label: 'Tier 3', value: kycStats?.tier3, hint: 'Proof of address, manually reviewed' },
-            ] as const).map((card) => (
-              <Link
-                key={card.tier}
-                to={`/kyc-data?tier=${card.tier}`}
-                className="group flex items-start gap-3 bg-white rounded-2xl p-3.5 md:p-4 shadow-soft border border-gray-100 hover:border-gray-200 hover:shadow-md transition-all min-w-0"
-              >
-                <TierIcon tier={card.tier} className="h-9 w-9 flex-shrink-0" />
-                <div className="min-w-0 flex-1">
-                  <p className="text-xs text-gray-500 truncate">
-                    {card.tier === 0 ? 'Unverified users' : `${card.label} users`}
-                  </p>
-                  <p className="mt-0.5 text-base md:text-lg font-semibold text-gray-900 tabular-nums">
-                    {kycStatsLoading ? '...' : (card.value ?? 0).toLocaleString()}
-                  </p>
-                  <p className="mt-1.5 text-[11px] text-gray-400 leading-snug">{card.hint}</p>
-                </div>
-              </Link>
-            ))}
-          </div>
+          <div className={`grid grid-cols-1 gap-4 items-start ${canReviewKyc ? 'lg:grid-cols-2' : ''}`}>
+            <KycCompletedToday enabled={canSeeKycStats} />
 
-          <div className={`mt-4 grid grid-cols-1 gap-4 items-start ${canReviewKyc ? 'lg:grid-cols-2' : ''}`}>
-          <KycCompletedToday enabled={canSeeKycStats} />
-
-          {canReviewKyc && (
+            {canReviewKyc && (
             <div className="bg-white rounded-2xl shadow-soft border border-gray-100 overflow-hidden">
               <div className="flex items-center justify-between px-4 md:px-6 py-4 border-b border-gray-100">
                 <div className="flex items-center gap-3">

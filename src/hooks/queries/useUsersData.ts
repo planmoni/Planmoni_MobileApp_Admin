@@ -403,9 +403,9 @@ export const useDeleteUser = () => {
   });
 };
 
-/** Account numbers generated for the user after KYC (Safe Haven / Paystack). */
+/** Account numbers generated for the user after KYC (Safe Haven / Nomba / Paystack). */
 export type GeneratedAccount = {
-  source: 'safehaven' | 'paystack';
+  source: 'safehaven' | 'nomba' | 'paystack';
   account_number: string;
   account_name: string | null;
   bank_name: string | null;

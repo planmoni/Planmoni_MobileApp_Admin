@@ -84,35 +84,6 @@ const matchesSearch = (event: CalendarEvent, query: string) => {
   return haystack.includes(query);
 };
 
-/** "↓ 12  ↑ 30" - how many of each kind happen on a day. */
-function DayCounts({ events, limit = 4 }: { events: CalendarEvent[]; limit?: number }) {
-  const counts = TYPE_ORDER.map((type) => ({ type, count: events.filter((e) => e.type === type).length })).filter(
-    (c) => c.count > 0
-  );
-  if (counts.length === 0) return null;
-
-  return (
-    <div className="space-y-0.5">
-      {counts.slice(0, limit).map(({ type, count }) => {
-        const { Icon, plural } = EVENT_TYPE_META[type];
-        return (
-          <div
-            key={type}
-            title={`${count} ${plural.toLowerCase()}`}
-            className={`flex items-center gap-1 text-[11px] font-medium ${
-              type === 'payout_failed' ? 'text-error' : 'text-gray-600'
-            }`}
-          >
-            <Icon className="h-3 w-3 shrink-0" />
-            <span>{count}</span>
-          </div>
-        );
-      })}
-      {counts.length > limit && <div className="text-[11px] text-gray-400">+{counts.length - limit} more</div>}
-    </div>
-  );
-}
-
 export default function Calendar() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
@@ -394,7 +365,6 @@ export default function Calendar() {
 
                 <div className="grid grid-cols-7 gap-2">
                   {calendarDays.map((day) => {
-                    const dayEvents = eventsOn(day);
                     const inMonth = isSameMonth(day, currentDate);
                     const selected = isSameDay(day, selectedDate);
                     const today = isSameDay(day, new Date());
@@ -403,33 +373,20 @@ export default function Calendar() {
                       <button
                         key={day.toISOString()}
                         onClick={() => selectDate(day)}
-                        className={`min-h-[96px] p-2 rounded-xl text-left border transition-all ${
+                        className={`aspect-square p-2 rounded-xl flex items-center justify-center border transition-all ${
                           selected
                             ? 'border-gray-900 ring-1 ring-gray-900 bg-gray-50'
                             : 'border-gray-100 hover:bg-gray-50 hover:border-gray-200'
                         } ${inMonth ? 'bg-white' : 'bg-gray-50 opacity-60'}`}
                       >
                         <span
-                          className={`inline-flex items-center justify-center text-sm font-semibold mb-1.5 ${
+                          className={`inline-flex items-center justify-center text-sm font-semibold ${
                             today ? 'w-6 h-6 rounded-full bg-gray-900 text-white' : 'text-gray-900'
                           }`}
                         >
                           {format(day, 'd')}
                         </span>
-                        <DayCounts events={dayEvents} />
                       </button>
-                    );
-                  })}
-                </div>
-
-                <div className="mt-5 flex flex-wrap gap-x-5 gap-y-2 border-t border-gray-100 pt-4">
-                  {TYPE_ORDER.map((type) => {
-                    const { Icon, plural } = EVENT_TYPE_META[type];
-                    return (
-                      <span key={type} className="flex items-center gap-1.5 text-xs text-gray-500">
-                        <Icon className={`h-3.5 w-3.5 ${type === 'payout_failed' ? 'text-error' : ''}`} />
-                        {plural}
-                      </span>
                     );
                   })}
                 </div>
@@ -440,7 +397,6 @@ export default function Calendar() {
               <div className="p-6">
                 <div className="grid grid-cols-7 gap-2">
                   {weekDays.map((day) => {
-                    const dayEvents = eventsOn(day);
                     const selected = isSameDay(day, selectedDate);
                     const today = isSameDay(day, new Date());
 
@@ -448,7 +404,7 @@ export default function Calendar() {
                       <button
                         key={day.toISOString()}
                         onClick={() => selectDate(day)}
-                        className={`min-h-[220px] p-3 rounded-xl text-left border transition-all ${
+                        className={`p-3 rounded-xl flex flex-col items-center justify-center border transition-all ${
                           selected
                             ? 'border-gray-900 ring-1 ring-gray-900 bg-gray-50'
                             : 'border-gray-100 bg-white hover:bg-gray-50 hover:border-gray-200'
@@ -456,33 +412,12 @@ export default function Calendar() {
                       >
                         <p className="text-xs font-medium text-gray-500">{format(day, 'EEE')}</p>
                         <span
-                          className={`inline-flex items-center justify-center text-xl font-semibold mb-3 ${
+                          className={`inline-flex items-center justify-center text-xl font-semibold ${
                             today ? 'w-8 h-8 rounded-full bg-gray-900 text-white text-base' : 'text-gray-900'
                           }`}
                         >
                           {format(day, 'd')}
                         </span>
-                        <div className="space-y-1.5">
-                          {dayEvents.slice(0, 6).map((event) => {
-                            const { Icon } = EVENT_TYPE_META[event.type];
-                            return (
-                              <div
-                                key={event.id}
-                                className={`flex items-center gap-1.5 text-xs ${
-                                  event.type === 'payout_failed' ? 'text-error' : 'text-gray-700'
-                                }`}
-                              >
-                                <Icon className="h-3 w-3 shrink-0" />
-                                <span className="truncate">
-                                  {event.amount !== null ? formatNairaCompact(event.amount) : EVENT_TYPE_META[event.type].title}
-                                </span>
-                              </div>
-                            );
-                          })}
-                          {dayEvents.length > 6 && (
-                            <p className="text-xs text-gray-400">+{dayEvents.length - 6} more</p>
-                          )}
-                        </div>
                       </button>
                     );
                   })}

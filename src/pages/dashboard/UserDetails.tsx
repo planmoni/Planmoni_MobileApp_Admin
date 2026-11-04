@@ -415,12 +415,18 @@ export default function UserDetails() {
           <div className="divide-y divide-gray-100">
             {generatedAccounts.map((account) => (
               <BankAccountRow
-                key={account.account_number}
+                key={`${account.source}-${account.account_number}`}
                 bankName={account.bank_name}
                 bankCode={account.bank_code}
                 accountNumber={account.account_number}
                 accountName={account.account_name}
-                badges={[account.status, account.is_default ? 'Primary' : null].filter(Boolean) as string[]}
+                badges={
+                  [
+                    account.source === 'nomba' ? 'Nomba' : account.source === 'paystack' ? 'Paystack' : 'SafeHaven',
+                    account.status,
+                    account.is_default ? 'Primary' : null,
+                  ].filter(Boolean) as string[]
+                }
                 footer={account.created_at ? <span>Created {format(new Date(account.created_at), 'MMM d, yyyy')}</span> : undefined}
               />
             ))}
